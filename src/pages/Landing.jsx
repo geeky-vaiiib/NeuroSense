@@ -36,28 +36,73 @@ export function NeuroLogo({ size = 36 }) {
   );
 }
 
+/* ── SVG icon set ────────────────────────────────────────── */
+const IcoBrain = () => (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M9.5 2A2.5 2.5 0 0112 4.5v15a2.5 2.5 0 01-4.96-.46 2.5 2.5 0 01-1.07-4.69 3 3 0 01.34-5.58 2.5 2.5 0 013.19-3.77z"/>
+    <path d="M14.5 2A2.5 2.5 0 0112 4.5v15a2.5 2.5 0 004.96-.46 2.5 2.5 0 001.07-4.69 3 3 0 00-.34-5.58 2.5 2.5 0 00-3.19-3.77z"/>
+  </svg>
+);
+const IcoClipboard = () => (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/>
+    <rect x="9" y="3" width="6" height="4" rx="1"/>
+    <line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/>
+  </svg>
+);
+const IcoUsers = () => (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/>
+    <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/>
+  </svg>
+);
+const IcoShield = () => (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+    <polyline points="9 12 11 14 15 10"/>
+  </svg>
+);
+const IcoStethoscope = () => (
+  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M4.8 2.3A.3.3 0 105 2H4a2 2 0 00-2 2v5a6 6 0 006 6 6 6 0 006-6V4a2 2 0 00-2-2h-1a.2.2 0 10.3.3"/>
+    <path d="M8 15v1a6 6 0 006 6 6 6 0 006-6v-4"/>
+    <circle cx="20" cy="10" r="2"/>
+  </svg>
+);
+const IcoHeart = () => (
+  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/>
+  </svg>
+);
+const IcoPerson = () => (
+  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="8" r="4"/>
+    <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+  </svg>
+);
+
 /* ── Data ────────────────────────────────────────────────── */
 const FEATURES = [
   {
-    emoji: '🔍',
+    Icon: IcoBrain,
     color: '#7C9A85', bg: 'rgba(124,154,133,0.1)', border: 'rgba(124,154,133,0.2)',
     title: 'Explainable AI',
     desc: 'Every risk score comes with a plain-language explanation of which signals drove it — no hidden algorithms.',
   },
   {
-    emoji: '📋',
+    Icon: IcoClipboard,
     color: '#B8873A', bg: 'rgba(184,135,58,0.08)', border: 'rgba(184,135,58,0.2)',
     title: '7 Validated Tools',
     desc: 'AQ-10, RAADS-R, ASRS, BRIEF-2 and more — internationally recognised instruments in one place.',
   },
   {
-    emoji: '👨‍👩‍👧',
+    Icon: IcoUsers,
     color: '#5E7A67', bg: 'rgba(94,122,103,0.1)', border: 'rgba(94,122,103,0.2)',
     title: 'For Everyone',
     desc: 'Designed for clinicians, parents, teachers, and individuals — accessible language at every step.',
   },
   {
-    emoji: '🛡️',
+    Icon: IcoShield,
     color: '#6B6560', bg: 'rgba(107,101,96,0.08)', border: 'rgba(107,101,96,0.2)',
     title: 'Private by Design',
     desc: 'DPDP Act 2023 compliant. Your data never leaves your control and is never sold or shared.',
@@ -73,17 +118,20 @@ const STATS = [
 
 const WHO_FOR = [
   {
-    icon: '🩺',
+    Icon: IcoStethoscope,
+    color: '#7C9A85', bg: 'rgba(124,154,133,0.1)', border: 'rgba(124,154,133,0.2)',
     title: 'Clinicians & Psychologists',
     desc: 'Run structured assessments, generate SHAP-explained reports, and manage your full caseload in one place.',
   },
   {
-    icon: '👨‍👩‍👧',
+    Icon: IcoHeart,
+    color: '#B8873A', bg: 'rgba(184,135,58,0.08)', border: 'rgba(184,135,58,0.2)',
     title: 'Parents & Caregivers',
     desc: 'Understand your child\'s screening results with clear, jargon-free explanations — and know what to do next.',
   },
   {
-    icon: '🧑',
+    Icon: IcoPerson,
+    color: '#5E7A67', bg: 'rgba(94,122,103,0.1)', border: 'rgba(94,122,103,0.2)',
     title: 'Individuals',
     desc: 'Self-refer, complete an evidence-based screening, and get a transparent report to share with your doctor.',
   },
@@ -285,29 +333,33 @@ export default function Landing() {
             Built for understanding,<br />not just diagnosis.
           </h2>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px' }}>
-            {FEATURES.map((f, i) => (
-              <div
-                key={f.title}
-                onMouseEnter={() => setHovFeat(i)} onMouseLeave={() => setHovFeat(null)}
-                style={{
-                  backgroundColor: 'var(--color-bg-card)',
-                  border: `1px solid ${hovFeat === i ? f.border : 'var(--color-neutral-200)'}`,
-                  borderRadius: '16px', padding: '28px',
-                  display: 'flex', flexDirection: 'column', gap: '14px',
-                  boxShadow: hovFeat === i ? 'var(--shadow-lg)' : 'var(--shadow-xs)',
-                  transform: hovFeat === i ? 'translateY(-4px)' : 'none',
-                  transition: 'all 220ms cubic-bezier(.4,0,.2,1)',
-                }}
-              >
-                <div style={{
-                  width: '48px', height: '48px', borderRadius: '12px', fontSize: '22px',
-                  backgroundColor: f.bg, border: `1px solid ${f.border}`,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}>{f.emoji}</div>
-                <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--color-neutral-900)' }}>{f.title}</div>
-                <div style={{ fontSize: '0.875rem', color: 'var(--color-neutral-500)', lineHeight: 1.65 }}>{f.desc}</div>
-              </div>
-            ))}
+            {FEATURES.map((f, i) => {
+              const { Icon } = f;
+              return (
+                <div
+                  key={f.title}
+                  onMouseEnter={() => setHovFeat(i)} onMouseLeave={() => setHovFeat(null)}
+                  style={{
+                    backgroundColor: 'var(--color-bg-card)',
+                    border: `1px solid ${hovFeat === i ? f.border : 'var(--color-neutral-200)'}`,
+                    borderRadius: '16px', padding: '28px',
+                    display: 'flex', flexDirection: 'column', gap: '16px',
+                    boxShadow: hovFeat === i ? 'var(--shadow-lg)' : 'var(--shadow-xs)',
+                    transform: hovFeat === i ? 'translateY(-4px)' : 'none',
+                    transition: 'all 220ms cubic-bezier(.4,0,.2,1)',
+                  }}
+                >
+                  <div style={{
+                    width: '48px', height: '48px', borderRadius: '12px',
+                    backgroundColor: f.bg, border: `1px solid ${f.border}`,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    color: f.color,
+                  }}><Icon /></div>
+                  <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--color-neutral-900)', letterSpacing: '-0.01em' }}>{f.title}</div>
+                  <div style={{ fontSize: '0.875rem', color: 'var(--color-neutral-500)', lineHeight: 1.7 }}>{f.desc}</div>
+                </div>
+              );
+            })}
           </div>
         </div>
       </section>
@@ -320,24 +372,32 @@ export default function Landing() {
             Wherever you are on<br />the journey.
           </h2>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '16px' }}>
-            {WHO_FOR.map((w, i) => (
-              <div
-                key={w.title}
-                onMouseEnter={() => setHovWho(i)} onMouseLeave={() => setHovWho(null)}
-                style={{
-                  padding: '32px 28px',
-                  border: `1px solid ${hovWho === i ? 'rgba(124,154,133,0.35)' : 'var(--color-neutral-200)'}`,
-                  borderRadius: '16px',
-                  backgroundColor: hovWho === i ? 'rgba(124,154,133,0.04)' : 'var(--color-bg-card)',
-                  display: 'flex', flexDirection: 'column', gap: '14px',
-                  transition: 'all 200ms', boxShadow: hovWho === i ? 'var(--shadow-md)' : 'var(--shadow-xs)',
-                }}
-              >
-                <span style={{ fontSize: '2rem' }}>{w.icon}</span>
-                <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--color-neutral-900)' }}>{w.title}</div>
-                <div style={{ fontSize: '0.875rem', color: 'var(--color-neutral-500)', lineHeight: 1.65 }}>{w.desc}</div>
-              </div>
-            ))}
+            {WHO_FOR.map((w, i) => {
+              const { Icon } = w;
+              return (
+                <div
+                  key={w.title}
+                  onMouseEnter={() => setHovWho(i)} onMouseLeave={() => setHovWho(null)}
+                  style={{
+                    padding: '32px 28px',
+                    border: `1px solid ${hovWho === i ? w.border : 'var(--color-neutral-200)'}`,
+                    borderRadius: '16px',
+                    backgroundColor: hovWho === i ? w.bg : 'var(--color-bg-card)',
+                    display: 'flex', flexDirection: 'column', gap: '16px',
+                    transition: 'all 200ms', boxShadow: hovWho === i ? 'var(--shadow-md)' : 'var(--shadow-xs)',
+                  }}
+                >
+                  <div style={{
+                    width: '52px', height: '52px', borderRadius: '14px',
+                    backgroundColor: w.bg, border: `1px solid ${w.border}`,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    color: w.color,
+                  }}><Icon /></div>
+                  <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--color-neutral-900)', letterSpacing: '-0.01em' }}>{w.title}</div>
+                  <div style={{ fontSize: '0.875rem', color: 'var(--color-neutral-500)', lineHeight: 1.7 }}>{w.desc}</div>
+                </div>
+              );
+            })}
           </div>
         </div>
       </section>

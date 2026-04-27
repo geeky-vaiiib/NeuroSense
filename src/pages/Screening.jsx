@@ -57,10 +57,17 @@ function ToolCard({ tool, onStart, isActive }) {
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           fontSize: '1.125rem',
         }}>
-          {tool.targetCondition === 'Autism Spectrum' || tool.targetCondition === 'Autism / Social' ? '🧠' :
-           tool.targetCondition === 'ADHD' ? '⚡' :
-           tool.targetCondition === 'Executive Function' ? '📊' :
-           tool.targetCondition === 'Dyslexia / Dyscalculia' ? '📖' : '🔍'}
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={cc.color} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+            {(tool.targetCondition === 'Autism Spectrum' || tool.targetCondition === 'Autism / Social')
+              ? <><path d="M9.5 2A2.5 2.5 0 0112 4.5v15a2.5 2.5 0 01-4.96-.46 2.5 2.5 0 01-1.07-4.69 3 3 0 01.34-5.58 2.5 2.5 0 013.19-3.77z"/><path d="M14.5 2A2.5 2.5 0 0112 4.5v15a2.5 2.5 0 004.96-.46 2.5 2.5 0 001.07-4.69 3 3 0 00-.34-5.58 2.5 2.5 0 00-3.19-3.77z"/></>
+              : tool.targetCondition === 'ADHD'
+              ? <><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></>
+              : tool.targetCondition === 'Executive Function'
+              ? <><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></>
+              : tool.targetCondition === 'Dyslexia / Dyscalculia'
+              ? <><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></>
+              : <><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></>}
+          </svg>
         </div>
 
         <div style={{ flex: 1, minWidth: 0 }}>
@@ -96,15 +103,12 @@ function ToolCard({ tool, onStart, isActive }) {
       {/* Stats row */}
       <div style={{ display: 'flex', gap: '16px' }}>
         {[
-          { icon: '⏱', label: tool.duration },
-          { icon: '❓', label: `${tool.questions} questions` },
-          { icon: '✅', label: 'Validated' },
+          { label: tool.duration, icon: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> },
+          { label: `${tool.questions} items`, icon: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg> },
+          { label: 'Validated', icon: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg> },
         ].map(({ icon, label }) => (
-          <span key={label} style={{
-            fontSize: '0.75rem', color: 'var(--color-neutral-500)',
-            display: 'flex', alignItems: 'center', gap: '4px',
-          }}>
-            <span style={{ fontSize: '12px' }}>{icon}</span>
+          <span key={label} style={{ fontSize: '0.75rem', color: 'var(--color-neutral-500)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <span style={{ display: 'flex', alignItems: 'center' }}>{icon}</span>
             {label}
           </span>
         ))}
@@ -173,7 +177,15 @@ export default function Screening() {
           textAlign: 'center', boxShadow: 'var(--shadow-lg)',
           display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px',
         }}>
-          <div style={{ fontSize: '3rem' }}>🎉</div>
+          <div style={{
+            width: '56px', height: '56px', borderRadius: '50%',
+            backgroundColor: 'rgba(94,122,103,0.12)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#5E7A67" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+          </div>
           <div>
             <h2 style={{ fontSize: '1.375rem', fontWeight: 700, margin: '0 0 6px', color: 'var(--color-neutral-900)' }}>Screening Complete</h2>
             <p style={{ fontSize: '0.875rem', color: 'var(--color-neutral-500)' }}>Session {result.sessionId}</p>
@@ -288,7 +300,19 @@ export default function Screening() {
         borderRadius: '12px',
         display: 'flex', alignItems: 'center', gap: '14px',
       }}>
-        <span style={{ fontSize: '1.5rem' }}>🧬</span>
+        <div style={{
+          width: '40px', height: '40px', borderRadius: '10px', flexShrink: 0,
+          backgroundColor: 'var(--color-primary-subtle)',
+          border: '1px solid var(--border-primary)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          color: 'var(--color-primary-dark)',
+        }}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/>
+            <rect x="9" y="3" width="6" height="4" rx="1"/>
+            <line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/>
+          </svg>
+        </div>
         <div>
           <div style={{ fontWeight: 600, color: 'var(--color-neutral-800)', fontSize: '0.9375rem' }}>Select a Screening Tool</div>
           <div style={{ fontSize: '0.8125rem', color: 'var(--color-neutral-500)', marginTop: '2px' }}>

@@ -36,11 +36,16 @@ const ACTIVITY = [
 ];
 
 const ACTIVITY_ICONS = {
-  screen: { icon: '📋', color: 'rgba(124,154,133,0.15)' },
-  flag:   { icon: '🚩', color: 'rgba(192,85,90,0.12)' },
-  review: { icon: '✅', color: 'rgba(94,122,103,0.12)' },
-  close:  { icon: '🔒', color: 'rgba(138,129,120,0.12)' },
-  note:   { icon: '📝', color: 'rgba(184,135,58,0.10)' },
+  screen: { color: 'rgba(124,154,133,0.15)', stroke: '#7C9A85',
+    svg: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/></svg> },
+  flag:   { color: 'rgba(192,85,90,0.12)',   stroke: '#C0555A',
+    svg: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg> },
+  review: { color: 'rgba(94,122,103,0.12)',  stroke: '#5E7A67',
+    svg: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg> },
+  close:  { color: 'rgba(138,129,120,0.12)', stroke: '#8A8178',
+    svg: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg> },
+  note:   { color: 'rgba(184,135,58,0.10)',  stroke: '#B8873A',
+    svg: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg> },
 };
 
 const RISK_DIST = [
@@ -127,7 +132,8 @@ export default function Dashboard() {
         <div>
           <div style={{ fontSize: '0.8125rem', color: 'rgba(255,255,255,0.65)', marginBottom: '4px', fontWeight: 500 }}>{TODAY}</div>
           <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#fff', margin: 0, letterSpacing: '-0.025em' }}>
-            {GREETING()}, {user?.name?.split(' ')[0] ?? 'Doctor'} 👋
+            {GREETING()}, {user?.name?.split(' ')[0] ?? 'Doctor'}
+
           </h1>
           <p style={{ fontSize: '0.875rem', color: 'rgba(255,255,255,0.7)', marginTop: '4px' }}>
             {DASHBOARD_STATS.awaitingReview} cases awaiting your review today
@@ -320,11 +326,12 @@ export default function Dashboard() {
                     borderBottom: i < ACTIVITY.length - 1 ? '1px solid var(--color-neutral-100)' : 'none',
                   }}>
                     <span style={{
-                      fontSize: '14px', width: '28px', height: '28px',
+                      width: '28px', height: '28px',
                       borderRadius: '8px', backgroundColor: meta.color,
+                      color: meta.stroke,
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                       flexShrink: 0,
-                    }}>{meta.icon}</span>
+                    }}>{meta.svg}</span>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <p style={{ margin: 0, fontSize: '0.8125rem', color: 'var(--color-neutral-700)', lineHeight: 1.4 }}>
                         <strong style={{ fontWeight: 600, color: 'var(--color-neutral-800)' }}>{a.actor}</strong>{' '}
