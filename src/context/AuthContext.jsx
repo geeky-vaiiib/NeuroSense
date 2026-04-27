@@ -4,7 +4,9 @@
  * Mock auth — no real backend required; stores session in localStorage.
  */
 
-import React, { createContext, useContext, useReducer, useEffect, useCallback } from 'react';
+/* eslint-disable react-refresh/only-export-components */
+
+import { createContext, useCallback, useContext, useEffect, useReducer } from 'react';
 
 /* ── Types ───────────────────────────────────────────────── */
 const AUTH_ACTIONS = {
@@ -84,8 +86,8 @@ function generateToken() {
 }
 
 function sanitizeUser(user) {
-  // Never expose password hash to context consumers
-  const { password: _pwd, ...safe } = user;
+  const safe = { ...user };
+  delete safe.password;
   return safe;
 }
 
@@ -159,15 +161,17 @@ export function AuthProvider({ children }) {
     }
 
     const token = generateToken();
-    const user = {
+    const rawUser = {
       id:        `usr-${Date.now()}`,
       name,
       email,
+      password,
       role:      role || 'Clinician',
       specialty: 'General',
       initials:  name.split(' ').map((w) => w[0]).join('').toUpperCase().slice(0, 2),
       joinedAt:  new Date().toISOString().split('T')[0],
     };
+    const user = sanitizeUser(rawUser);
 
     localStorage.setItem('ns_session', JSON.stringify({ user, token }));
     dispatch({ type: AUTH_ACTIONS.REGISTER, payload: { user, token } });

@@ -3,7 +3,7 @@
  * Top navigation bar with page title, search, and action area.
  */
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useLocation } from 'react-router-dom';
 
 const PAGE_TITLES = {

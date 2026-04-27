@@ -1,7 +1,6 @@
 /**
  * App.jsx — Root with AuthProvider, protected routes, landing + auth pages.
  */
-import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -67,6 +66,7 @@ function AppShell() {
           <Routes>
             <Route path="/"                element={<Dashboard />} />
             <Route path="/screening"       element={<Screening />} />
+            <Route path="/screening/:category" element={<Screening />} />
             <Route path="/results"         element={<Results />} />
             <Route path="/results/:caseId" element={<Results />} />
             <Route path="/cases"           element={<Cases />} />

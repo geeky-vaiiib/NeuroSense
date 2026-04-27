@@ -1,7 +1,6 @@
 /**
  * Sidebar.jsx — Persistent 240px nav, uses AuthContext for user info + logout.
  */
-import React from 'react';
 import { NeuroLogo } from '../pages/Landing';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';

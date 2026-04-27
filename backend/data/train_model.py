@@ -1,25 +1,25 @@
 #!/usr/bin/env python3
 """
-data/train_model.py — One-time training script for the NeuroSense ASD classifier.
+data/train_model.py — Category-aware training for NeuroSense ASD classifier.
 
-Uses the UCI/Kaggle ASD Screening Adult dataset.
-CRITICAL: Drops the 'result' column to prevent data leakage (it's the sum of A1-A10).
+Supports dual-category: adult and child.
+CRITICAL: Drops the 'result' column to prevent data leakage.
 
 Usage:
-  1. Place the CSV dataset in backend/data/ as 'asd_screening.csv'
-  2. Run: python -m data.train_model   (from backend/ directory)
+  cd backend/
+  python -m data.train_model --category adult
+  python -m data.train_model --category child
+  python -m data.train_model                     # train both
 
-Pipeline:
-  1. Load + clean data (drop high-missing rows, impute)
-  2. Label-encode categoricals
-  3. 80/20 stratified split
-  4. SMOTE on training set only
-  5. Train XGBoost, AdaBoost, GradientBoosting
-  6. 5-fold StratifiedKFold cross-validation
-  7. Report metrics (accuracy, AUC-ROC, precision, recall, F1, Cohen's Kappa)
-  8. Save best model → ml/model.pkl
-  9. Save encoders → ml/encoders.pkl
+Dataset expectations:
+  backend/data/asd_screening_adult.csv    (or legacy asd_screening.csv)
+  backend/data/asd_screening_child.csv
+
+Outputs:
+  backend/ml/model_adult.pkl     / encoders_adult.pkl     / background_adult.npy
+  backend/ml/model_child.pkl     / encoders_child.pkl     / background_child.npy
 """
+import argparse
 
 import os
 import sys
@@ -38,15 +38,15 @@ from sklearn.ensemble import AdaBoostClassifier, GradientBoostingClassifier
 from xgboost import XGBClassifier
 from imblearn.over_sampling import SMOTE
 
+try:
+    from backend.ml.config import CATEGORY_MODEL_CONFIG
+except ImportError:  # pragma: no cover - fallback for backend cwd execution
+    from ml.config import CATEGORY_MODEL_CONFIG
+
 warnings.filterwarnings("ignore", category=FutureWarning)
 warnings.filterwarnings("ignore", category=UserWarning)
 
-# ── Paths ──────────────────────────────────────────────────────────
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-BACKEND_DIR = os.path.dirname(SCRIPT_DIR)
-DATA_PATH = os.path.join(SCRIPT_DIR, "asd_screening.csv")
-MODEL_SAVE_PATH = os.path.join(BACKEND_DIR, "ml", "model.pkl")
-ENCODERS_SAVE_PATH = os.path.join(BACKEND_DIR, "ml", "encoders.pkl")
 
 
 # ── Feature columns ────────────────────────────────────────────────
@@ -56,10 +56,10 @@ CATEGORICAL_FEATURES = ["gender", "ethnicity", "jaundice", "austism"]  # sic: da
 LEAKAGE_COLUMNS = ["result"]  # THIS MUST BE DROPPED
 
 
-def load_and_clean(path: str) -> pd.DataFrame:
+def load_and_clean(path: str, category: str = "adult") -> pd.DataFrame:
     """Load CSV, drop leakage columns, handle missing values."""
     print(f"\n{'='*60}")
-    print("  NeuroSense — ASD Screening Model Training")
+    print(f"  NeuroSense — {category.upper()} Model Training")
     print(f"{'='*60}\n")
 
     if not os.path.exists(path):
@@ -271,8 +271,8 @@ def train_and_evaluate(X_train, y_train, X_test, y_test):
     return best_model, best_name, results
 
 
-def save_artifacts(model, encoders, model_path, encoders_path):
-    """Save trained model and encoders to disk."""
+def save_artifacts(model, encoders, background, model_path, encoders_path, background_path):
+    """Save trained model artifacts to disk."""
     os.makedirs(os.path.dirname(model_path), exist_ok=True)
 
     joblib.dump(model, model_path)
@@ -281,41 +281,65 @@ def save_artifacts(model, encoders, model_path, encoders_path):
     joblib.dump(encoders, encoders_path)
     print(f"[8/8] Saved encoders → {encoders_path}")
 
+    np.save(background_path, background)
+    print(f"[8/8] Saved LIME background → {background_path}")
 
-def main():
-    # 1. Load and clean
-    df = load_and_clean(DATA_PATH)
 
-    # 2. Encode categoricals
+def train_category(category: str):
+    """Run the full training pipeline for one category."""
+    config = CATEGORY_MODEL_CONFIG[category]
+    data_path = None
+    for path in config["dataset_paths"]:
+        path_str = str(path)
+        if os.path.exists(path_str):
+            data_path = path_str
+            break
+    if data_path is None:
+        print(f"\n[SKIP] No dataset for '{category}'. Expected at:")
+        for path in config["dataset_paths"]:
+            print(f"  {path}")
+        return
+
+    df = load_and_clean(data_path, category)
     print(f"\n[2/8] Encoding categorical features...")
     df, encoders = encode_features(df)
-
-    # 3. Build feature matrix
     X, y = build_feature_matrix(df)
-
-    # 4. Train/test split (80/20, stratified)
     print(f"\n[3/8] Splitting: 80% train / 20% test (stratified)")
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.2, random_state=42, stratify=y,
     )
     print(f"       Train: {X_train.shape[0]} samples")
     print(f"       Test:  {X_test.shape[0]} samples")
-
-    # 5. SMOTE
     X_train_res, y_train_res = apply_smote(X_train, y_train)
-
-    # 6. Train, cross-validate, report
     best_model, best_name, results = train_and_evaluate(
         X_train_res, y_train_res, X_test, y_test,
     )
-
-    # 7-8. Save
-    save_artifacts(best_model, encoders, MODEL_SAVE_PATH, ENCODERS_SAVE_PATH)
-
+    background = X_train_res[: min(len(X_train_res), 256)]
+    save_artifacts(
+        best_model,
+        encoders,
+        background,
+        str(config["model_path"]),
+        str(config["encoders_path"]),
+        str(config["background_path"]),
+    )
     print(f"\n{'='*60}")
-    print(f"  Training complete!")
-    print(f"  Run the API: cd backend && uvicorn main:app --reload")
+    print(f"  {category.upper()} training complete!")
     print(f"{'='*60}\n")
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Train NeuroSense ASD models.")
+    parser.add_argument(
+        "--category",
+        choices=sorted(CATEGORY_MODEL_CONFIG.keys()),
+        help="Train a specific category. Omit to train both.",
+    )
+    args = parser.parse_args()
+    categories = [args.category] if args.category else sorted(CATEGORY_MODEL_CONFIG.keys())
+    for cat in categories:
+        train_category(cat)
+    print("\nDone. Run: uvicorn backend.main:app --reload")
 
 
 if __name__ == "__main__":

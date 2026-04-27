@@ -2,7 +2,7 @@
  * Landing.jsx — Professional homepage. Inclusive messaging for clinicians,
  * parents, and individuals. No demo mode. Better logo, generous spacing.
  */
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 
 /* ── Shared logo SVG ─────────────────────────────────────── */
@@ -138,7 +138,7 @@ const WHO_FOR = [
 ];
 
 const STEPS = [
-  { num: '01', title: 'Choose your path', desc: 'Are you a clinician, parent, or self-referring? NeuroSense adapts its language and flow accordingly.' },
+  { num: '01', title: 'Choose your track', desc: 'Pick the adult self-report or child caregiver screening flow first. NeuroSense routes you into the correct age-based model and experience.' },
   { num: '02', title: 'Complete a screening', desc: 'Answer validated questions at your own pace. Save and continue any time — no pressure.' },
   { num: '03', title: 'Read your report', desc: 'Get a clear risk rating plus an AI explanation of exactly what influenced the result.' },
 ];
@@ -238,7 +238,7 @@ export default function Landing() {
           }}>
             <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#7C9A85', flexShrink: 0,
               animation: 'pulse-dot 2s ease-in-out infinite' }} />
-            Neurodevelopmental screening for everyone
+            Adult and child ASD screening tracks
           </div>
 
           {/* H1 */}
@@ -263,25 +263,34 @@ export default function Landing() {
             color: 'var(--color-neutral-500)', lineHeight: 1.75,
             maxWidth: '560px', margin: 0, fontWeight: 400,
           }}>
-            NeuroSense combines validated assessment tools with explainable AI to help
-            clinicians, parents, and individuals navigate ASD, ADHD, and neurodevelopmental
-            conditions — with full transparency at every step.
+            NeuroSense combines validated assessment tools with explainable AI to guide
+            adult self-report screening and caregiver-led child screening, each with its own
+            model pipeline, language, and explainable result.
           </p>
 
           {/* CTAs */}
           <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'center' }}>
-            <Link to="/auth?mode=register" id="hero-cta-primary" style={{
+            <Link to="/app/screening/adult" id="hero-cta-primary" style={{
               padding: '14px 32px', borderRadius: '11px', border: 'none',
               background: 'linear-gradient(135deg, #7C9A85, #4A7259)',
               color: '#fff', fontSize: '1rem', fontWeight: 700,
               textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '8px',
               boxShadow: '0 4px 18px rgba(94,122,103,0.35)',
             }}>
-              Start your free assessment
+              Start adult screening
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" /></svg>
             </Link>
-            <a href="#how" id="hero-cta-secondary" style={{
+            <Link to="/app/screening/child" id="hero-cta-secondary" style={{
               padding: '14px 28px', borderRadius: '11px',
+              border: '1.5px solid #E6C79A',
+              backgroundColor: 'var(--color-bg-card)',
+              color: '#8A6028', fontSize: '1rem', fontWeight: 600,
+              textDecoration: 'none', display: 'inline-flex', alignItems: 'center',
+            }}>
+              Start child screening
+            </Link>
+            <a href="#how" id="hero-cta-tertiary" style={{
+              padding: '14px 24px', borderRadius: '11px',
               border: '1.5px solid var(--color-neutral-300)',
               backgroundColor: 'var(--color-bg-card)',
               color: 'var(--color-neutral-700)', fontSize: '1rem', fontWeight: 500,

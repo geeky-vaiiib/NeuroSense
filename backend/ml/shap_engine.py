@@ -11,12 +11,10 @@ Provides:
 import numpy as np
 from typing import Optional
 
-# Feature names matching the training pipeline order
-FEATURE_NAMES = [
-    "A1_Score", "A2_Score", "A3_Score", "A4_Score", "A5_Score",
-    "A6_Score", "A7_Score", "A8_Score", "A9_Score", "A10_Score",
-    "Age", "Gender", "Jaundice", "Family_ASD", "Ethnicity",
-]
+try:
+    from .config import FEATURE_NAMES
+except ImportError:  # pragma: no cover - fallback for backend cwd execution
+    from ml.config import FEATURE_NAMES
 
 # How many features to return
 TOP_K = 8

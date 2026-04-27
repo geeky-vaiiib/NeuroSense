@@ -3,7 +3,7 @@
  * Accessible modal dialog with focus trap, backdrop click dismiss, and ESC key support.
  */
 
-import React, { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 
 const styles = {

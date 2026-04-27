@@ -87,7 +87,10 @@ def compute_lime(
         List of top 5 dicts: { feature, weight, direction, plain_english }
         sorted by absolute weight descending.
     """
-    from ml.shap_engine import FEATURE_NAMES as DEFAULT_NAMES
+    try:
+        from .shap_engine import FEATURE_NAMES as DEFAULT_NAMES
+    except ImportError:  # pragma: no cover - fallback for backend cwd execution
+        from ml.shap_engine import FEATURE_NAMES as DEFAULT_NAMES
 
     if feature_names is None:
         feature_names = DEFAULT_NAMES

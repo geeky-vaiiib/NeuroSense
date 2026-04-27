@@ -2,7 +2,7 @@
  * Auth.jsx — Login / Register. No demo mode. Inclusive language.
  * Professional logo. Better padding and field UX.
  */
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { NeuroLogo } from './Landing';

@@ -1,123 +1,78 @@
-/**
- * Results.jsx
- * SHAP-explained screening results with waterfall feature visualization.
- */
-
-import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
-import { useShap } from '../hooks/useShap';
-import { MOCK_CASES } from '../data/mockData';
+import { useEffect, useMemo, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import CategoryBadge from '../components/CategoryBadge';
 import RiskBadge from '../components/RiskBadge';
-import Modal from '../components/Modal';
+import { useShap } from '../hooks/useShap';
+import { casesApi } from '../services/api';
+import { getCategoryContent } from '../data/screeningContent';
 
 const styles = {
-  page: { display: 'flex', flexDirection: 'column', gap: 'var(--space-8)' },
-  caseSelector: {
+  page: {
     display: 'flex',
-    gap: 'var(--space-3)',
-    overflowX: 'auto',
-    paddingBottom: 'var(--space-2)',
+    flexDirection: 'column',
+    gap: '24px',
   },
-  caseChip: (active) => ({
-    flexShrink: 0,
-    padding: 'var(--space-2) var(--space-4)',
-    borderRadius: 'var(--radius-full)',
-    border: `1.5px solid ${active ? 'var(--color-primary)' : 'var(--color-neutral-200)'}`,
-    backgroundColor: active ? 'var(--color-primary-muted)' : 'var(--color-bg-card)',
-    fontSize: 'var(--font-size-sm)',
-    fontFamily: 'var(--font-mono)',
-    fontWeight: active ? 'var(--font-weight-semibold)' : 'var(--font-weight-normal)',
-    color: active ? 'var(--color-primary-dark)' : 'var(--color-neutral-600)',
-    cursor: 'pointer',
-    transition: 'all var(--transition-fast)',
-  }),
-  grid: {
-    display: 'grid',
-    gridTemplateColumns: '1fr 340px',
-    gap: 'var(--space-6)',
-    alignItems: 'start',
-  },
-  panel: {
+  card: {
     backgroundColor: 'var(--color-bg-card)',
     border: '1px solid var(--color-neutral-200)',
-    borderRadius: 'var(--radius-xl)',
-    padding: 'var(--space-6)',
-    boxShadow: 'var(--shadow-sm)',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 'var(--space-6)',
+    borderRadius: '22px',
+    padding: '24px',
+    boxShadow: 'var(--shadow-xs)',
   },
-  panelTitle: {
-    fontSize: 'var(--font-size-base)',
-    fontWeight: 'var(--font-weight-semibold)',
-    color: 'var(--color-neutral-800)',
-  },
-  featureBar: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 'var(--space-3)',
-  },
-  featureRow: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 'var(--space-3)',
-  },
-  featureName: {
-    fontSize: 'var(--font-size-sm)',
-    color: 'var(--color-neutral-600)',
-    width: '200px',
-    flexShrink: 0,
-    whiteSpace: 'nowrap',
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
-  },
-  barTrack: {
-    flex: 1,
-    height: '8px',
-    borderRadius: 'var(--radius-full)',
-    backgroundColor: 'var(--color-neutral-100)',
-    overflow: 'visible',
-    position: 'relative',
-  },
-  shapValue: {
-    fontFamily: 'var(--font-mono)',
-    fontSize: 'var(--font-size-xs)',
-    width: '48px',
-    textAlign: 'right',
-    flexShrink: 0,
+  metaLabel: {
+    fontSize: '0.75rem',
+    fontWeight: 700,
+    color: 'var(--color-neutral-400)',
+    letterSpacing: '0.05em',
+    textTransform: 'uppercase',
   },
 };
 
-function ShapBarChart({ features, maxVal }) {
+function FeatureBars({ features }) {
+  const maxValue = Math.max(...features.map((item) => Math.abs(item.shapValue)), 0.01);
+
   return (
-    <div style={styles.featureBar} role="list" aria-label="SHAP feature importances">
-      {features.map((f) => {
-        const absMax = maxVal || Math.max(...features.map((x) => Math.abs(x.value)));
-        const width = Math.abs(f.value) / absMax * 100;
-        const isPositive = f.direction === 'positive';
-        const color = isPositive ? 'var(--color-risk-high)' : 'var(--color-risk-low)';
+    <div style={{ display: 'grid', gap: '12px' }}>
+      {features.map((item) => {
+        const pct = Math.abs(item.shapValue) / maxValue;
+        const color =
+          item.direction === 'positive'
+            ? 'var(--color-risk-high)'
+            : 'var(--color-risk-low)';
 
         return (
-          <div key={f.name} style={styles.featureRow} role="listitem" aria-label={`${f.name}: ${f.value > 0 ? '+' : ''}${f.value.toFixed(2)}`}>
-            <span style={styles.featureName} title={f.name}>{f.name}</span>
-            <div style={styles.barTrack}>
+          <div key={`${item.feature}-${item.shapValue}`} style={{ display: 'grid', gap: '6px' }}>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                gap: '12px',
+                alignItems: 'baseline',
+              }}
+            >
+              <strong style={{ color: 'var(--color-neutral-800)' }}>{item.feature}</strong>
+              <span style={{ color, fontFamily: 'var(--font-mono)', fontSize: '0.85rem' }}>
+                {item.shapValue > 0 ? '+' : ''}
+                {item.shapValue.toFixed(2)}
+              </span>
+            </div>
+            <div
+              style={{
+                height: '10px',
+                borderRadius: '999px',
+                backgroundColor: 'var(--color-neutral-100)',
+                overflow: 'hidden',
+              }}
+            >
               <div
                 style={{
-                  position: 'absolute',
-                  height: '8px',
-                  width: `${width}%`,
-                  borderRadius: 'var(--radius-full)',
+                  width: `${Math.max(pct * 100, 6)}%`,
+                  height: '100%',
+                  borderRadius: '999px',
                   backgroundColor: color,
-                  opacity: 0.85,
-                  left: 0,
-                  top: 0,
-                  transition: 'width 600ms cubic-bezier(0.4, 0, 0.2, 1)',
                 }}
               />
             </div>
-            <span style={{ ...styles.shapValue, color }}>
-              {f.value > 0 ? '+' : ''}{f.value.toFixed(2)}
-            </span>
           </div>
         );
       })}
@@ -126,157 +81,377 @@ function ShapBarChart({ features, maxVal }) {
 }
 
 export default function Results() {
-  const { caseId: paramCaseId } = useParams();
-  const { fetchExplanation, explanations, loading, getSortedFeatures } = useShap();
+  const { caseId: routeCaseId } = useParams();
+  const navigate = useNavigate();
+  const { explanations, loading: explanationLoading, errors, fetchExplanation, getSortedFeatures } = useShap();
 
-  // URL param takes priority; falls back to first case when on /results
-  const [selectedCaseId, setSelectedCaseId] = useState(
-    paramCaseId ?? MOCK_CASES[0].id
-  );
-  const [modalOpen, setModalOpen] = useState(false);
-
-  // Sync with URL param when navigating directly to /results/:caseId
-  useEffect(() => {
-    if (paramCaseId) setSelectedCaseId(paramCaseId);
-  }, [paramCaseId]);
+  const [cases, setCases] = useState([]);
+  const [detailCache, setDetailCache] = useState({});
+  const [loadingList, setLoadingList] = useState(true);
+  const [loadingDetail, setLoadingDetail] = useState(false);
+  const [pageError, setPageError] = useState('');
 
   useEffect(() => {
-    fetchExplanation(selectedCaseId);
-  }, [selectedCaseId, fetchExplanation]);
+    let active = true;
+    async function loadCases() {
+      setLoadingList(true);
+      setPageError('');
+      try {
+        const list = await casesApi.list();
+        if (!active) return;
+        setCases(list);
+      } catch (error) {
+        if (active) {
+          setPageError(error.message);
+        }
+      } finally {
+        if (active) {
+          setLoadingList(false);
+        }
+      }
+    }
 
-  const selectedCase = MOCK_CASES.find((c) => c.id === selectedCaseId);
+    loadCases();
+    return () => {
+      active = false;
+    };
+  }, [navigate, routeCaseId]);
+
+  const selectedCaseId = routeCaseId || cases[0]?.id || '';
+
+  useEffect(() => {
+    if (!routeCaseId && cases[0]?.id) {
+      navigate(`/app/results/${cases[0].id}`, { replace: true });
+    }
+  }, [cases, navigate, routeCaseId]);
+
+  useEffect(() => {
+    if (!selectedCaseId) return;
+
+    let active = true;
+    async function loadCaseDetail() {
+      if (detailCache[selectedCaseId]) {
+        fetchExplanation(selectedCaseId).catch(() => {});
+        return;
+      }
+
+      setLoadingDetail(true);
+      setPageError('');
+      try {
+        const detail = await casesApi.get(selectedCaseId);
+        if (!active) return;
+        setDetailCache((current) => ({ ...current, [selectedCaseId]: detail }));
+        fetchExplanation(selectedCaseId).catch(() => {});
+      } catch (error) {
+        if (active) {
+          setPageError(error.message);
+        }
+      } finally {
+        if (active) {
+          setLoadingDetail(false);
+        }
+      }
+    }
+
+    loadCaseDetail();
+    return () => {
+      active = false;
+    };
+  }, [detailCache, fetchExplanation, selectedCaseId]);
+
+  const selectedSummary = cases.find((item) => item.id === selectedCaseId);
+  const selectedCase = detailCache[selectedCaseId] ?? selectedSummary;
   const explanation = explanations[selectedCaseId];
   const features = getSortedFeatures(selectedCaseId);
-  const isLoading = loading[selectedCaseId];
+  const content = selectedCase ? getCategoryContent(selectedCase.category) : null;
+
+  const topMetadata = useMemo(() => {
+    if (!selectedCase) return [];
+    return [
+      ['Case ID', selectedCase.id],
+      ['Screening tool', selectedCase.screeningTool],
+      ['Model used', selectedCase.modelUsed],
+      ['Data source', selectedCase.dataSource === 'mock' ? 'Mock mode' : 'Live model'],
+      ['AQ-10 score', `${selectedCase.aq10Score ?? 0}/10`],
+      ['Status', selectedCase.status],
+    ];
+  }, [selectedCase]);
 
   return (
     <main id="results-page" style={styles.page}>
-      {/* Case selector */}
-      <nav aria-label="Case selection" style={styles.caseSelector}>
-        {MOCK_CASES.map((c) => (
-          <button
-            key={c.id}
-            id={`case-selector-${c.id}`}
-            style={styles.caseChip(c.id === selectedCaseId)}
-            onClick={() => setSelectedCaseId(c.id)}
-            aria-pressed={c.id === selectedCaseId}
-          >
-            {c.id} — {c.patientName}
-          </button>
-        ))}
-      </nav>
+      <section style={styles.card}>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            gap: '16px',
+            flexWrap: 'wrap',
+            alignItems: 'center',
+            marginBottom: '18px',
+          }}
+        >
+          <div>
+            <h1 style={{ margin: '0 0 6px', color: 'var(--color-neutral-900)' }}>
+              Category-aware results and explainability
+            </h1>
+            <p style={{ margin: 0, color: 'var(--color-neutral-600)', lineHeight: 1.7 }}>
+              Every case keeps its adult or child track visible through the result, model,
+              explanation, and stored case summary.
+            </p>
+          </div>
+        </div>
 
-      {selectedCase && (
-        <div style={styles.grid}>
-          {/* SHAP Panel */}
-          <div style={styles.panel}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <span style={styles.panelTitle}>SHAP Feature Contributions</span>
-              {explanation?.mock && (
-                <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-neutral-400)', fontFamily: 'var(--font-mono)' }}>
-                  demo data
+        {loadingList ? (
+          <p style={{ margin: 0, color: 'var(--color-neutral-500)' }}>Loading cases…</p>
+        ) : (
+          <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', paddingBottom: '4px' }}>
+            {cases.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => navigate(`/app/results/${item.id}`)}
+                style={{
+                  minWidth: '210px',
+                  padding: '12px 14px',
+                  borderRadius: '16px',
+                  border: `1px solid ${
+                    item.id === selectedCaseId ? 'var(--color-primary)' : 'var(--color-neutral-200)'
+                  }`,
+                  backgroundColor:
+                    item.id === selectedCaseId
+                      ? 'var(--color-primary-muted)'
+                      : 'var(--color-bg-card)',
+                  textAlign: 'left',
+                  cursor: 'pointer',
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px' }}>
+                  <CategoryBadge category={item.category} size="sm" />
+                  <RiskBadge level={item.riskLevel} size="sm" />
+                </div>
+                <strong
+                  style={{
+                    display: 'block',
+                    marginTop: '10px',
+                    color: 'var(--color-neutral-900)',
+                  }}
+                >
+                  {item.subjectName || 'Unnamed case'}
+                </strong>
+                <span style={{ fontSize: '0.8rem', color: 'var(--color-neutral-500)' }}>
+                  {item.id}
                 </span>
+              </button>
+            ))}
+          </div>
+        )}
+      </section>
+
+      {(pageError || errors[selectedCaseId]) && (
+        <section
+          style={{
+            ...styles.card,
+            borderColor: 'var(--color-risk-high-border)',
+            backgroundColor: 'var(--color-risk-high-muted)',
+          }}
+        >
+          <p style={{ margin: 0, color: 'var(--color-risk-high)', fontWeight: 600 }}>
+            {pageError || errors[selectedCaseId]}
+          </p>
+        </section>
+      )}
+
+      {selectedCase && content && (
+        <>
+          <section style={styles.card}>
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: '1.35fr 1fr',
+                gap: '20px',
+              }}
+            >
+              <div>
+                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
+                  <CategoryBadge category={selectedCase.category} size="lg" />
+                  <RiskBadge level={selectedCase.riskLevel} size="lg" showScore score={selectedCase.riskScore} />
+                </div>
+                <h2 style={{ margin: '14px 0 8px', color: 'var(--color-neutral-900)' }}>
+                  {content.resultsTitle}
+                </h2>
+                <p style={{ margin: 0, color: 'var(--color-neutral-600)', lineHeight: 1.7 }}>
+                  {selectedCase.interpretation}
+                </p>
+                <div
+                  style={{
+                    marginTop: '16px',
+                    padding: '16px',
+                    borderRadius: '16px',
+                    border: `1px solid ${content.accentBorder}`,
+                    backgroundColor: content.accentSoft,
+                    color: 'var(--color-neutral-700)',
+                    lineHeight: 1.7,
+                  }}
+                >
+                  {explanation?.summary || 'Generating explanation summary…'}
+                </div>
+              </div>
+
+              <div
+                style={{
+                  border: '1px solid var(--color-neutral-200)',
+                  borderRadius: '18px',
+                  padding: '18px',
+                  backgroundColor: 'var(--color-bg)',
+                }}
+              >
+                <p style={{ margin: '0 0 10px', ...styles.metaLabel }}>Attached metadata</p>
+                <div style={{ display: 'grid', gap: '12px' }}>
+                  {topMetadata.map(([label, value]) => (
+                    <div key={label} style={{ display: 'flex', justifyContent: 'space-between', gap: '12px' }}>
+                      <span style={{ color: 'var(--color-neutral-500)', fontSize: '0.85rem' }}>
+                        {label}
+                      </span>
+                      <strong style={{ color: 'var(--color-neutral-900)', textAlign: 'right' }}>
+                        {value}
+                      </strong>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section
+            style={{
+              display: 'grid',
+              gridTemplateColumns: '1.3fr 1fr',
+              gap: '20px',
+            }}
+          >
+            <div style={styles.card}>
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  gap: '16px',
+                  alignItems: 'center',
+                  marginBottom: '16px',
+                }}
+              >
+                <div>
+                  <h3 style={{ margin: 0, color: 'var(--color-neutral-900)' }}>
+                    SHAP feature contributions
+                  </h3>
+                  <p style={{ margin: '6px 0 0', color: 'var(--color-neutral-500)' }}>
+                    Top factors driving the {selectedCase.category} model output.
+                  </p>
+                </div>
+                {explanation?.isMock && (
+                  <span
+                    style={{
+                      padding: '4px 10px',
+                      borderRadius: '999px',
+                      backgroundColor: 'var(--color-neutral-100)',
+                      color: 'var(--color-neutral-500)',
+                      fontFamily: 'var(--font-mono)',
+                      fontSize: '0.75rem',
+                    }}
+                  >
+                    mock mode
+                  </span>
+                )}
+              </div>
+              {loadingDetail || explanationLoading[selectedCaseId] ? (
+                <p style={{ margin: 0, color: 'var(--color-neutral-500)' }}>
+                  Loading explainability…
+                </p>
+              ) : (
+                <FeatureBars features={features} />
               )}
             </div>
 
-            {/* Score gauge */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
-              <div>
-                <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-neutral-400)', marginBottom: 'var(--space-1)' }}>Risk Score</div>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--font-size-3xl)', fontWeight: 'var(--font-weight-bold)', color: 'var(--color-neutral-900)' }}>
-                  {Math.round(selectedCase.riskScore * 100)}<span style={{ fontSize: 'var(--font-size-lg)', color: 'var(--color-neutral-400)' }}>%</span>
+            <div style={{ display: 'grid', gap: '20px' }}>
+              <section style={styles.card}>
+                <h3 style={{ marginTop: 0, color: 'var(--color-neutral-900)' }}>
+                  Respondent context
+                </h3>
+                <div style={{ display: 'grid', gap: '12px' }}>
+                  {[
+                    ['Subject', selectedCase.subjectName || 'No name provided'],
+                    ['Respondent', selectedCase.respondentName || 'No name provided'],
+                    ['Relationship', selectedCase.respondentRelationship || content.trackSummary],
+                    ['Age', selectedCase.age],
+                    ['Gender', selectedCase.gender],
+                    ['Clinician', selectedCase.clinician || 'Awaiting clinician assignment'],
+                  ].map(([label, value]) => (
+                    <div key={label} style={{ display: 'flex', justifyContent: 'space-between', gap: '12px' }}>
+                      <span style={{ color: 'var(--color-neutral-500)' }}>{label}</span>
+                      <strong style={{ color: 'var(--color-neutral-900)', textAlign: 'right' }}>
+                        {value}
+                      </strong>
+                    </div>
+                  ))}
                 </div>
-              </div>
-              <RiskBadge level={selectedCase.riskLevel} size="lg" />
-            </div>
+              </section>
 
-            {isLoading ? (
-              <div style={{ textAlign: 'center', color: 'var(--color-neutral-400)', padding: 'var(--space-8)' }}>
-                Loading SHAP values…
-              </div>
-            ) : (
-              <ShapBarChart features={features} />
-            )}
-
-            <div style={{ display: 'flex', gap: 'var(--space-4)', fontSize: 'var(--font-size-xs)', color: 'var(--color-neutral-400)' }}>
-              <span style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-                <span style={{ width: '10px', height: '10px', borderRadius: '2px', backgroundColor: 'var(--color-risk-high)', display: 'inline-block' }} />
-                Increases risk
-              </span>
-              <span style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-                <span style={{ width: '10px', height: '10px', borderRadius: '2px', backgroundColor: 'var(--color-risk-low)', display: 'inline-block' }} />
-                Decreases risk
-              </span>
+              <section style={styles.card}>
+                <h3 style={{ marginTop: 0, color: 'var(--color-neutral-900)' }}>
+                  LIME narrative
+                </h3>
+                <div style={{ display: 'grid', gap: '12px' }}>
+                  {(explanation?.lime || []).map((item) => (
+                    <div
+                      key={`${item.feature}-${item.weight}`}
+                      style={{
+                        paddingBottom: '12px',
+                        borderBottom: '1px solid var(--color-neutral-100)',
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px' }}>
+                        <strong style={{ color: 'var(--color-neutral-800)' }}>{item.feature}</strong>
+                        <span style={{ color: 'var(--color-neutral-500)', fontFamily: 'var(--font-mono)' }}>
+                          {item.weight > 0 ? '+' : ''}
+                          {item.weight.toFixed(2)}
+                        </span>
+                      </div>
+                      <p style={{ margin: '6px 0 0', color: 'var(--color-neutral-600)', lineHeight: 1.6 }}>
+                        {item.plainEnglish}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </section>
             </div>
+          </section>
 
-            <button
-              id="view-full-explanation-btn"
-              onClick={() => setModalOpen(true)}
-              style={{
-                padding: 'var(--space-3) var(--space-5)',
-                borderRadius: 'var(--radius-lg)',
-                border: '1.5px solid var(--color-primary)',
-                backgroundColor: 'transparent',
-                color: 'var(--color-primary-dark)',
-                fontSize: 'var(--font-size-sm)',
-                fontWeight: 'var(--font-weight-medium)',
-                cursor: 'pointer',
-                fontFamily: 'var(--font-body)',
-              }}
-            >
-              View Full Explanation
-            </button>
-          </div>
-
-          {/* Case Info */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
-            <div style={styles.panel}>
-              <span style={styles.panelTitle}>Case Summary</span>
-              <dl style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-                {[
-                  ['Patient', selectedCase.patientName],
-                  ['Age', selectedCase.age],
-                  ['Clinician', selectedCase.clinician],
-                  ['Diagnosis', selectedCase.diagnosis],
-                  ['Screening Date', selectedCase.screeningDate],
-                ].map(([label, value]) => (
-                  <div key={label} style={{ display: 'flex', justifyContent: 'space-between', gap: 'var(--space-3)' }}>
-                    <dt style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-neutral-400)', textTransform: 'uppercase', letterSpacing: 'var(--letter-spacing-wide)' }}>{label}</dt>
-                    <dd style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-neutral-700)', fontWeight: 'var(--font-weight-medium)', textAlign: 'right' }}>{value}</dd>
-                  </div>
-                ))}
-              </dl>
+          <section style={styles.card}>
+            <h3 style={{ marginTop: 0, color: 'var(--color-neutral-900)' }}>
+              Questionnaire snapshot
+            </h3>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px' }}>
+              {Object.entries(selectedCase.answers || {}).map(([key, value]) => (
+                <div
+                  key={key}
+                  style={{
+                    padding: '14px',
+                    borderRadius: '16px',
+                    border: '1px solid var(--color-neutral-200)',
+                    backgroundColor: 'var(--color-bg)',
+                  }}
+                >
+                  <p style={{ margin: '0 0 6px', fontWeight: 700, color: 'var(--color-neutral-800)' }}>
+                    {key}
+                  </p>
+                  <p style={{ margin: 0, color: 'var(--color-neutral-600)', lineHeight: 1.6 }}>
+                    {value}
+                  </p>
+                </div>
+              ))}
             </div>
-            <div style={styles.panel}>
-              <span style={styles.panelTitle}>Notes</span>
-              <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-neutral-600)', lineHeight: 'var(--line-height-relaxed)' }}>
-                {selectedCase.notes}
-              </p>
-            </div>
-          </div>
-        </div>
+          </section>
+        </>
       )}
-
-      {/* Full Explanation Modal */}
-      <Modal
-        open={modalOpen}
-        onClose={() => setModalOpen(false)}
-        title="Full SHAP Explanation"
-        subtitle={`Case ${selectedCaseId} · ${selectedCase?.diagnosis}`}
-        size="lg"
-      >
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
-          <p style={{ color: 'var(--color-neutral-600)', fontSize: 'var(--font-size-sm)' }}>
-            SHAP (SHapley Additive exPlanations) values show how each feature pushes the model output
-            above or below the base value of <code style={{ fontFamily: 'var(--font-mono)' }}>{explanation?.baseValue}</code>.
-          </p>
-          {features.length > 0 && <ShapBarChart features={features} />}
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-mono)', fontSize: 'var(--font-size-sm)', color: 'var(--color-neutral-500)', borderTop: '1px solid var(--color-neutral-200)', paddingTop: 'var(--space-4)' }}>
-            <span>Base value: {explanation?.baseValue}</span>
-            <span>Output: <strong style={{ color: 'var(--color-neutral-800)' }}>{explanation?.outputValue}</strong></span>
-          </div>
-        </div>
-      </Modal>
     </main>
   );
 }

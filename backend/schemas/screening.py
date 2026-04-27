@@ -1,16 +1,22 @@
-"""
-schemas/screening.py — Pydantic models for the NeuroSense screening API.
+"""Pydantic models for the dual-track NeuroSense screening API."""
 
-Request:  ScreeningRequest  — demographics + AQ-10 answers
-Response: ScreeningResponse — risk level, fusion score, case ID
-"""
-
-from pydantic import BaseModel, Field
-from typing import Optional
 from enum import Enum
+from typing import Optional
+
+from pydantic import BaseModel, ConfigDict, Field, model_validator
+
+try:
+    from ..core.categories import validate_age_for_category
+except ImportError:  # pragma: no cover - fallback for backend cwd execution
+    from core.categories import validate_age_for_category
 
 
 # ── Enums ──────────────────────────────────────────────────────────
+class CategoryEnum(str, Enum):
+    adult = "adult"
+    child = "child"
+
+
 class GenderEnum(str, Enum):
     male = "Male"
     female = "Female"
@@ -36,18 +42,23 @@ class FamilyAsdEnum(str, Enum):
 
 # ── Request ────────────────────────────────────────────────────────
 class Demographics(BaseModel):
-    """Patient demographic data from Step 1 of the wizard."""
-    name: Optional[str] = Field(None, description="Full name (optional)")
+    subject_name: Optional[str] = Field(None, alias="subjectName")
+    respondent_name: Optional[str] = Field(None, alias="respondentName")
+    respondent_relationship: Optional[str] = Field(None, alias="respondentRelationship")
     age: int = Field(..., ge=1, le=100, description="Patient age in years")
     gender: GenderEnum
     ethnicity: Optional[str] = Field(None, description="Ethnicity label")
     jaundice: Optional[JaundiceEnum] = Field(None, description="Jaundice at birth")
-    family_asd: Optional[FamilyAsdEnum] = Field(None, alias="familyAsd",
-                                                  description="Family history of ASD")
+    family_asd: Optional[FamilyAsdEnum] = Field(
+        None,
+        alias="familyAsd",
+        description="Family history of ASD",
+    )
+
+    model_config = ConfigDict(populate_by_name=True)
 
 
 class AQ10Answers(BaseModel):
-    """AQ-10 questionnaire answers — keyed A1 through A10."""
     A1: str
     A2: str
     A3: str
@@ -61,32 +72,56 @@ class AQ10Answers(BaseModel):
 
 
 class ScreeningRequest(BaseModel):
-    """Full screening submission payload."""
+    category: CategoryEnum = Field(..., description="adult or child")
     demo: Demographics
     answers: AQ10Answers
-    aq10_score: int = Field(..., ge=0, le=10, alias="aq10Score",
-                            description="Pre-computed AQ-10 sum score")
+    aq10_score: int = Field(
+        ...,
+        ge=0,
+        le=10,
+        alias="aq10Score",
+        description="Pre-computed AQ-10 sum score",
+    )
 
-    model_config = {"populate_by_name": True}
+    model_config = ConfigDict(populate_by_name=True)
+
+    @model_validator(mode="after")
+    def validate_age_category(self):
+        validate_age_for_category(self.category.value, self.demo.age)
+        return self
 
 
 # ── Response ───────────────────────────────────────────────────────
 class ScreeningResponse(BaseModel):
-    """Result returned after ML inference."""
     case_id: str = Field(..., alias="caseId", description="Generated case identifier")
+    category: CategoryEnum
+    category_label: str = Field(..., alias="categoryLabel")
     status: str = Field("processing", description="Current processing status")
     risk_level: RiskLevel = Field(..., alias="riskLevel")
-    fusion_score: float = Field(..., ge=0.0, le=1.0, alias="fusionScore",
-                                 description="Ensemble fusion probability")
+    fusion_score: float = Field(
+        ...,
+        ge=0.0,
+        le=1.0,
+        alias="fusionScore",
+        description="Ensemble fusion probability",
+    )
     aq10_score: int = Field(..., alias="aq10Score")
+    model_used: str = Field("", alias="modelUsed", description="Model identifier")
+    is_mock: bool = Field(False, alias="isMock")
+    data_source: str = Field(..., alias="dataSource")
+    interpretation: str
+    submitted_at: str = Field(..., alias="submittedAt")
 
-    model_config = {"populate_by_name": True}
+    model_config = ConfigDict(populate_by_name=True)
 
 
-class CaseOut(BaseModel):
-    """Case object returned by GET /cases endpoints."""
+class CaseSummaryResponse(BaseModel):
     id: str
-    patient_name: Optional[str] = Field(None, alias="patientName")
+    category: CategoryEnum
+    category_label: str = Field(..., alias="categoryLabel")
+    subject_name: Optional[str] = Field(None, alias="subjectName")
+    respondent_name: Optional[str] = Field(None, alias="respondentName")
+    respondent_relationship: Optional[str] = Field(None, alias="respondentRelationship")
     age: int
     gender: str
     risk_level: str = Field(..., alias="riskLevel")
@@ -94,64 +129,112 @@ class CaseOut(BaseModel):
     screening_date: str = Field(..., alias="screeningDate")
     status: str
     diagnosis: Optional[str] = None
+    screening_tool: str = Field(..., alias="screeningTool")
+    model_used: str = Field(..., alias="modelUsed")
+    is_mock: bool = Field(..., alias="isMock")
+    data_source: str = Field(..., alias="dataSource")
+    tags: list[str] = Field(default_factory=list)
 
-    model_config = {"populate_by_name": True}
+    model_config = ConfigDict(populate_by_name=True)
 
 
+class CaseDetailResponse(CaseSummaryResponse):
+    referral_date: str = Field("", alias="referralDate")
+    clinician: str = ""
+    completed_screenings: list[str] = Field(default_factory=list, alias="completedScreenings")
+    aq10_score: int = Field(..., alias="aq10Score")
+    notes: str = ""
+    interpretation: str
+    demo: Demographics
+    answers: AQ10Answers
+
+    model_config = ConfigDict(populate_by_name=True)
+
+
+# ── Explainability ─────────────────────────────────────────────────
 class ShapFeatureOut(BaseModel):
-    """Single SHAP feature contribution."""
     feature: str
     shap_value: float = Field(..., alias="shapValue")
-    direction: str  # "positive" or "negative"
+    direction: str
 
-    model_config = {"populate_by_name": True}
+    model_config = ConfigDict(populate_by_name=True)
 
 
 class LimeFeatureOut(BaseModel):
-    """Single LIME feature explanation."""
     feature: str
     weight: float
-    direction: str  # "positive" or "negative"
+    direction: str
     plain_english: str = Field(..., alias="plainEnglish")
 
-    model_config = {"populate_by_name": True}
+    model_config = ConfigDict(populate_by_name=True)
 
 
 class CombinedExplainResponse(BaseModel):
-    """
-    Combined SHAP + LIME explanation for a screened case.
-    Returned by GET /explain/{caseId}.
-    """
     case_id: str = Field(..., alias="caseId")
+    category: CategoryEnum
+    category_label: str = Field(..., alias="categoryLabel")
+    model_used: str = Field("", alias="modelUsed")
+    is_mock: bool = Field(False, alias="isMock")
+    data_source: str = Field(..., alias="dataSource")
     shap: list[ShapFeatureOut]
     lime: list[LimeFeatureOut]
     summary: str = Field(..., description="Plain-language overall explanation")
+    generated_at: str = Field(..., alias="generatedAt")
 
-    model_config = {"populate_by_name": True}
-
-
-# ── Kept for backwards compatibility ──────────────────────────────
-class ShapFeature(BaseModel):
-    """Legacy SHAP feature model."""
-    name: str
-    value: float
-    direction: str
-
-class ExplainResponse(BaseModel):
-    """Legacy explain response — use CombinedExplainResponse instead."""
-    case_id: str = Field(..., alias="caseId")
-    base_value: float = Field(..., alias="baseValue")
-    output_value: float = Field(..., alias="outputValue")
-    features: list[ShapFeature]
-
-    model_config = {"populate_by_name": True}
+    model_config = ConfigDict(populate_by_name=True)
 
 
+class CategoryCountResponse(BaseModel):
+    category: CategoryEnum
+    label: str
+    count: int
+
+
+class ModalityConfidenceResponse(BaseModel):
+    id: str
+    label: str
+    pct: int
+
+
+class DashboardTotalsResponse(BaseModel):
+    total_cases: int = Field(..., alias="totalCases")
+    adult_cases: int = Field(..., alias="adultCases")
+    child_cases: int = Field(..., alias="childCases")
+    high_risk: int = Field(..., alias="highRisk")
+    moderate_risk: int = Field(..., alias="moderateRisk")
+    low_risk: int = Field(..., alias="lowRisk")
+    awaiting_review: int = Field(..., alias="awaitingReview")
+    mock_cases: int = Field(..., alias="mockCases")
+    average_risk_score: float = Field(..., alias="averageRiskScore")
+    average_aq10_score: float = Field(..., alias="averageAq10Score")
+
+    model_config = ConfigDict(populate_by_name=True)
+
+
+class DashboardSummaryResponse(BaseModel):
+    category_filter: str = Field(..., alias="categoryFilter")
+    totals: DashboardTotalsResponse
+    recent_cases: list[CaseSummaryResponse] = Field(default_factory=list, alias="recentCases")
+    category_breakdown: list[CategoryCountResponse] = Field(
+        default_factory=list,
+        alias="categoryBreakdown",
+    )
+    modality_confidence: list[ModalityConfidenceResponse] = Field(
+        default_factory=list,
+        alias="modalityConfidence",
+    )
+
+    model_config = ConfigDict(populate_by_name=True)
+
+
+# ── Health ─────────────────────────────────────────────────────────
 class HealthResponse(BaseModel):
-    """Health check response."""
     status: str = "ok"
-    model_loaded: bool = Field(False, alias="modelLoaded")
-    version: str = "1.0.0"
+    models_loaded: dict = Field(
+        default_factory=dict,
+        alias="modelsLoaded",
+        description="Per-category model status",
+    )
+    version: str = "2.0.0"
 
-    model_config = {"populate_by_name": True}
-
+    model_config = ConfigDict(populate_by_name=True)

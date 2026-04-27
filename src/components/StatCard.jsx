@@ -3,7 +3,7 @@
  * A metric display card with trend indicator and optional sparkline slot.
  */
 
-import React from 'react';
+import { useState } from 'react';
 
 const trendColors = {
   up: 'var(--color-risk-high)',
@@ -115,7 +115,7 @@ export default function StatCard({
   trendValue,
   trendLabel = 'vs last month',
 }) {
-  const [hovered, setHovered] = React.useState(false);
+  const [hovered, setHovered] = useState(false);
 
   return (
     <article
