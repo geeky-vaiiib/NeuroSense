@@ -154,9 +154,8 @@ export default function Landing() {
 
       {/* ── Hero ────────────────────────────────────────────── */}
       <section style={{
-        padding: '100px 6% 96px',
-        display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center',
-        gap: '28px', position: 'relative', overflow: 'hidden',
+        padding: '96px 6% 88px',
+        position: 'relative', overflow: 'hidden',
       }} aria-label="Hero section">
         {/* Subtle bg radials */}
         <div style={{
@@ -168,79 +167,91 @@ export default function Landing() {
           `,
         }} aria-hidden="true" />
 
-        {/* Pill badge */}
+        {/* Centred inner column — same pattern as Features/Who/How */}
         <div style={{
-          display: 'inline-flex', alignItems: 'center', gap: '7px',
-          padding: '6px 16px', borderRadius: '999px',
-          border: '1px solid rgba(124,154,133,0.3)',
-          backgroundColor: 'rgba(124,154,133,0.07)',
-          fontSize: '0.75rem', fontWeight: 600, color: '#4A7259',
-          letterSpacing: '0.03em',
+          maxWidth: '820px',
+          margin: '0 auto',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          textAlign: 'center',
+          gap: '28px',
+          position: 'relative',
         }}>
-          <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#7C9A85', flexShrink: 0,
-            animation: 'pulse-dot 2s ease-in-out infinite' }} />
-          Neurodevelopmental screening for everyone
-        </div>
 
-        {/* H1 */}
-        <h1 style={{
-          fontSize: 'clamp(2.25rem, 5.5vw, 3.75rem)',
-          fontWeight: 800, lineHeight: 1.08,
-          letterSpacing: '-0.04em', color: 'var(--color-neutral-900)',
-          maxWidth: '820px', margin: 0,
-        }}>
-          Understand your mind
-          <br />
-          <span style={{
-            background: 'linear-gradient(135deg, #7C9A85 10%, #4A7259 90%)',
-            WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-            backgroundClip: 'text',
-          }}>with clarity and confidence.</span>
-        </h1>
-
-        {/* Sub */}
-        <p style={{
-          fontSize: 'clamp(1rem, 1.8vw, 1.175rem)',
-          color: 'var(--color-neutral-500)', lineHeight: 1.7,
-          maxWidth: '580px', margin: 0, fontWeight: 400,
-        }}>
-          NeuroSense combines validated assessment tools with explainable AI to help
-          clinicians, parents, and individuals navigate ASD, ADHD, and neurodevelopmental
-          conditions — with full transparency at every step.
-        </p>
-
-        {/* CTAs */}
-        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'center', marginTop: '4px' }}>
-          <Link to="/auth?mode=register" id="hero-cta-primary" style={{
-            padding: '14px 32px', borderRadius: '11px', border: 'none',
-            background: 'linear-gradient(135deg, #7C9A85, #4A7259)',
-            color: '#fff', fontSize: '1rem', fontWeight: 700,
-            textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '8px',
-            boxShadow: '0 4px 18px rgba(94,122,103,0.35)',
-            transition: 'all 200ms',
+          {/* Pill badge */}
+          <div style={{
+            display: 'inline-flex', alignItems: 'center', gap: '7px',
+            padding: '6px 16px', borderRadius: '999px',
+            border: '1px solid rgba(124,154,133,0.3)',
+            backgroundColor: 'rgba(124,154,133,0.07)',
+            fontSize: '0.75rem', fontWeight: 600, color: '#4A7259',
+            letterSpacing: '0.03em',
           }}>
-            Start your free assessment
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" /></svg>
-          </Link>
-          <a href="#how" id="hero-cta-secondary" style={{
-            padding: '14px 28px', borderRadius: '11px',
-            border: '1.5px solid var(--color-neutral-300)',
-            backgroundColor: 'var(--color-bg-card)',
-            color: 'var(--color-neutral-700)', fontSize: '1rem', fontWeight: 500,
-            textDecoration: 'none', display: 'inline-flex', alignItems: 'center',
-          }}>
-            See how it works
-          </a>
-        </div>
+            <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#7C9A85', flexShrink: 0,
+              animation: 'pulse-dot 2s ease-in-out infinite' }} />
+            Neurodevelopmental screening for everyone
+          </div>
 
-        {/* Trust row */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '28px', flexWrap: 'wrap', justifyContent: 'center', marginTop: '8px' }}>
-          {['7 Validated Tools', 'AI-explained results', 'No clinical jargon', 'DPDP compliant'].map((t) => (
-            <span key={t} style={{ fontSize: '0.8125rem', color: 'var(--color-neutral-400)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#7C9A85" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
-              {t}
-            </span>
-          ))}
+          {/* H1 */}
+          <h1 style={{
+            fontSize: 'clamp(2.5rem, 5.5vw, 3.75rem)',
+            fontWeight: 800, lineHeight: 1.08,
+            letterSpacing: '-0.04em', color: 'var(--color-neutral-900)',
+            margin: 0,
+          }}>
+            Understand your mind
+            <br />
+            <span style={{
+              background: 'linear-gradient(135deg, #7C9A85 10%, #4A7259 90%)',
+              WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text',
+            }}>with clarity and confidence.</span>
+          </h1>
+
+          {/* Sub */}
+          <p style={{
+            fontSize: 'clamp(1rem, 1.8vw, 1.125rem)',
+            color: 'var(--color-neutral-500)', lineHeight: 1.75,
+            maxWidth: '560px', margin: 0, fontWeight: 400,
+          }}>
+            NeuroSense combines validated assessment tools with explainable AI to help
+            clinicians, parents, and individuals navigate ASD, ADHD, and neurodevelopmental
+            conditions — with full transparency at every step.
+          </p>
+
+          {/* CTAs */}
+          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'center' }}>
+            <Link to="/auth?mode=register" id="hero-cta-primary" style={{
+              padding: '14px 32px', borderRadius: '11px', border: 'none',
+              background: 'linear-gradient(135deg, #7C9A85, #4A7259)',
+              color: '#fff', fontSize: '1rem', fontWeight: 700,
+              textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '8px',
+              boxShadow: '0 4px 18px rgba(94,122,103,0.35)',
+            }}>
+              Start your free assessment
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" /></svg>
+            </Link>
+            <a href="#how" id="hero-cta-secondary" style={{
+              padding: '14px 28px', borderRadius: '11px',
+              border: '1.5px solid var(--color-neutral-300)',
+              backgroundColor: 'var(--color-bg-card)',
+              color: 'var(--color-neutral-700)', fontSize: '1rem', fontWeight: 500,
+              textDecoration: 'none', display: 'inline-flex', alignItems: 'center',
+            }}>
+              See how it works
+            </a>
+          </div>
+
+          {/* Trust row */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '24px', flexWrap: 'wrap', justifyContent: 'center' }}>
+            {['7 Validated Tools', 'AI-explained results', 'No clinical jargon', 'DPDP compliant'].map((t) => (
+              <span key={t} style={{ fontSize: '0.8125rem', color: 'var(--color-neutral-400)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#7C9A85" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+                {t}
+              </span>
+            ))}
+          </div>
         </div>
       </section>
 
