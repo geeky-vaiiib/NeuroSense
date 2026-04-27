@@ -170,6 +170,49 @@ export const DASHBOARD_STATS = {
   completionRate: 0.94,
 };
 
+/** Stats for the new Dashboard spec */
+export const STAT_CARDS = [
+  {
+    id: 'screenings-today',
+    label: 'Screenings Today',
+    value: 12,
+    unit: null,
+    borderColor: '#7C9A85',   /* sage */
+    href: null,
+  },
+  {
+    id: 'high-risk-flags',
+    label: 'High Risk Flags',
+    value: 4,
+    unit: null,
+    borderColor: '#C0555A',   /* rose */
+    href: '/app/cases',
+  },
+  {
+    id: 'avg-fusion-score',
+    label: 'Avg Fusion Score',
+    value: '0.58',
+    unit: null,
+    borderColor: '#B8873A',   /* amber */
+    href: null,
+  },
+  {
+    id: 'xai-reports-ready',
+    label: 'XAI Reports Ready',
+    value: 9,
+    unit: null,
+    borderColor: '#5E7A67',   /* primary-dark */
+    href: null,
+  },
+];
+
+export const MODALITY_CONFIDENCE = [
+  { id: 'questionnaire',  label: 'Questionnaire',   pct: 76, color: '#7C9A85' },
+  { id: 'facial',         label: 'Facial Analysis',  pct: 61, color: '#4A90B8' },
+  { id: 'gaze',           label: 'Gaze Tracking',    pct: 58, color: '#B8873A' },
+  { id: 'speech',         label: 'Speech Pattern',   pct: 44, color: '#8A8178' },
+];
+
 export const CLINICIANS = [
   { id: 'c1', name: 'Dr. Priya Mehta', specialty: 'Autism Spectrum', caseload: 48 },
   { id: 'c2', name: 'Dr. Lena Torres', specialty: 'ADHD & Executive Function', caseload: 39 },
