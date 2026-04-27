@@ -1,247 +1,273 @@
 /**
- * Settings.jsx
- * Application preferences and configuration panel.
+ * Settings.jsx — Upgraded: profile card, grouped settings panels, danger zone.
  */
-
 import React, { useState } from 'react';
+import { useAuth } from '../context/AuthContext';
 
-const styles = {
-  page: { display: 'flex', flexDirection: 'column', gap: 'var(--space-8)', maxWidth: '640px' },
-  section: {
-    backgroundColor: 'var(--color-bg-card)',
-    border: '1px solid var(--color-neutral-200)',
-    borderRadius: 'var(--radius-xl)',
-    overflow: 'hidden',
-    boxShadow: 'var(--shadow-sm)',
-  },
-  sectionHeader: {
-    padding: 'var(--space-5) var(--space-6)',
-    borderBottom: '1px solid var(--color-neutral-100)',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '3px',
-  },
-  sectionTitle: {
-    fontSize: 'var(--font-size-base)',
-    fontWeight: 'var(--font-weight-semibold)',
-    color: 'var(--color-neutral-900)',
-  },
-  sectionDesc: {
-    fontSize: 'var(--font-size-xs)',
-    color: 'var(--color-neutral-400)',
-  },
-  settingRow: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 'var(--space-5) var(--space-6)',
-    borderBottom: '1px solid var(--color-neutral-100)',
-    gap: 'var(--space-6)',
-  },
-  settingInfo: { flex: 1 },
-  settingLabel: {
-    fontSize: 'var(--font-size-sm)',
-    fontWeight: 'var(--font-weight-medium)',
-    color: 'var(--color-neutral-800)',
-  },
-  settingHint: {
-    fontSize: 'var(--font-size-xs)',
-    color: 'var(--color-neutral-400)',
-    marginTop: '3px',
-  },
-  toggle: (active) => ({
-    position: 'relative',
-    width: '42px',
-    height: '24px',
-    borderRadius: 'var(--radius-full)',
-    backgroundColor: active ? 'var(--color-primary)' : 'var(--color-neutral-300)',
-    border: 'none',
-    cursor: 'pointer',
-    transition: 'background-color var(--transition-fast)',
-    flexShrink: 0,
-  }),
-  toggleThumb: (active) => ({
-    position: 'absolute',
-    top: '3px',
-    left: active ? '21px' : '3px',
-    width: '18px',
-    height: '18px',
-    borderRadius: 'var(--radius-full)',
-    backgroundColor: '#fff',
-    boxShadow: '0 1px 4px rgba(0,0,0,0.15)',
-    transition: 'left var(--transition-spring)',
-  }),
-  select: {
-    padding: 'var(--space-2) var(--space-3)',
-    borderRadius: 'var(--radius-md)',
-    border: '1px solid var(--color-neutral-200)',
-    backgroundColor: 'var(--color-bg)',
-    fontSize: 'var(--font-size-sm)',
-    color: 'var(--color-neutral-700)',
-    fontFamily: 'var(--font-body)',
-    cursor: 'pointer',
-  },
-  saveBtn: {
-    padding: 'var(--space-3) var(--space-6)',
-    borderRadius: 'var(--radius-lg)',
-    border: 'none',
-    backgroundColor: 'var(--color-primary)',
-    color: '#fff',
-    fontSize: 'var(--font-size-sm)',
-    fontWeight: 'var(--font-weight-semibold)',
-    cursor: 'pointer',
-    fontFamily: 'var(--font-body)',
-    boxShadow: 'var(--shadow-primary)',
-    transition: 'all var(--transition-fast)',
-  },
-  dangerBtn: {
-    padding: 'var(--space-3) var(--space-6)',
-    borderRadius: 'var(--radius-lg)',
-    border: '1px solid var(--color-risk-high-border)',
-    backgroundColor: 'var(--color-risk-high-muted)',
-    color: 'var(--color-risk-high)',
-    fontSize: 'var(--font-size-sm)',
-    fontWeight: 'var(--font-weight-semibold)',
-    cursor: 'pointer',
-    fontFamily: 'var(--font-body)',
-    transition: 'all var(--transition-fast)',
-  },
-  apiInput: {
-    flex: 1,
-    height: '36px',
-    padding: '0 var(--space-3)',
-    border: '1px solid var(--color-neutral-200)',
-    borderRadius: 'var(--radius-md)',
-    backgroundColor: 'var(--color-bg)',
-    fontSize: 'var(--font-size-sm)',
-    fontFamily: 'var(--font-mono)',
-    color: 'var(--color-neutral-700)',
-  },
-};
-
-function Toggle({ id, checked, onChange, label, hint }) {
+/* ── Toggle ──────────────────────────────────────────────── */
+function Toggle({ id, checked, onChange, label, desc }) {
   return (
-    <div style={styles.settingRow} role="group" aria-labelledby={`${id}-label`}>
-      <div style={styles.settingInfo}>
-        <div id={`${id}-label`} style={styles.settingLabel}>{label}</div>
-        {hint && <div style={styles.settingHint}>{hint}</div>}
+    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px', padding: '14px 0' }}>
+      <div>
+        <div style={{ fontSize: '0.9rem', fontWeight: 500, color: 'var(--color-neutral-800)' }}>{label}</div>
+        {desc && <div style={{ fontSize: '0.8125rem', color: 'var(--color-neutral-400)', marginTop: '3px', lineHeight: 1.4 }}>{desc}</div>}
       </div>
       <button
         id={id}
         role="switch"
         aria-checked={checked}
         aria-label={label}
-        style={styles.toggle(checked)}
         onClick={() => onChange(!checked)}
+        style={{
+          width: '42px', height: '24px', borderRadius: '999px', border: 'none',
+          backgroundColor: checked ? 'var(--color-primary)' : 'var(--color-neutral-300)',
+          cursor: 'pointer', position: 'relative', flexShrink: 0,
+          transition: 'background-color 200ms',
+        }}
       >
-        <span style={styles.toggleThumb(checked)} aria-hidden="true" />
+        <span style={{
+          position: 'absolute', top: '3px',
+          left: checked ? '21px' : '3px',
+          width: '18px', height: '18px', borderRadius: '50%',
+          backgroundColor: '#fff',
+          boxShadow: '0 1px 4px rgba(0,0,0,0.2)',
+          transition: 'left 200ms',
+          display: 'block',
+        }} />
       </button>
     </div>
   );
 }
 
-export default function Settings() {
-  const [prefs, setPrefs] = useState({
-    shapEnabled: true,
-    autoFlag: true,
-    emailNotifications: false,
-    auditLog: true,
-    highContrastMode: false,
-    reducedMotion: false,
-    defaultRiskThreshold: 'moderate',
-    apiBase: 'http://localhost:8000',
-  });
+/* ── Section card ────────────────────────────────────────── */
+function Section({ title, icon, children, danger }) {
+  return (
+    <section style={{
+      backgroundColor: 'var(--color-bg-card)',
+      border: `1px solid ${danger ? 'var(--color-risk-high-border)' : 'var(--color-neutral-200)'}`,
+      borderRadius: '16px',
+      overflow: 'hidden',
+      boxShadow: 'var(--shadow-xs)',
+    }}>
+      <div style={{
+        padding: '16px 22px',
+        borderBottom: `1px solid ${danger ? 'var(--color-risk-high-border)' : 'var(--color-neutral-100)'}`,
+        backgroundColor: danger ? 'var(--color-risk-high-muted)' : 'var(--color-bg)',
+        display: 'flex', alignItems: 'center', gap: '8px',
+      }}>
+        <span style={{ fontSize: '16px' }}>{icon}</span>
+        <h2 style={{
+          fontSize: '0.9rem', fontWeight: 600,
+          color: danger ? 'var(--color-risk-high)' : 'var(--color-neutral-800)',
+          margin: 0,
+        }}>{title}</h2>
+      </div>
+      <div style={{ padding: '6px 22px 18px', display: 'flex', flexDirection: 'column' }}>
+        {children}
+      </div>
+    </section>
+  );
+}
 
-  const set = (key) => (val) => setPrefs((p) => ({ ...p, [key]: val }));
+/* ── Labelled input ──────────────────────────────────────── */
+function LabelledInput({ id, label, value, onChange, mono, desc, type = 'text' }) {
+  const [foc, setFoc] = useState(false);
+  return (
+    <div style={{ padding: '14px 0', borderBottom: '1px solid var(--color-neutral-100)' }}>
+      <label htmlFor={id} style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-neutral-700)', display: 'block', marginBottom: '6px' }}>
+        {label}
+      </label>
+      {desc && <p style={{ fontSize: '0.8rem', color: 'var(--color-neutral-400)', margin: '0 0 8px', lineHeight: 1.4 }}>{desc}</p>}
+      <input
+        id={id} type={type} value={value} onChange={onChange}
+        onFocus={() => setFoc(true)} onBlur={() => setFoc(false)}
+        style={{
+          width: '100%', height: '40px', padding: '0 14px',
+          border: `1.5px solid ${foc ? 'var(--color-primary)' : 'var(--color-neutral-200)'}`,
+          borderRadius: '10px',
+          backgroundColor: foc ? '#fff' : 'var(--color-bg)',
+          fontFamily: mono ? 'var(--font-mono)' : 'var(--font-body)',
+          fontSize: '0.9rem', color: 'var(--color-neutral-800)', outline: 'none',
+          boxShadow: foc ? '0 0 0 3px rgba(124,154,133,0.12)' : 'none',
+          transition: 'all 150ms',
+        }}
+      />
+    </div>
+  );
+}
+
+function initials(name) {
+  return (name ?? '').split(' ').map((w) => w[0]).join('').toUpperCase().slice(0, 2);
+}
+
+export default function Settings() {
+  const { user, logout } = useAuth();
+
+  const [apiUrl, setApiUrl] = useState('http://localhost:8000');
+  const [timeoutVal, setTimeoutVal] = useState('30');
+  const [riskThreshold, setRiskThreshold] = useState('0.6');
+  const [toggls, setToggls] = useState({
+    autoSave: true, notifications: true, auditLog: true, reducedMotion: false,
+    highContrast: false, emailAlerts: false, xaiDefault: true,
+  });
+  const [saved, setSaved] = useState(false);
+
+  const toggle = (key) => setToggls((p) => ({ ...p, [key]: !p[key] }));
+
+  const handleSave = () => {
+    setSaved(true);
+    window.setTimeout(() => setSaved(false), 2500);
+  };
 
   return (
-    <main id="settings-page" style={styles.page}>
-      {/* Integrations */}
-      <section style={styles.section} aria-label="API & Integrations">
-        <div style={styles.sectionHeader}>
-          <div style={styles.sectionTitle}>API & Integrations</div>
-          <div style={styles.sectionDesc}>Connect to the NeuroSense backend and external services.</div>
+    <main id="settings-page" style={{ display: 'flex', flexDirection: 'column', gap: '20px', maxWidth: '720px' }}>
+
+      {/* Profile card */}
+      <section style={{
+        background: 'linear-gradient(135deg, var(--color-primary-dark) 0%, var(--color-primary) 100%)',
+        borderRadius: '16px', padding: '24px 28px',
+        display: 'flex', alignItems: 'center', gap: '18px',
+        boxShadow: '0 4px 24px rgba(94,122,103,0.25)',
+      }}>
+        <div style={{
+          width: '60px', height: '60px', borderRadius: '16px', flexShrink: 0,
+          backgroundColor: 'rgba(255,255,255,0.2)',
+          border: '2px solid rgba(255,255,255,0.4)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: '1.375rem', fontWeight: 700, color: '#fff',
+        }}>{initials(user?.name)}</div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: '1.125rem', fontWeight: 700, color: '#fff' }}>{user?.name ?? 'Clinician'}</div>
+          <div style={{ fontSize: '0.875rem', color: 'rgba(255,255,255,0.75)', marginTop: '2px' }}>{user?.role ?? ''}</div>
+          <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.55)', marginTop: '2px', fontFamily: 'var(--font-mono)' }}>{user?.email ?? ''}</div>
         </div>
-        <div style={{ ...styles.settingRow, borderBottom: 'none' }}>
-          <div style={styles.settingInfo}>
-            <div style={styles.settingLabel}>Backend API URL</div>
-            <div style={styles.settingHint}>FastAPI server address</div>
-          </div>
-          <div style={{ display: 'flex', gap: 'var(--space-3)', flex: 1, maxWidth: '280px' }}>
-            <input
-              id="settings-api-url"
-              type="url"
-              value={prefs.apiBase}
-              onChange={(e) => set('apiBase')(e.target.value)}
-              style={styles.apiInput}
-              aria-label="Backend API URL"
-            />
-          </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', alignItems: 'flex-end' }}>
+          <span style={{
+            padding: '3px 10px', borderRadius: '999px',
+            backgroundColor: 'rgba(255,255,255,0.2)',
+            fontSize: '0.75rem', fontWeight: 600, color: '#fff', whiteSpace: 'nowrap',
+          }}>
+            🟢 Active
+          </span>
+          <span style={{ fontSize: '0.6875rem', color: 'rgba(255,255,255,0.55)', fontFamily: 'var(--font-mono)', whiteSpace: 'nowrap' }}>
+            Member since {user?.joinedAt ?? '—'}
+          </span>
         </div>
       </section>
 
-      {/* Clinical Preferences */}
-      <section style={styles.section} aria-label="Clinical Preferences">
-        <div style={styles.sectionHeader}>
-          <div style={styles.sectionTitle}>Clinical Preferences</div>
-          <div style={styles.sectionDesc}>Control how cases are flagged and reported.</div>
+      {/* API & Integrations */}
+      <Section title="API & Integrations" icon="🔌">
+        <LabelledInput id="api-base-url" label="Backend API URL" value={apiUrl} onChange={(e) => setApiUrl(e.target.value)} mono desc="NeuroSense connects to this endpoint for live inference and data sync." />
+        <LabelledInput id="api-timeout" label="Request Timeout (seconds)" value={timeoutVal} onChange={(e) => setTimeoutVal(e.target.value)} type="number" />
+        <div style={{ padding: '14px 0', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          <button id="test-connection-btn" style={{
+            padding: '8px 18px', borderRadius: '8px', border: '1px solid var(--color-primary)',
+            backgroundColor: 'transparent', color: 'var(--color-primary-dark)',
+            fontSize: '0.875rem', fontWeight: 500, cursor: 'pointer', fontFamily: 'var(--font-body)',
+          }}>Test Connection</button>
+          <button id="reset-api-btn" style={{
+            padding: '8px 18px', borderRadius: '8px',
+            border: '1px solid var(--color-neutral-200)',
+            backgroundColor: 'transparent', color: 'var(--color-neutral-500)',
+            fontSize: '0.875rem', cursor: 'pointer', fontFamily: 'var(--font-body)',
+          }}>Reset to Default</button>
         </div>
-        <Toggle id="toggle-shap" checked={prefs.shapEnabled} onChange={set('shapEnabled')} label="SHAP Explanations" hint="Show feature importance for every result" />
-        <Toggle id="toggle-autoflag" checked={prefs.autoFlag} onChange={set('autoFlag')} label="Auto-Flag High Risk" hint="Automatically mark cases above threshold" />
-        <div style={styles.settingRow}>
-          <div style={styles.settingInfo}>
-            <div style={styles.settingLabel}>Default Risk Threshold</div>
-            <div style={styles.settingHint}>Cases at or above this level are flagged</div>
+      </Section>
+
+      {/* Clinical preferences */}
+      <Section title="Clinical Preferences" icon="🩺">
+        <Toggle id="toggle-xai-default" checked={toggls.xaiDefault} onChange={() => toggle('xaiDefault')}
+          label="Show XAI explanations by default"
+          desc="Automatically display SHAP feature importances on every result." />
+        <div style={{ borderTop: '1px solid var(--color-neutral-100)' }}>
+          <div style={{ padding: '14px 0 8px' }}>
+            <label htmlFor="risk-threshold-select" style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-neutral-700)', display: 'block', marginBottom: '6px' }}>Default High-Risk Threshold</label>
+            <select id="risk-threshold-select" value={riskThreshold} onChange={(e) => setRiskThreshold(e.target.value)}
+              style={{
+                height: '40px', padding: '0 14px',
+                border: '1.5px solid var(--color-neutral-200)', borderRadius: '10px',
+                backgroundColor: 'var(--color-bg)', fontSize: '0.9rem',
+                fontFamily: 'var(--font-body)', color: 'var(--color-neutral-700)', cursor: 'pointer',
+              }}>
+              {['0.50', '0.55', '0.60', '0.65', '0.70', '0.75', '0.80'].map((v) => (
+                <option key={v} value={v}>{(parseFloat(v) * 100).toFixed(0)}% — {parseFloat(v) >= 0.7 ? 'Conservative' : parseFloat(v) <= 0.55 ? 'Sensitive' : 'Balanced'}</option>
+              ))}
+            </select>
           </div>
-          <select
-            id="settings-risk-threshold"
-            value={prefs.defaultRiskThreshold}
-            onChange={(e) => set('defaultRiskThreshold')(e.target.value)}
-            style={styles.select}
-            aria-label="Default risk threshold"
-          >
-            <option value="low">Low</option>
-            <option value="moderate">Moderate</option>
-            <option value="high">High</option>
-          </select>
         </div>
-        <div style={{ ...styles.settingRow, borderBottom: 'none' }}>
-          <Toggle id="toggle-audit" checked={prefs.auditLog} onChange={set('auditLog')} label="Audit Logging" hint="Record all clinical actions for compliance" />
-        </div>
-      </section>
+        <Toggle id="toggle-auto-save" checked={toggls.autoSave} onChange={() => toggle('autoSave')}
+          label="Auto-save sessions" desc="Automatically save incomplete screening sessions every 60 seconds." />
+        <Toggle id="toggle-audit-log" checked={toggls.auditLog} onChange={() => toggle('auditLog')}
+          label="Enable audit logging" desc="Log all case access and modifications (required for DPDP compliance)." />
+      </Section>
 
       {/* Notifications */}
-      <section style={styles.section} aria-label="Notifications">
-        <div style={styles.sectionHeader}>
-          <div style={styles.sectionTitle}>Notifications</div>
-          <div style={styles.sectionDesc}>Configure how you receive alerts.</div>
-        </div>
-        <div style={{ ...styles.settingRow, borderBottom: 'none' }}>
-          <Toggle id="toggle-email" checked={prefs.emailNotifications} onChange={set('emailNotifications')} label="Email Notifications" hint="Receive alerts for high-risk cases via email" />
-        </div>
-      </section>
+      <Section title="Notifications" icon="🔔">
+        <Toggle id="toggle-notifications" checked={toggls.notifications} onChange={() => toggle('notifications')}
+          label="In-app notifications" desc="Show banner alerts for high-risk case flags and pending reviews." />
+        <Toggle id="toggle-email-alerts" checked={toggls.emailAlerts} onChange={() => toggle('emailAlerts')}
+          label="Email alerts for high-risk cases" desc="Receive an email when a new high-risk case is flagged for your review." />
+      </Section>
 
       {/* Accessibility */}
-      <section style={styles.section} aria-label="Accessibility">
-        <div style={styles.sectionHeader}>
-          <div style={styles.sectionTitle}>Accessibility</div>
-          <div style={styles.sectionDesc}>Adapt the interface to your needs.</div>
-        </div>
-        <Toggle id="toggle-contrast" checked={prefs.highContrastMode} onChange={set('highContrastMode')} label="High Contrast Mode" hint="Increase color contrast for visibility" />
-        <div style={{ ...styles.settingRow, borderBottom: 'none' }}>
-          <Toggle id="toggle-motion" checked={prefs.reducedMotion} onChange={set('reducedMotion')} label="Reduce Motion" hint="Minimize animations and transitions" />
-        </div>
-      </section>
+      <Section title="Accessibility" icon="♿">
+        <Toggle id="toggle-reduced-motion" checked={toggls.reducedMotion} onChange={() => toggle('reducedMotion')}
+          label="Reduce motion" desc="Minimises animations and transitions across the interface." />
+        <Toggle id="toggle-high-contrast" checked={toggls.highContrast} onChange={() => toggle('highContrast')}
+          label="High contrast mode" desc="Increases colour contrast for improved readability." />
+      </Section>
 
-      {/* Actions */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 'var(--space-4)' }}>
-        <button id="settings-save-btn" style={styles.saveBtn} onClick={() => alert('Settings saved (demo)')}>
-          Save Preferences
-        </button>
-        <button id="settings-reset-btn" style={styles.dangerBtn} onClick={() => alert('Reset to defaults (demo)')}>
-          Reset to Defaults
-        </button>
+      {/* Save button */}
+      <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+        <button id="save-settings-btn" onClick={handleSave} style={{
+          padding: '10px 28px', borderRadius: '10px', border: 'none',
+          background: 'linear-gradient(135deg, var(--color-primary), var(--color-primary-dark))',
+          color: '#fff', fontWeight: 600, cursor: 'pointer',
+          fontFamily: 'var(--font-body)', fontSize: '0.9375rem',
+          boxShadow: '0 4px 14px rgba(124,154,133,0.30)',
+        }}>Save Changes</button>
+        {saved && (
+          <span style={{
+            fontSize: '0.875rem', color: 'var(--color-primary-dark)', fontWeight: 500,
+            display: 'flex', alignItems: 'center', gap: '6px',
+          }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+            Saved successfully
+          </span>
+        )}
       </div>
+
+      {/* Danger zone */}
+      <Section title="Danger Zone" icon="⚠️" danger>
+        <div style={{ padding: '14px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', borderBottom: '1px solid var(--color-risk-high-border)' }}>
+          <div>
+            <div style={{ fontWeight: 500, color: 'var(--color-neutral-800)', fontSize: '0.9rem' }}>Clear All Mock Data</div>
+            <div style={{ fontSize: '0.8rem', color: 'var(--color-neutral-400)', marginTop: '2px' }}>Remove all demo cases and screening sessions</div>
+          </div>
+          <button id="clear-data-btn" style={{
+            padding: '7px 16px', borderRadius: '8px',
+            border: '1px solid var(--color-risk-high-border)',
+            backgroundColor: 'transparent', color: 'var(--color-risk-high)',
+            fontSize: '0.8125rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-body)',
+            whiteSpace: 'nowrap', flexShrink: 0,
+          }}>Clear Data</button>
+        </div>
+        <div style={{ padding: '14px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px' }}>
+          <div>
+            <div style={{ fontWeight: 500, color: 'var(--color-neutral-800)', fontSize: '0.9rem' }}>Sign Out</div>
+            <div style={{ fontSize: '0.8rem', color: 'var(--color-neutral-400)', marginTop: '2px' }}>End your current session and return to login</div>
+          </div>
+          <button id="settings-logout-btn" onClick={logout} style={{
+            padding: '7px 16px', borderRadius: '8px',
+            border: '1px solid var(--color-risk-high-border)',
+            backgroundColor: 'var(--color-risk-high-muted)', color: 'var(--color-risk-high)',
+            fontSize: '0.8125rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-body)',
+            whiteSpace: 'nowrap', flexShrink: 0,
+          }}>Sign Out</button>
+        </div>
+      </Section>
     </main>
   );
 }

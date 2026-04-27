@@ -1,172 +1,201 @@
 /**
- * Screening.jsx
- * Manage and administer neurodevelopmental screening assessments.
+ * Screening.jsx — Upgraded tool cards: colour bands, Popular badge,
+ * condition chips, estimated time bar, session flow.
  */
-
 import React, { useState } from 'react';
 import { useScreening } from '../hooks/useScreening';
 import RiskBadge from '../components/RiskBadge';
 
-const conditionColors = {
-  ASD: 'var(--color-primary)',
-  ADHD: 'var(--color-risk-moderate)',
-  'Executive Function': 'var(--color-secondary)',
-  Dyslexia: 'var(--color-risk-high)',
+const CONDITION_COLORS = {
+  'Autism Spectrum':       { color: '#7C9A85', bg: 'rgba(124,154,133,0.1)',  border: 'rgba(124,154,133,0.25)' },
+  'ADHD':                  { color: '#B8873A', bg: 'rgba(184,135,58,0.08)', border: 'rgba(184,135,58,0.22)' },
+  'Executive Function':    { color: '#8A8178', bg: 'rgba(138,129,120,0.1)', border: 'rgba(138,129,120,0.22)' },
+  'Dyslexia / Dyscalculia':{ color: '#5E7A67', bg: 'rgba(94,122,103,0.1)',  border: 'rgba(94,122,103,0.22)' },
+  'Substance Use':         { color: '#C0555A', bg: 'rgba(192,85,90,0.08)',  border: 'rgba(192,85,90,0.20)' },
+  'Autism / Social':       { color: '#7C9A85', bg: 'rgba(124,154,133,0.1)', border: 'rgba(124,154,133,0.25)' },
 };
 
-const styles = {
-  page: { display: 'flex', flexDirection: 'column', gap: 'var(--space-8)' },
-  toolsGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-    gap: 'var(--space-5)',
-  },
-  toolCard: (active) => ({
-    backgroundColor: 'var(--color-bg-card)',
-    border: `1.5px solid ${active ? 'var(--color-primary)' : 'var(--color-neutral-200)'}`,
-    borderRadius: 'var(--radius-xl)',
-    padding: 'var(--space-6)',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 'var(--space-4)',
-    cursor: 'pointer',
-    transition: 'all var(--transition-base)',
-    boxShadow: active ? 'var(--shadow-primary)' : 'var(--shadow-sm)',
-    backgroundColor: active ? 'var(--color-primary-subtle)' : 'var(--color-bg-card)',
-  }),
-  toolName: {
-    fontSize: 'var(--font-size-lg)',
-    fontWeight: 'var(--font-weight-bold)',
-    fontFamily: 'var(--font-mono)',
-    color: 'var(--color-neutral-900)',
-  },
-  toolFullName: {
-    fontSize: 'var(--font-size-sm)',
-    color: 'var(--color-neutral-500)',
-    lineHeight: 'var(--line-height-snug)',
-  },
-  conditionTag: (condition) => ({
-    display: 'inline-block',
-    padding: '3px 10px',
-    borderRadius: 'var(--radius-full)',
-    fontSize: 'var(--font-size-xs)',
-    fontWeight: 'var(--font-weight-semibold)',
-    fontFamily: 'var(--font-mono)',
-    color: conditionColors[condition] || 'var(--color-secondary)',
-    backgroundColor: `${conditionColors[condition] || 'var(--color-secondary)'}18`,
-    letterSpacing: 'var(--letter-spacing-wide)',
-  }),
-  metaRow: {
-    display: 'flex',
-    gap: 'var(--space-4)',
-  },
-  metaItem: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '2px',
-  },
-  metaLabel: {
-    fontSize: 'var(--font-size-xs)',
-    color: 'var(--color-neutral-400)',
-    letterSpacing: 'var(--letter-spacing-wide)',
-    textTransform: 'uppercase',
-  },
-  metaValue: {
-    fontSize: 'var(--font-size-sm)',
-    fontFamily: 'var(--font-mono)',
-    fontWeight: 'var(--font-weight-medium)',
-    color: 'var(--color-neutral-700)',
-  },
-  startBtn: {
-    marginTop: 'auto',
-    padding: 'var(--space-3) var(--space-5)',
-    borderRadius: 'var(--radius-lg)',
-    border: 'none',
-    backgroundColor: 'var(--color-primary)',
-    color: '#fff',
-    fontSize: 'var(--font-size-sm)',
-    fontWeight: 'var(--font-weight-semibold)',
-    cursor: 'pointer',
-    transition: 'all var(--transition-fast)',
-    fontFamily: 'var(--font-body)',
-    letterSpacing: 'var(--letter-spacing-wide)',
-    width: '100%',
-    boxShadow: 'var(--shadow-primary)',
-  },
-  sessionPanel: {
-    backgroundColor: 'var(--color-bg-card)',
-    border: '1px solid var(--color-neutral-200)',
-    borderRadius: 'var(--radius-xl)',
-    padding: 'var(--space-8)',
-    boxShadow: 'var(--shadow-md)',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 'var(--space-6)',
-  },
-  progressBar: {
-    height: '6px',
-    borderRadius: 'var(--radius-full)',
-    backgroundColor: 'var(--color-neutral-200)',
-    overflow: 'hidden',
-  },
-  progressFill: (pct) => ({
-    height: '100%',
-    width: `${pct}%`,
-    borderRadius: 'var(--radius-full)',
-    background: 'linear-gradient(90deg, var(--color-primary-dark), var(--color-primary))',
-    transition: 'width var(--transition-slow)',
-  }),
-  resultCard: {
-    backgroundColor: 'var(--color-bg)',
-    border: '1px solid var(--color-neutral-200)',
-    borderRadius: 'var(--radius-xl)',
-    padding: 'var(--space-6)',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 'var(--space-4)',
-    alignItems: 'center',
-    textAlign: 'center',
-  },
-};
+const POPULAR = ['RAADS-R', 'ASRS-v1.1'];
+
+function ToolCard({ tool, onStart, isActive }) {
+  const [hov, setHov] = useState(false);
+  const cc = CONDITION_COLORS[tool.targetCondition] || CONDITION_COLORS['Executive Function'];
+  const pop = POPULAR.includes(tool.id);
+
+  return (
+    <article
+      id={`tool-card-${tool.id}`}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      style={{
+        backgroundColor: 'var(--color-bg-card)',
+        border: `1px solid ${hov ? cc.border : 'var(--color-neutral-200)'}`,
+        borderRadius: '14px',
+        padding: '20px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '14px',
+        boxShadow: hov ? 'var(--shadow-md)' : 'var(--shadow-xs)',
+        transform: hov ? 'translateY(-2px)' : 'none',
+        transition: 'all 220ms cubic-bezier(.4,0,.2,1)',
+        position: 'relative',
+        overflow: 'hidden',
+      }}
+    >
+      {/* Colour band top */}
+      <div style={{
+        position: 'absolute', top: 0, left: 0, right: 0, height: '3px',
+        backgroundColor: cc.color, opacity: 0.75,
+      }} />
+
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+        {/* Icon square */}
+        <div style={{
+          width: '40px', height: '40px', borderRadius: '10px', flexShrink: 0,
+          backgroundColor: cc.bg, border: `1px solid ${cc.border}`,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: '1.125rem',
+        }}>
+          {tool.targetCondition === 'Autism Spectrum' || tool.targetCondition === 'Autism / Social' ? '🧠' :
+           tool.targetCondition === 'ADHD' ? '⚡' :
+           tool.targetCondition === 'Executive Function' ? '📊' :
+           tool.targetCondition === 'Dyslexia / Dyscalculia' ? '📖' : '🔍'}
+        </div>
+
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+            <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: '0.9375rem', color: 'var(--color-neutral-900)' }}>
+              {tool.id}
+            </span>
+            {pop && (
+              <span style={{
+                padding: '1px 7px', borderRadius: '999px',
+                backgroundColor: 'var(--color-primary-muted)',
+                color: 'var(--color-primary-dark)',
+                fontSize: '0.625rem', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase',
+              }}>Popular</span>
+            )}
+          </div>
+          <div style={{ fontSize: '0.8125rem', color: 'var(--color-neutral-500)', marginTop: '2px', lineHeight: 1.3 }}>
+            {tool.fullName}
+          </div>
+        </div>
+      </div>
+
+      {/* Condition tag */}
+      <div style={{
+        display: 'inline-flex', alignItems: 'center', gap: '5px', alignSelf: 'flex-start',
+        padding: '3px 10px', borderRadius: '6px',
+        backgroundColor: cc.bg, border: `1px solid ${cc.border}`,
+        fontSize: '0.75rem', fontWeight: 600, color: cc.color,
+      }}>
+        {tool.targetCondition}
+      </div>
+
+      {/* Stats row */}
+      <div style={{ display: 'flex', gap: '16px' }}>
+        {[
+          { icon: '⏱', label: tool.duration },
+          { icon: '❓', label: `${tool.questions} questions` },
+          { icon: '✅', label: 'Validated' },
+        ].map(({ icon, label }) => (
+          <span key={label} style={{
+            fontSize: '0.75rem', color: 'var(--color-neutral-500)',
+            display: 'flex', alignItems: 'center', gap: '4px',
+          }}>
+            <span style={{ fontSize: '12px' }}>{icon}</span>
+            {label}
+          </span>
+        ))}
+      </div>
+
+      {/* Progress bar (time estimate) */}
+      <div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
+          <span style={{ fontSize: '0.6875rem', color: 'var(--color-neutral-400)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Estimated time</span>
+          <span style={{ fontSize: '0.6875rem', fontFamily: 'var(--font-mono)', color: cc.color, fontWeight: 600 }}>{tool.duration}</span>
+        </div>
+        <div style={{ height: '5px', borderRadius: '999px', backgroundColor: 'var(--color-neutral-100)', overflow: 'hidden' }}>
+          <div style={{
+            height: '100%', borderRadius: '999px',
+            backgroundColor: cc.color,
+            width: `${Math.min(100, (tool.questions / 80) * 100)}%`,
+            transition: 'width 600ms',
+          }} />
+        </div>
+      </div>
+
+      {/* CTA */}
+      <button
+        id={`start-screening-${tool.id}`}
+        onClick={() => onStart(tool)}
+        style={{
+          height: '38px', borderRadius: '10px', border: 'none',
+          background: isActive
+            ? 'var(--color-neutral-200)'
+            : `linear-gradient(135deg, ${cc.color}, ${cc.color}cc)`,
+          color: isActive ? 'var(--color-neutral-500)' : '#fff',
+          fontSize: '0.875rem', fontWeight: 600,
+          cursor: isActive ? 'not-allowed' : 'pointer',
+          fontFamily: 'var(--font-body)',
+          transition: 'all 150ms',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+        }}
+        disabled={isActive}
+        aria-label={`Start ${tool.id} screening`}
+      >
+        {isActive ? 'Session Active' : (
+          <>
+            Start Screening
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" />
+            </svg>
+          </>
+        )}
+      </button>
+    </article>
+  );
+}
 
 export default function Screening() {
-  const {
-    availableTools,
-    activeTool,
-    activeToolId,
-    progress,
-    result,
-    isSubmitting,
-    selectTool,
-    submitScreening,
-    reset,
-  } = useScreening();
-
-  const [patientId] = useState('NS-2024-DEMO');
-
-  const handleStart = (toolId) => {
-    selectTool(toolId);
-  };
-
-  const handleSubmit = async () => {
-    await submitScreening(patientId);
-  };
+  const { availableTools, activeTool, selectTool, progress, result, isSubmitting, submitScreening, resetSession } = useScreening();
+  const [patientId] = useState(`PAT-${Date.now().toString(36).toUpperCase()}`);
 
   if (result) {
     return (
-      <main id="screening-page" style={styles.page}>
-        <div style={styles.sessionPanel}>
-          <div style={styles.resultCard}>
-            <div style={{ fontSize: 'var(--font-size-4xl)' }}>✓</div>
-            <h2 style={{ color: 'var(--color-neutral-900)' }}>Screening Complete</h2>
-            <RiskBadge level={result.riskLevel} size="lg" showScore score={result.riskLevel === 'high' ? 0.87 : result.riskLevel === 'moderate' ? 0.63 : 0.18} />
-            <p style={{ color: 'var(--color-neutral-500)', fontSize: 'var(--font-size-sm)' }}>
-              Session ID: <code style={{ fontFamily: 'var(--font-mono)' }}>{result.sessionId}</code>
+      <main id="screening-page" style={{ display: 'flex', flexDirection: 'column', gap: '24px', alignItems: 'center', paddingTop: '40px' }}>
+        <div style={{
+          width: '100%', maxWidth: '520px',
+          backgroundColor: 'var(--color-bg-card)',
+          border: '1px solid var(--color-neutral-200)',
+          borderRadius: '20px', padding: '40px',
+          textAlign: 'center', boxShadow: 'var(--shadow-lg)',
+          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px',
+        }}>
+          <div style={{ fontSize: '3rem' }}>🎉</div>
+          <div>
+            <h2 style={{ fontSize: '1.375rem', fontWeight: 700, margin: '0 0 6px', color: 'var(--color-neutral-900)' }}>Screening Complete</h2>
+            <p style={{ fontSize: '0.875rem', color: 'var(--color-neutral-500)' }}>Session {result.sessionId}</p>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
+            <RiskBadge level={result.riskLevel} size="lg" showScore score={result.score} />
+            <p style={{ fontSize: '0.875rem', color: 'var(--color-neutral-600)', maxWidth: '340px', lineHeight: 1.6 }}>
+              {result.recommendation}
             </p>
-            {result.mock && <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-neutral-400)' }}>Demo mode — backend not connected</p>}
-            <button id="screening-reset-btn" onClick={reset} style={{ ...styles.startBtn, width: 'auto', padding: 'var(--space-3) var(--space-8)' }}>
-              Start Another Screening
-            </button>
+          </div>
+          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', justifyContent: 'center' }}>
+            <button onClick={resetSession} style={{
+              padding: '10px 22px', borderRadius: '10px', border: 'none',
+              background: 'linear-gradient(135deg, var(--color-primary), var(--color-primary-dark))',
+              color: '#fff', fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-body)', fontSize: '0.875rem',
+            }}>Start Another</button>
+            <button onClick={() => window.location.href = '/app/results'} style={{
+              padding: '10px 22px', borderRadius: '10px',
+              border: '1px solid var(--color-neutral-200)',
+              backgroundColor: 'var(--color-bg)', color: 'var(--color-neutral-700)',
+              fontWeight: 500, cursor: 'pointer', fontFamily: 'var(--font-body)', fontSize: '0.875rem',
+            }}>View Results →</button>
           </div>
         </div>
       </main>
@@ -174,85 +203,113 @@ export default function Screening() {
   }
 
   if (activeTool) {
+    const cc = CONDITION_COLORS[activeTool.targetCondition] || CONDITION_COLORS['Executive Function'];
     return (
-      <main id="screening-session-page" style={styles.page}>
-        <div style={styles.sessionPanel}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div>
-              <span style={styles.conditionTag(activeTool.targetCondition)}>{activeTool.targetCondition}</span>
-              <h2 style={{ marginTop: 'var(--space-3)', color: 'var(--color-neutral-900)' }}>{activeTool.fullName}</h2>
-              <p style={{ color: 'var(--color-neutral-500)', fontSize: 'var(--font-size-sm)', marginTop: 'var(--space-1)' }}>
-                {activeTool.questions} questions · Est. {activeTool.duration}
-              </p>
+      <main id="screening-active" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+        {/* Session card */}
+        <div style={{
+          backgroundColor: 'var(--color-bg-card)',
+          border: '1px solid var(--color-neutral-200)',
+          borderRadius: '16px', padding: '28px',
+          boxShadow: 'var(--shadow-sm)',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px', flexWrap: 'wrap' }}>
+            <div style={{
+              padding: '3px 12px', borderRadius: '999px',
+              backgroundColor: cc.bg, border: `1px solid ${cc.border}`,
+              fontSize: '0.75rem', fontWeight: 700, color: cc.color,
+              fontFamily: 'var(--font-mono)',
+            }}>{activeTool.id}</div>
+            <div style={{ fontSize: '0.875rem', color: 'var(--color-neutral-600)' }}>{activeTool.fullName}</div>
+            <div style={{ marginLeft: 'auto', fontSize: '0.75rem', fontFamily: 'var(--font-mono)', color: 'var(--color-neutral-400)' }}>
+              Patient: {patientId}
             </div>
-            <button id="screening-cancel-btn" onClick={reset} style={{ ...styles.startBtn, width: 'auto', backgroundColor: 'var(--color-neutral-200)', color: 'var(--color-neutral-700)', boxShadow: 'none' }}>
-              Cancel
-            </button>
           </div>
 
           {/* Progress */}
-          <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 'var(--space-2)' }}>
-              <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-neutral-400)' }}>Progress</span>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--font-size-xs)', color: 'var(--color-neutral-600)' }}>{progress}%</span>
+          <div style={{ marginBottom: '20px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+              <span style={{ fontSize: '0.8125rem', color: 'var(--color-neutral-600)', fontWeight: 500 }}>Administration Progress</span>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.8125rem', color: cc.color, fontWeight: 700 }}>{Math.round(progress)}%</span>
             </div>
-            <div style={styles.progressBar}>
-              <div style={styles.progressFill(progress)} />
+            <div style={{ height: '8px', borderRadius: '999px', backgroundColor: 'var(--color-neutral-100)', overflow: 'hidden' }}>
+              <div style={{
+                height: '100%', borderRadius: '999px',
+                background: `linear-gradient(90deg, ${cc.color}, ${cc.color}aa)`,
+                width: `${progress}%`, transition: 'width 500ms',
+              }} />
             </div>
           </div>
 
-          <p style={{ color: 'var(--color-neutral-500)', textAlign: 'center', padding: 'var(--space-8) 0' }}>
-            Screening questions would render here. Connect your question bank to proceed.
+          <p style={{ fontSize: '0.875rem', color: 'var(--color-neutral-500)', lineHeight: 1.6 }}>
+            Administer the {activeTool.fullName} ({activeTool.questions} items) to the patient.
+            Mark responses and submit to generate the AI-assisted risk report.
           </p>
+        </div>
 
+        <div style={{ display: 'flex', gap: '10px' }}>
           <button
-            id="screening-submit-btn"
-            onClick={handleSubmit}
+            id="submit-screening-btn"
+            onClick={() => submitScreening(patientId)}
             disabled={isSubmitting}
-            style={{ ...styles.startBtn, opacity: isSubmitting ? 0.7 : 1, cursor: isSubmitting ? 'not-allowed' : 'pointer' }}
+            style={{
+              padding: '11px 28px', borderRadius: '10px', border: 'none',
+              background: 'linear-gradient(135deg, var(--color-primary), var(--color-primary-dark))',
+              color: '#fff', fontWeight: 600, cursor: isSubmitting ? 'wait' : 'pointer',
+              fontFamily: 'var(--font-body)', fontSize: '0.9375rem',
+              boxShadow: '0 4px 14px rgba(124,154,133,0.30)',
+              opacity: isSubmitting ? 0.75 : 1,
+            }}
           >
-            {isSubmitting ? 'Submitting…' : 'Submit Screening'}
+            {isSubmitting ? 'Generating Report…' : 'Submit & Generate Report →'}
           </button>
+          <button
+            id="cancel-screening-btn"
+            onClick={resetSession}
+            style={{
+              padding: '11px 22px', borderRadius: '10px',
+              border: '1px solid var(--color-neutral-200)',
+              backgroundColor: 'var(--color-bg)', color: 'var(--color-neutral-600)',
+              cursor: 'pointer', fontFamily: 'var(--font-body)', fontSize: '0.875rem',
+            }}
+          >Cancel</button>
         </div>
       </main>
     );
   }
 
   return (
-    <main id="screening-page" style={styles.page}>
-      <p style={{ color: 'var(--color-neutral-500)' }}>
-        Select a validated neurodevelopmental screening tool to begin an assessment session.
-      </p>
-
-      <div style={styles.toolsGrid}>
-        {availableTools.map((tool) => (
-          <div key={tool.id} style={styles.toolCard(activeToolId === tool.id)} role="article">
-            <div>
-              <span style={styles.conditionTag(tool.targetCondition)}>{tool.targetCondition}</span>
-            </div>
-            <div>
-              <div style={styles.toolName}>{tool.name}</div>
-              <div style={styles.toolFullName}>{tool.fullName}</div>
-            </div>
-            <div style={styles.metaRow}>
-              <div style={styles.metaItem}>
-                <span style={styles.metaLabel}>Duration</span>
-                <span style={styles.metaValue}>{tool.duration}</span>
-              </div>
-              <div style={styles.metaItem}>
-                <span style={styles.metaLabel}>Questions</span>
-                <span style={styles.metaValue}>{tool.questions}</span>
-              </div>
-            </div>
-            <button
-              id={`start-screening-${tool.id}`}
-              style={styles.startBtn}
-              onClick={() => handleStart(tool.id)}
-              aria-label={`Start ${tool.name} screening`}
-            >
-              Start Screening →
-            </button>
+    <main id="screening-page" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+      {/* Intro banner */}
+      <div style={{
+        padding: '20px 24px',
+        backgroundColor: 'var(--color-primary-subtle)',
+        border: '1px solid var(--border-primary)',
+        borderRadius: '12px',
+        display: 'flex', alignItems: 'center', gap: '14px',
+      }}>
+        <span style={{ fontSize: '1.5rem' }}>🧬</span>
+        <div>
+          <div style={{ fontWeight: 600, color: 'var(--color-neutral-800)', fontSize: '0.9375rem' }}>Select a Screening Tool</div>
+          <div style={{ fontSize: '0.8125rem', color: 'var(--color-neutral-500)', marginTop: '2px' }}>
+            Choose a validated instrument below. Each generates a SHAP-explained risk report on completion.
           </div>
+        </div>
+      </div>
+
+      {/* Tool grid */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fill, minmax(290px, 1fr))',
+        gap: '16px',
+      }}>
+        {availableTools.map((tool) => (
+          <ToolCard
+            key={tool.id}
+            tool={tool}
+            onStart={selectTool}
+            isActive={!!activeTool}
+          />
         ))}
       </div>
     </main>
