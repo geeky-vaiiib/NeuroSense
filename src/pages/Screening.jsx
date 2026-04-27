@@ -3,14 +3,14 @@
  *
  * Steps:
  *   0 — Consent          (fully implemented)
- *   1 — Demographics     (placeholder)
- *   2 — AQ-10            (placeholder)
+ *   1 — Demographics     (fully implemented)
+ *   2 — AQ-10            (fully implemented)
  *   3 — Review           (placeholder)
  *
- * Neuroinclusive design rules applied to Step 0:
+ * Neuroinclusive design rules:
  *  - Plain language: no idioms, one idea per sentence
- *  - No animation or time pressure
- *  - Large tap targets for checkboxes
+ *  - No animation or time pressure on consent step
+ *  - Large tap targets for checkboxes and answer buttons
  *  - Clear disabled/enabled state on Continue button
  */
 import React, { useState } from 'react';
@@ -478,40 +478,303 @@ function StepConsent({ onNext }) {
 }
 
 /* ─────────────────────────────────────────────────────────────
-   Step 1 — Demographics (placeholder)
+   FormField — reusable labelled field wrapper
 ───────────────────────────────────────────────────────────── */
-function StepDemographics({ onNext, onBack }) {
+function FormField({ htmlFor, label, required, optional, children }) {
+  return (
+    <div>
+      <label htmlFor={htmlFor} style={labelStyle}>
+        {label}
+        {optional && <span style={{ fontWeight: 400, color: 'var(--color-neutral-400)', marginLeft: '4px' }}>(optional)</span>}
+        {required && <span style={{ color: 'var(--color-risk-high)', marginLeft: '3px' }}>*</span>}
+      </label>
+      {children}
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────
+   FocusInput — input/select with sage focus ring
+───────────────────────────────────────────────────────────── */
+function FocusInput({ as: Tag = 'input', id, children, ...rest }) {
+  const [foc, setFoc] = useState(false);
+  return (
+    <Tag
+      id={id}
+      onFocus={() => setFoc(true)}
+      onBlur={() => setFoc(false)}
+      style={{
+        ...fieldBase,
+        ...(foc ? fieldFocus : {}),
+        ...(Tag === 'select' ? { cursor: 'pointer', appearance: 'none',
+          backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238A8A82' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`,
+          backgroundRepeat: 'no-repeat',
+          backgroundPosition: 'right 12px center',
+          paddingRight: '32px',
+        } : {}),
+      }}
+      {...rest}
+    >
+      {children}
+    </Tag>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Step 1 — Demographics
+───────────────────────────────────────────────────────────── */
+function StepDemographics({ demo, setDemo, onNext, onBack }) {
+  const set = (key) => (e) => setDemo((p) => ({ ...p, [key]: e.target.value }));
+  const canContinue = demo.age !== '' && demo.gender !== '';
+
   return (
     <section aria-labelledby="demographics-heading">
-      <h2 id="demographics-heading" style={{ fontSize: '1.125rem', fontWeight: 600, color: 'var(--color-neutral-900)', margin: '0 0 12px' }}>
-        About you
-      </h2>
-      <p style={{ fontSize: '14px', color: 'var(--color-neutral-400)', lineHeight: 1.7 }}>
-        Demographics step — coming soon.
-      </p>
-      <div style={{ display: 'flex', gap: '10px', marginTop: '24px' }}>
-        <button onClick={onBack}  style={secondaryBtn}>← Back</button>
-        <button onClick={onNext}  style={primaryBtn}>Continue →</button>
+      <div style={{ marginBottom: '24px' }}>
+        <h2 id="demographics-heading" style={{
+          fontSize: '1.125rem', fontWeight: 600,
+          color: 'var(--color-neutral-900)', margin: '0 0 6px',
+          letterSpacing: '-0.015em',
+        }}>
+          About you
+        </h2>
+        <p style={{ fontSize: '14px', color: 'var(--color-neutral-500)', lineHeight: 1.7, margin: 0 }}>
+          This information helps us generate a more accurate screening report.
+          Only Age and Gender are required.
+        </p>
+      </div>
+
+      {/* 2-column grid */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(2, 1fr)',
+        gap: '18px 20px',
+      }}>
+        {/* Full Name (optional) */}
+        <FormField htmlFor="demo-name" label="Full Name" optional>
+          <FocusInput id="demo-name" placeholder="e.g. Jordan A." value={demo.name} onChange={set('name')} />
+        </FormField>
+
+        {/* Age (required) */}
+        <FormField htmlFor="demo-age" label="Age" required>
+          <FocusInput id="demo-age" type="number" min="1" max="100" placeholder="e.g. 28" value={demo.age} onChange={set('age')} />
+        </FormField>
+
+        {/* Gender (required) */}
+        <FormField htmlFor="demo-gender" label="Gender" required>
+          <FocusInput as="select" id="demo-gender" value={demo.gender} onChange={set('gender')}>
+            <option value="" disabled>Select…</option>
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+            <option value="Non-binary">Non-binary</option>
+            <option value="Prefer not to say">Prefer not to say</option>
+          </FocusInput>
+        </FormField>
+
+        {/* Ethnicity */}
+        <FormField htmlFor="demo-ethnicity" label="Ethnicity" optional>
+          <FocusInput as="select" id="demo-ethnicity" value={demo.ethnicity} onChange={set('ethnicity')}>
+            <option value="" disabled>Select…</option>
+            <option value="South Asian">South Asian</option>
+            <option value="East Asian">East Asian</option>
+            <option value="White-Caucasian">White / Caucasian</option>
+            <option value="Black-African">Black / African</option>
+            <option value="Mixed">Mixed</option>
+            <option value="Other">Other / Prefer not to say</option>
+          </FocusInput>
+        </FormField>
+
+        {/* Jaundice at birth */}
+        <FormField htmlFor="demo-jaundice" label="Jaundice at birth" optional>
+          <FocusInput as="select" id="demo-jaundice" value={demo.jaundice} onChange={set('jaundice')}>
+            <option value="" disabled>Select…</option>
+            <option value="Yes">Yes</option>
+            <option value="No">No</option>
+          </FocusInput>
+        </FormField>
+
+        {/* Family history of ASD */}
+        <FormField htmlFor="demo-familyAsd" label="Family history of ASD" optional>
+          <FocusInput as="select" id="demo-familyAsd" value={demo.familyAsd} onChange={set('familyAsd')}>
+            <option value="" disabled>Select…</option>
+            <option value="Yes">Yes</option>
+            <option value="No">No</option>
+          </FocusInput>
+        </FormField>
+      </div>
+
+      {/* Nav buttons */}
+      <div style={{ marginTop: '28px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <button onClick={onBack} style={secondaryBtn}>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
+          </svg>
+          Back
+        </button>
+        <button
+          id="demo-continue-btn"
+          onClick={onNext}
+          disabled={!canContinue}
+          style={{
+            ...primaryBtn,
+            background: canContinue ? primaryBtn.background : 'var(--color-neutral-200)',
+            color: canContinue ? '#fff' : 'var(--color-neutral-400)',
+            cursor: canContinue ? 'pointer' : 'not-allowed',
+            boxShadow: canContinue ? primaryBtn.boxShadow : 'none',
+          }}
+        >
+          Continue
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+          </svg>
+        </button>
+        {!canContinue && (
+          <p role="status" aria-live="polite" style={{ fontSize: '13px', color: 'var(--color-neutral-400)', margin: 0 }}>
+            Age and Gender are required.
+          </p>
+        )}
       </div>
     </section>
   );
 }
 
 /* ─────────────────────────────────────────────────────────────
-   Step 2 — AQ-10 Questionnaire (placeholder)
+   Step 2 — AQ-10 Questionnaire
 ───────────────────────────────────────────────────────────── */
-function StepAQ10({ onNext, onBack }) {
+function AQ10Card({ q, selectedAnswer, onSelect }) {
+  const answered = selectedAnswer != null;
+  return (
+    <div
+      id={`aq10-card-${q.id}`}
+      style={{
+        border: `1.5px solid ${answered ? 'var(--color-primary)' : 'var(--color-neutral-200)'}`,
+        borderRadius: '12px',
+        backgroundColor: answered ? 'rgba(124,154,133,0.03)' : 'var(--color-bg-card)',
+        padding: '20px 22px',
+        display: 'flex', flexDirection: 'column', gap: '14px',
+        transition: 'border-color 200ms',
+      }}
+    >
+      {/* Question header */}
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+        <span style={{
+          fontFamily: 'var(--font-mono)',
+          fontSize: '13px',
+          fontWeight: 600,
+          color: answered ? 'var(--color-primary-dark)' : 'var(--color-neutral-400)',
+          flexShrink: 0,
+          marginTop: '1px',
+        }}>
+          {q.id}
+        </span>
+        <span style={{
+          fontSize: '14px',
+          lineHeight: 1.7,
+          color: 'var(--color-neutral-800)',
+          fontWeight: 400,
+        }}>
+          {q.text}
+        </span>
+      </div>
+
+      {/* Answer buttons row */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
+        {ANSWER_OPTIONS.map((opt) => {
+          const isSelected = selectedAnswer === opt;
+          return (
+            <button
+              key={opt}
+              aria-pressed={isSelected}
+              onClick={() => onSelect(q.id, opt)}
+              style={{
+                height: '38px',
+                borderRadius: '8px',
+                border: `1.5px solid ${isSelected ? 'var(--color-primary)' : 'var(--color-neutral-200)'}`,
+                backgroundColor: isSelected ? 'var(--color-primary)' : '#fff',
+                color: isSelected ? '#fff' : 'var(--color-neutral-600)',
+                fontSize: '12px',
+                fontWeight: isSelected ? 600 : 400,
+                fontFamily: 'var(--font-body)',
+                cursor: 'pointer',
+                transition: 'all 150ms',
+                padding: '0 6px',
+                lineHeight: 1.2,
+              }}
+            >
+              {opt}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function StepAQ10({ answers, setAnswers, onNext, onBack }) {
+  const answeredCount = Object.keys(answers).length;
+  const allAnswered = answeredCount === AQ10_QUESTIONS.length;
+
+  const handleSelect = (qId, opt) => {
+    setAnswers((prev) => ({ ...prev, [qId]: opt }));
+  };
+
   return (
     <section aria-labelledby="aq10-heading">
-      <h2 id="aq10-heading" style={{ fontSize: '1.125rem', fontWeight: 600, color: 'var(--color-neutral-900)', margin: '0 0 12px' }}>
-        AQ-10 Questionnaire
-      </h2>
-      <p style={{ fontSize: '14px', color: 'var(--color-neutral-400)', lineHeight: 1.7 }}>
-        Questionnaire step — coming soon.
-      </p>
-      <div style={{ display: 'flex', gap: '10px', marginTop: '24px' }}>
-        <button onClick={onBack}  style={secondaryBtn}>← Back</button>
-        <button onClick={onNext}  style={primaryBtn}>Continue →</button>
+      <div style={{ marginBottom: '24px' }}>
+        <h2 id="aq10-heading" style={{
+          fontSize: '1.125rem', fontWeight: 600,
+          color: 'var(--color-neutral-900)', margin: '0 0 6px',
+          letterSpacing: '-0.015em',
+        }}>
+          AQ-10 Screening Questionnaire
+        </h2>
+        <p style={{ fontSize: '14px', color: 'var(--color-neutral-500)', lineHeight: 1.7, margin: 0 }}>
+          For each statement, select the option that best describes you.
+          There are no right or wrong answers. Take as long as you need.
+        </p>
+      </div>
+
+      {/* Question cards */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        {AQ10_QUESTIONS.map((q) => (
+          <AQ10Card
+            key={q.id}
+            q={q}
+            selectedAnswer={answers[q.id] ?? null}
+            onSelect={handleSelect}
+          />
+        ))}
+      </div>
+
+      {/* Nav buttons */}
+      <div style={{ marginTop: '28px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <button onClick={onBack} style={secondaryBtn}>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
+          </svg>
+          Back
+        </button>
+        <button
+          id="aq10-continue-btn"
+          onClick={onNext}
+          disabled={!allAnswered}
+          style={{
+            ...primaryBtn,
+            background: allAnswered ? primaryBtn.background : 'var(--color-neutral-200)',
+            color: allAnswered ? '#fff' : 'var(--color-neutral-400)',
+            cursor: allAnswered ? 'pointer' : 'not-allowed',
+            boxShadow: allAnswered ? primaryBtn.boxShadow : 'none',
+          }}
+        >
+          Continue
+          <span style={{
+            fontFamily: 'var(--font-mono)',
+            fontSize: '12px',
+            fontWeight: 600,
+            opacity: 0.85,
+          }}>
+            ({answeredCount}/{AQ10_QUESTIONS.length} answered)
+          </span>
+        </button>
       </div>
     </section>
   );
@@ -538,43 +801,112 @@ function StepReview({ onBack }) {
 }
 
 /* ─────────────────────────────────────────────────────────────
-   Shared placeholder button styles
+   Shared button styles
 ───────────────────────────────────────────────────────────── */
 const primaryBtn = {
-  height: '40px', padding: '0 24px', borderRadius: '10px', border: 'none',
+  height: '42px', padding: '0 24px', borderRadius: '10px', border: 'none',
   background: 'linear-gradient(135deg, #7C9A85, #5E7A67)',
   color: '#fff', fontSize: '14px', fontWeight: 600,
   cursor: 'pointer', fontFamily: 'inherit',
   boxShadow: '0 4px 14px rgba(94,122,103,0.25)',
+  display: 'flex', alignItems: 'center', gap: '8px',
 };
 const secondaryBtn = {
-  height: '40px', padding: '0 20px', borderRadius: '10px',
+  height: '42px', padding: '0 20px', borderRadius: '10px',
   border: '1.5px solid var(--color-neutral-200)',
   backgroundColor: 'transparent', color: 'var(--color-neutral-600)',
   fontSize: '14px', fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit',
+  display: 'flex', alignItems: 'center', gap: '6px',
+};
+
+/* ─────────────────────────────────────────────────────────────
+   AQ-10 questions — per Allison et al. (2012)
+───────────────────────────────────────────────────────────── */
+const AQ10_QUESTIONS = [
+  { id: 'A1',  text: 'I often notice small sounds when others do not.',                              asdTrait: true  },
+  { id: 'A2',  text: 'I usually concentrate more on the whole picture, rather than small details.',   asdTrait: false },
+  { id: 'A3',  text: 'I find it easy to do more than one thing at once.',                             asdTrait: false },
+  { id: 'A4',  text: 'If there is an interruption, I can switch back to what I was doing quickly.',   asdTrait: false },
+  { id: 'A5',  text: 'I find it easy to read between the lines when someone is talking to me.',       asdTrait: false },
+  { id: 'A6',  text: 'I know how to tell if someone listening to me is getting bored.',               asdTrait: false },
+  { id: 'A7',  text: 'When reading a story, I find it difficult to work out the characters\' intentions.', asdTrait: true },
+  { id: 'A8',  text: 'I like to collect information about categories of things.',                     asdTrait: true  },
+  { id: 'A9',  text: 'I find it easy to work out what someone is thinking just by looking at their face.', asdTrait: false },
+  { id: 'A10', text: 'I find it difficult to work out people\'s intentions.',                         asdTrait: true  },
+];
+
+const ANSWER_OPTIONS = [
+  'Definitely agree',
+  'Slightly agree',
+  'Slightly disagree',
+  'Definitely disagree',
+];
+
+/* ─────────────────────────────────────────────────────────────
+   Shared field styles
+───────────────────────────────────────────────────────────── */
+const fieldBase = {
+  width: '100%',
+  height: '42px',
+  padding: '10px 14px',
+  border: '1px solid var(--color-secondary-light)',
+  borderRadius: '8px',
+  backgroundColor: '#fff',
+  fontFamily: 'var(--font-body)',
+  fontSize: '14px',
+  color: 'var(--color-neutral-800)',
+  outline: 'none',
+  boxSizing: 'border-box',
+};
+const fieldFocus = {
+  borderColor: 'var(--color-primary)',
+  boxShadow: '0 0 0 3px rgba(124,154,133,0.12)',
+};
+const labelStyle = {
+  display: 'block',
+  fontSize: '13px',
+  fontWeight: 600,
+  color: 'var(--color-neutral-700)',
+  marginBottom: '6px',
+};
+
+
+/* ─────────────────────────────────────────────────────────────
+   Default demographics state
+───────────────────────────────────────────────────────────── */
+const DEMO_INIT = {
+  name: '',
+  age: '',
+  gender: '',
+  ethnicity: '',
+  jaundice: '',
+  familyAsd: '',
 };
 
 /* ─────────────────────────────────────────────────────────────
    Root Screening wizard — step router
+   State is lifted here so navigating Back preserves all data.
 ───────────────────────────────────────────────────────────── */
 export default function Screening() {
-  const [step, setStep] = useState(0);
+  const [step, setStep]       = useState(0);
+  const [demo, setDemo]       = useState(DEMO_INIT);
+  const [answers, setAnswers] = useState({});  /* keyed A1–A10 */
 
   const goNext = () => setStep((s) => Math.min(s + 1, STEPS.length - 1));
   const goBack = () => setStep((s) => Math.max(s - 1, 0));
 
   const STEP_COMPONENTS = [
-    <StepConsent     key={0} onNext={goNext} />,
-    <StepDemographics key={1} onNext={goNext} onBack={goBack} />,
-    <StepAQ10        key={2} onNext={goNext} onBack={goBack} />,
-    <StepReview      key={3} onBack={goBack} />,
+    <StepConsent      key={0} onNext={goNext} />,
+    <StepDemographics key={1} demo={demo} setDemo={setDemo} onNext={goNext} onBack={goBack} />,
+    <StepAQ10         key={2} answers={answers} setAnswers={setAnswers} onNext={goNext} onBack={goBack} />,
+    <StepReview       key={3} onBack={goBack} />,
   ];
 
   return (
     <main
       id="screening-wizard"
       style={{
-        maxWidth: '680px',
+        maxWidth: '720px',
         margin: '0 auto',
         display: 'flex',
         flexDirection: 'column',
