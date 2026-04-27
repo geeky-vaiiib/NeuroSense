@@ -1,0 +1,157 @@
+{
+  "NS-2024-001": {
+    "id": "NS-2024-001",
+    "patientName": "Jordan A.",
+    "age": 34,
+    "gender": "Non-binary",
+    "riskLevel": "High",
+    "riskScore": 0.87,
+    "aq10Score": 8,
+    "screeningDate": "2024-11-14",
+    "status": "reviewed",
+    "diagnosis": "ASD — Confirmed",
+    "demo": {
+      "age": 34,
+      "gender": "Non-binary",
+      "jaundice": "No",
+      "familyAsd": "No",
+      "ethnicity": "South Asian"
+    },
+    "answers": {
+      "A1": "Definitely agree",
+      "A2": "Slightly agree",
+      "A3": "Slightly disagree",
+      "A4": "Definitely disagree",
+      "A5": "Definitely disagree",
+      "A6": "Slightly disagree",
+      "A7": "Definitely agree",
+      "A8": "Definitely agree",
+      "A9": "Slightly disagree",
+      "A10": "Definitely agree"
+    }
+  },
+  "NS-2024-002": {
+    "id": "NS-2024-002",
+    "patientName": "Sam T.",
+    "age": 28,
+    "gender": "Male",
+    "riskLevel": "Moderate",
+    "riskScore": 0.63,
+    "aq10Score": 5,
+    "screeningDate": "2024-11-13",
+    "status": "pending-review",
+    "diagnosis": "ADHD-Combined — Probable",
+    "demo": {
+      "age": 28,
+      "gender": "Male",
+      "jaundice": "No",
+      "familyAsd": "No",
+      "ethnicity": "South Asian"
+    },
+    "answers": {
+      "A1": "Definitely agree",
+      "A2": "Slightly agree",
+      "A3": "Slightly agree",
+      "A4": "Slightly disagree",
+      "A5": "Slightly agree",
+      "A6": "Slightly agree",
+      "A7": "Slightly agree",
+      "A8": "Definitely agree",
+      "A9": "Slightly agree",
+      "A10": "Slightly disagree"
+    }
+  },
+  "NS-2024-003": {
+    "id": "NS-2024-003",
+    "patientName": "Riley M.",
+    "age": 22,
+    "gender": "Female",
+    "riskLevel": "Moderate",
+    "riskScore": 0.58,
+    "aq10Score": 4,
+    "screeningDate": "2024-11-11",
+    "status": "reviewed",
+    "diagnosis": "Dyslexia — Confirmed",
+    "demo": {
+      "age": 22,
+      "gender": "Female",
+      "jaundice": "No",
+      "familyAsd": "No",
+      "ethnicity": "White-Caucasian"
+    },
+    "answers": {
+      "A1": "Slightly agree",
+      "A2": "Slightly agree",
+      "A3": "Slightly agree",
+      "A4": "Slightly agree",
+      "A5": "Slightly disagree",
+      "A6": "Slightly agree",
+      "A7": "Definitely agree",
+      "A8": "Slightly disagree",
+      "A9": "Slightly agree",
+      "A10": "Slightly agree"
+    }
+  },
+  "NS-2024-004": {
+    "id": "NS-2024-004",
+    "patientName": "Alex K.",
+    "age": 41,
+    "gender": "Male",
+    "riskLevel": "Low",
+    "riskScore": 0.18,
+    "aq10Score": 2,
+    "screeningDate": "2024-11-07",
+    "status": "closed",
+    "diagnosis": "Low Risk — No Diagnosis",
+    "demo": {
+      "age": 41,
+      "gender": "Male",
+      "jaundice": "No",
+      "familyAsd": "No",
+      "ethnicity": "White-Caucasian"
+    },
+    "answers": {
+      "A1": "Slightly disagree",
+      "A2": "Slightly agree",
+      "A3": "Definitely agree",
+      "A4": "Definitely agree",
+      "A5": "Slightly agree",
+      "A6": "Definitely agree",
+      "A7": "Slightly disagree",
+      "A8": "Slightly agree",
+      "A9": "Slightly agree",
+      "A10": "Slightly disagree"
+    }
+  },
+  "NS-2024-005": {
+    "id": "NS-2024-005",
+    "patientName": "Morgan L.",
+    "age": 19,
+    "gender": "Female",
+    "riskLevel": "High",
+    "riskScore": 0.91,
+    "aq10Score": 9,
+    "screeningDate": "2024-11-17",
+    "status": "in-progress",
+    "diagnosis": "ASD + ADHD — Under Review",
+    "demo": {
+      "age": 19,
+      "gender": "Female",
+      "jaundice": "Yes",
+      "familyAsd": "Yes",
+      "ethnicity": "White-Caucasian"
+    },
+    "answers": {
+      "A1": "Definitely agree",
+      "A2": "Definitely disagree",
+      "A3": "Definitely disagree",
+      "A4": "Definitely disagree",
+      "A5": "Definitely disagree",
+      "A6": "Slightly disagree",
+      "A7": "Definitely agree",
+      "A8": "Definitely agree",
+      "A9": "Definitely disagree",
+      "A10": "Definitely agree"
+    }
+  }
+}

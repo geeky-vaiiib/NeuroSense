@@ -98,15 +98,47 @@ class CaseOut(BaseModel):
     model_config = {"populate_by_name": True}
 
 
-class ShapFeature(BaseModel):
+class ShapFeatureOut(BaseModel):
     """Single SHAP feature contribution."""
-    name: str
-    value: float
+    feature: str
+    shap_value: float = Field(..., alias="shapValue")
     direction: str  # "positive" or "negative"
 
+    model_config = {"populate_by_name": True}
+
+
+class LimeFeatureOut(BaseModel):
+    """Single LIME feature explanation."""
+    feature: str
+    weight: float
+    direction: str  # "positive" or "negative"
+    plain_english: str = Field(..., alias="plainEnglish")
+
+    model_config = {"populate_by_name": True}
+
+
+class CombinedExplainResponse(BaseModel):
+    """
+    Combined SHAP + LIME explanation for a screened case.
+    Returned by GET /explain/{caseId}.
+    """
+    case_id: str = Field(..., alias="caseId")
+    shap: list[ShapFeatureOut]
+    lime: list[LimeFeatureOut]
+    summary: str = Field(..., description="Plain-language overall explanation")
+
+    model_config = {"populate_by_name": True}
+
+
+# ── Kept for backwards compatibility ──────────────────────────────
+class ShapFeature(BaseModel):
+    """Legacy SHAP feature model."""
+    name: str
+    value: float
+    direction: str
 
 class ExplainResponse(BaseModel):
-    """SHAP explanation response."""
+    """Legacy explain response — use CombinedExplainResponse instead."""
     case_id: str = Field(..., alias="caseId")
     base_value: float = Field(..., alias="baseValue")
     output_value: float = Field(..., alias="outputValue")
@@ -122,3 +154,4 @@ class HealthResponse(BaseModel):
     version: str = "1.0.0"
 
     model_config = {"populate_by_name": True}
+

@@ -1,10 +1,15 @@
 """
 ml/shap_engine.py — Compute SHAP values for model explainability.
 
-Provides feature-importance explanations for each screening prediction.
+Provides:
+  compute_shap(model, X_instance, feature_names) → top 8 features
+    - Uses TreeExplainer for XGBoost / GradientBoosting
+    - Uses KernelExplainer as fallback for AdaBoost (no native tree path)
+    - Returns list of {feature, shap_value, direction} sorted by |shap_value| desc
 """
 
 import numpy as np
+from typing import Optional
 
 # Feature names matching the training pipeline order
 FEATURE_NAMES = [
@@ -13,91 +18,108 @@ FEATURE_NAMES = [
     "Age", "Gender", "Jaundice", "Family_ASD", "Ethnicity",
 ]
 
+# How many features to return
+TOP_K = 8
 
-def compute_shap_values(model_bundle: dict, X: np.ndarray) -> dict:
+
+def compute_shap(
+    model,
+    X_instance: np.ndarray,
+    feature_names: Optional[list] = None,
+) -> list[dict]:
     """
     Compute SHAP values for a single prediction.
 
     Args:
-        model_bundle: { 'model': clf, 'encoders': {...} }
-        X:            feature array of shape (1, 15)
+        model:          trained sklearn/xgboost classifier (or None for mock)
+        X_instance:     feature array of shape (1, n_features)
+        feature_names:  list of feature name strings
 
     Returns:
-        {
-          'base_value': float,
-          'output_value': float,
-          'features': [ { name, value, direction }, ... ]
-        }
+        List of top 8 dicts: { feature, shap_value, direction }
+        sorted by absolute shap_value descending.
     """
-    clf = model_bundle.get("model")
+    if feature_names is None:
+        feature_names = FEATURE_NAMES
 
-    if clf is None:
-        # Mock SHAP values when no model is loaded
-        return _mock_shap(X)
+    if model is None:
+        return _mock_shap(X_instance, feature_names)
 
     try:
-        import shap
-        explainer = shap.TreeExplainer(clf)
-        shap_values = explainer.shap_values(X)
-
-        # For binary classifiers, shap_values may be a list of two arrays
-        if isinstance(shap_values, list):
-            sv = shap_values[1]  # positive class
-        else:
-            sv = shap_values
-
-        base_val = float(explainer.expected_value
-                         if not isinstance(explainer.expected_value, (list, np.ndarray))
-                         else explainer.expected_value[1])
-
-        features = []
-        for i, name in enumerate(FEATURE_NAMES):
-            val = float(sv[0][i])
-            features.append({
-                "name": name,
-                "value": round(abs(val), 4),
-                "direction": "positive" if val > 0 else "negative",
-            })
-
-        # Sort by absolute value descending
-        features.sort(key=lambda f: f["value"], reverse=True)
-
-        output_val = base_val + float(sv[0].sum())
-
-        return {
-            "base_value": round(base_val, 4),
-            "output_value": round(output_val, 4),
-            "features": features,
-        }
-
+        return _real_shap(model, X_instance, feature_names)
     except Exception as e:
         print(f"[NeuroSense] SHAP computation failed: {e}")
-        return _mock_shap(X)
+        return _mock_shap(X_instance, feature_names)
 
 
-def _mock_shap(X: np.ndarray) -> dict:
-    """Generate plausible mock SHAP values for demo purposes."""
-    # Use the actual feature values to create proportional mock importances
-    vals = X.flatten()[:len(FEATURE_NAMES)]
-    total = max(float(np.abs(vals).sum()), 1.0)
+def _real_shap(model, X_instance: np.ndarray, feature_names: list) -> list[dict]:
+    """Run SHAP with the appropriate explainer for the model type."""
+    import shap
 
-    features = []
-    for i, name in enumerate(FEATURE_NAMES):
-        v = float(vals[i]) if i < len(vals) else 0.0
-        importance = round(abs(v) / total * 0.8, 4)  # scale to ~0.8 total
-        features.append({
-            "name": name,
-            "value": importance,
-            "direction": "positive" if v > 0.5 else "negative",
+    model_type = type(model).__name__
+
+    # Pick explainer based on model type
+    if model_type in ("XGBClassifier", "GradientBoostingClassifier"):
+        explainer = shap.TreeExplainer(model)
+    elif model_type == "AdaBoostClassifier":
+        # AdaBoost doesn't have native tree-path support in SHAP.
+        # Use KernelExplainer with a small background summary.
+        background = shap.sample(X_instance, min(10, X_instance.shape[0]))
+        explainer = shap.KernelExplainer(model.predict_proba, background)
+    else:
+        # Generic fallback — try TreeExplainer first
+        try:
+            explainer = shap.TreeExplainer(model)
+        except Exception:
+            background = shap.sample(X_instance, min(10, X_instance.shape[0]))
+            explainer = shap.KernelExplainer(model.predict_proba, background)
+
+    shap_values = explainer.shap_values(X_instance)
+
+    # For binary classifiers, shap_values may be [neg_class, pos_class]
+    if isinstance(shap_values, list):
+        sv = shap_values[1]  # positive class
+    else:
+        sv = shap_values
+
+    # Build result list
+    results = []
+    for i, name in enumerate(feature_names):
+        if i >= sv.shape[1]:
+            break
+        val = float(sv[0][i])
+        results.append({
+            "feature": name,
+            "shap_value": round(val, 4),
+            "direction": "positive" if val > 0 else "negative",
         })
 
-    features.sort(key=lambda f: f["value"], reverse=True)
+    # Sort by absolute value descending, keep top K
+    results.sort(key=lambda r: abs(r["shap_value"]), reverse=True)
+    return results[:TOP_K]
 
-    return {
-        "base_value": 0.15,
-        "output_value": round(0.15 + sum(
-            f["value"] * (1 if f["direction"] == "positive" else -1)
-            for f in features
-        ), 4),
-        "features": features,
-    }
+
+def _mock_shap(X_instance: np.ndarray, feature_names: list) -> list[dict]:
+    """
+    Generate plausible mock SHAP values when no model is available.
+    Uses actual feature values to produce proportional importances.
+    """
+    vals = X_instance.flatten()
+    total = max(float(np.abs(vals).sum()), 1.0)
+
+    results = []
+    for i, name in enumerate(feature_names):
+        v = float(vals[i]) if i < len(vals) else 0.0
+        # Scale so total absolute SHAP is ~0.7
+        shap_val = round((v / total) * 0.7, 4) if total > 0 else 0.0
+        # Add a small random-ish perturbation from feature index to vary signs
+        if v <= 0 and i % 3 == 0:
+            shap_val = -abs(shap_val)
+        results.append({
+            "feature": name,
+            "shap_value": shap_val,
+            "direction": "positive" if shap_val > 0 else "negative",
+        })
+
+    results.sort(key=lambda r: abs(r["shap_value"]), reverse=True)
+    return results[:TOP_K]
