@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
 import { useShap } from '../hooks/useShap';
 import { MOCK_CASES } from '../data/mockData';
 import RiskBadge from '../components/RiskBadge';
@@ -125,9 +126,19 @@ function ShapBarChart({ features, maxVal }) {
 }
 
 export default function Results() {
+  const { caseId: paramCaseId } = useParams();
   const { fetchExplanation, explanations, loading, getSortedFeatures } = useShap();
-  const [selectedCaseId, setSelectedCaseId] = useState(MOCK_CASES[0].id);
+
+  // URL param takes priority; falls back to first case when on /results
+  const [selectedCaseId, setSelectedCaseId] = useState(
+    paramCaseId ?? MOCK_CASES[0].id
+  );
   const [modalOpen, setModalOpen] = useState(false);
+
+  // Sync with URL param when navigating directly to /results/:caseId
+  useEffect(() => {
+    if (paramCaseId) setSelectedCaseId(paramCaseId);
+  }, [paramCaseId]);
 
   useEffect(() => {
     fetchExplanation(selectedCaseId);

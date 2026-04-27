@@ -1,111 +1,388 @@
-:root {
-  --text: #6b6375;
-  --text-h: #08060d;
-  --bg: #fff;
-  --border: #e5e4e7;
-  --code-bg: #f4f3ec;
-  --accent: #aa3bff;
-  --accent-bg: rgba(170, 59, 255, 0.1);
-  --accent-border: rgba(170, 59, 255, 0.5);
-  --social-bg: rgba(244, 243, 236, 0.5);
-  --shadow:
-    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
+/* ============================================================
+   NeuroSense — index.css
+   Global reset · base styles · layout primitives
+   ============================================================ */
 
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --mono: ui-monospace, Consolas, monospace;
+@import './styles/tokens.css';
 
-  font: 18px/145% var(--sans);
-  letter-spacing: 0.18px;
-  color-scheme: light dark;
-  color: var(--text);
-  background: var(--bg);
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-
-  @media (max-width: 1024px) {
-    font-size: 16px;
-  }
+/* ── 1. Box-model reset ───────────────────────────────────── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text: #9ca3af;
-    --text-h: #f3f4f6;
-    --bg: #16171d;
-    --border: #2e303a;
-    --code-bg: #1f2028;
-    --accent: #c084fc;
-    --accent-bg: rgba(192, 132, 252, 0.15);
-    --accent-border: rgba(192, 132, 252, 0.5);
-    --social-bg: rgba(47, 48, 58, 0.5);
-    --shadow:
-      rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
-  }
+/* ── 2. Root & document ──────────────────────────────────── */
+html {
+  font-size: 16px;
+  /* Smooth scroll — disabled when user prefers reduced motion */
+  scroll-behavior: smooth;
 
-  #social .button-icon {
-    filter: invert(1) brightness(2);
-  }
+  /* Font rendering */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
-  margin: 0;
+  font-family: var(--font-body);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-normal);
+  line-height: var(--line-height-normal);
+  color: var(--color-neutral-800);
+  background-color: var(--color-bg);
+  min-height: 100dvh;
+  min-height: 100vh; /* fallback */
+  overflow-x: hidden;
 }
 
-#root {
-  width: 1126px;
+/* ── 3. prefers-reduced-motion ───────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ── 4. Typography baseline ─────────────────────────────── */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-body);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-tight);
+  letter-spacing: var(--letter-spacing-tight);
+  color: var(--color-neutral-900);
+}
+
+h1 { font-size: var(--font-size-3xl); }
+h2 { font-size: var(--font-size-2xl); }
+h3 { font-size: var(--font-size-xl); }
+h4 { font-size: var(--font-size-lg); }
+h5 { font-size: var(--font-size-md); }
+h6 { font-size: var(--font-size-base); }
+
+p {
+  line-height: var(--line-height-relaxed);
+  color: var(--color-neutral-700);
+}
+
+a {
+  color: var(--color-primary-dark);
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+a:hover { color: var(--color-primary); }
+
+/* ── 5. Interactive element resets ──────────────────────── */
+button {
+  cursor: pointer;
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  border: none;
+  background: none;
+  color: inherit;
+  line-height: inherit;
+}
+button:disabled { cursor: not-allowed; }
+
+input,
+textarea,
+select {
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+  outline: none;
+  border: none;
+  background: none;
+}
+
+/* ── 6. Media defaults ──────────────────────────────────── */
+img,
+svg,
+video,
+canvas {
+  display: block;
   max-width: 100%;
-  margin: 0 auto;
-  text-align: center;
-  border-inline: 1px solid var(--border);
-  min-height: 100svh;
+}
+
+/* ── 7. List resets ─────────────────────────────────────── */
+ul,
+ol {
+  list-style: none;
+}
+
+/* ── 8. Code / mono ────────────────────────────────────── */
+code, kbd, samp, pre {
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+}
+
+/* ── 9. Focus ring ─────────────────────────────────────── */
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* ── 10. Scrollbar (webkit) ─────────────────────────────── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-neutral-300);
+  border-radius: var(--radius-full);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-neutral-400);
+}
+
+/* ── 11. Root / app shell ───────────────────────────────── */
+#root {
+  display: flex;
+  min-height: 100dvh;
+  min-height: 100vh;
+}
+
+/* App shell — sidebar + main split */
+.ns-layout {
+  display: flex;
+  width: 100%;
+  min-height: 100vh;
+}
+
+/* Sidebar occupies fixed 240px column */
+.ns-sidebar {
+  width: var(--sidebar-width);       /* 240px from tokens */
+  min-width: var(--sidebar-width);
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background-color: var(--color-bg-sidebar);
+  border-right: 1px solid var(--color-neutral-200);
   display: flex;
   flex-direction: column;
-  box-sizing: border-box;
+  z-index: var(--z-sticky);
 }
 
-h1,
-h2 {
-  font-family: var(--heading);
-  font-weight: 500;
-  color: var(--text-h);
+/* Main scrollable column */
+.ns-main {
+  flex: 1;
+  min-width: 0;                     /* prevent flex blowout */
+  display: flex;
+  flex-direction: column;
+  background-color: var(--color-bg);
+  overflow-y: auto;
+  height: 100vh;
 }
 
-h1 {
-  font-size: 56px;
-  letter-spacing: -1.68px;
-  margin: 32px 0;
-  @media (max-width: 1024px) {
-    font-size: 36px;
-    margin: 20px 0;
-  }
-}
-h2 {
-  font-size: 24px;
-  line-height: 118%;
-  letter-spacing: -0.24px;
-  margin: 0 0 8px;
-  @media (max-width: 1024px) {
-    font-size: 20px;
-  }
-}
-p {
-  margin: 0;
+/* Inner page content padding */
+.ns-page {
+  flex: 1;
+  padding: 32px 36px;
+  max-width: var(--content-max-width);
+  width: 100%;
 }
 
-code,
-.counter {
-  font-family: var(--mono);
+/* ── 12. Utility classes ────────────────────────────────── */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+.mono    { font-family: var(--font-mono); }
+.truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ============================================================
+   Sidebar component styles (.ns-sb-*)
+   All sidebar-specific rules live here so the JSX stays clean.
+   ============================================================ */
+
+/* ── Brand / logo strip ──────────────────────────────────── */
+.ns-sb-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 20px 18px 18px;
+  flex-shrink: 0;
+}
+
+/* Green square logomark */
+.ns-sb-logomark {
   display: inline-flex;
-  border-radius: 4px;
-  color: var(--text-h);
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: linear-gradient(
+    140deg,
+    var(--color-primary)      0%,
+    var(--color-primary-dark) 100%
+  );
+  color: #fff;
+  font-family: var(--font-body);
+  font-size: 1rem;
+  font-weight: var(--font-weight-bold);
+  letter-spacing: -0.02em;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(124, 154, 133, 0.35);
+  user-select: none;
 }
 
-code {
-  font-size: 15px;
-  line-height: 135%;
-  padding: 4px 8px;
-  background: var(--code-bg);
+.ns-sb-brand-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.ns-sb-app-name {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-neutral-900);
+  letter-spacing: var(--letter-spacing-tight);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ns-sb-app-sub {
+  font-size: var(--font-size-xs);
+  color: var(--color-neutral-400);
+  white-space: nowrap;
+  letter-spacing: 0.01em;
+}
+
+/* ── Horizontal rule divider ─────────────────────────────── */
+.ns-sb-divider {
+  height: 1px;
+  background-color: var(--color-neutral-200);
+  flex-shrink: 0;
+  margin: 0 12px;
+}
+
+/* ── Navigation list ─────────────────────────────────────── */
+.ns-sb-nav {
+  flex: 1;
+  padding: 12px 8px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.ns-sb-nav ul {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* ── Nav link — base ─────────────────────────────────────── */
+.ns-sb-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-neutral-600);
+  text-decoration: none;
+  white-space: nowrap;
+  overflow: hidden;
+
+  /* Left border slot — invisible by default, takes up space so layout
+     doesn't shift when the active border appears */
+  border-left: 2.5px solid transparent;
+
+  /* Smooth color/bg transition */
+  transition:
+    color            var(--transition-fast),
+    background-color var(--transition-fast),
+    border-color     var(--transition-fast);
+}
+
+/* Hover state */
+.ns-sb-link:hover {
+  color: var(--color-neutral-800);
+  background-color: var(--color-neutral-100);
+}
+
+/* ── Nav link — active ───────────────────────────────────── */
+/*
+  Active = left border in sage (#7C9A85) +
+           sage-tinted background (8% opacity)
+*/
+.ns-sb-link--active {
+  color: var(--color-primary-dark);
+  background-color: var(--color-primary-subtle);   /* rgba(124,154,133,0.08) */
+  border-left-color: var(--color-primary);         /* #7C9A85 — sage */
+  font-weight: var(--font-weight-semibold);
+}
+
+.ns-sb-link--active:hover {
+  background-color: var(--color-primary-muted);    /* slightly stronger on hover */
+}
+
+/* ── Link icon ───────────────────────────────────────────── */
+.ns-sb-link-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  /* Inherit color from parent link */
+  color: inherit;
+  transition: color var(--transition-fast);
+}
+
+/* Active icon — sage accent */
+.ns-sb-link--active .ns-sb-link-icon {
+  color: var(--color-primary);
+}
+
+/* ── Link label ──────────────────────────────────────────── */
+.ns-sb-link-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Compliance footer strip ─────────────────────────────── */
+.ns-sb-footer {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 12px 18px 14px;
+  flex-shrink: 0;
+
+  font-size: var(--font-size-xs);          /* 11px */
+  color: var(--color-neutral-400);
+  line-height: var(--line-height-snug);
+  letter-spacing: 0.01em;
 }
