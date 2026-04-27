@@ -98,4 +98,21 @@ export const analyticsApi = {
   dashboard: () => api.get('/analytics/dashboard'),
 };
 
+/* ── Mock: submitScreening ───────────────────────────────── */
+/**
+ * Simulates submitting the completed screening wizard to the backend.
+ * Returns a fake case ID after a 1.5-second delay.
+ * Replace with a real POST when the FastAPI endpoint is ready.
+ *
+ * @param {Object} formData - { demo, answers, aq10Score }
+ * @returns {Promise<{ caseId: string, status: string }>}
+ */
+export async function submitScreening(formData) {
+  await new Promise((resolve) => setTimeout(resolve, 1500));
+  return {
+    caseId: 'NS-0042',
+    status: 'processing',
+  };
+}
+
 export default api;
