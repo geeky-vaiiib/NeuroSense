@@ -112,7 +112,7 @@ export default function Landing() {
   const [hovWho, setHovWho]   = useState(null);
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: 'var(--color-bg)', fontFamily: 'var(--font-body)', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ minHeight: '100vh', width: '100%', backgroundColor: 'var(--color-bg)', fontFamily: 'var(--font-body)', display: 'flex', flexDirection: 'column' }}>
 
       {/* ── Navbar ──────────────────────────────────────────── */}
       <nav style={{

@@ -150,6 +150,8 @@ code, kbd, samp, pre {
 /* ── 11. Root / app shell ───────────────────────────────── */
 #root {
   display: flex;
+  flex-direction: column;
+  width: 100%;
   min-height: 100dvh;
   min-height: 100vh;
 }
