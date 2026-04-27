@@ -7,11 +7,11 @@ import React, { useState } from 'react';
 import { useLocation } from 'react-router-dom';
 
 const PAGE_TITLES = {
-  '/': { title: 'Dashboard', subtitle: 'Overview of clinical activity' },
-  '/screening': { title: 'Screening', subtitle: 'Administer and manage assessments' },
-  '/results': { title: 'Results', subtitle: 'Review SHAP-explained outcomes' },
-  '/cases': { title: 'Cases', subtitle: 'Patient case management' },
-  '/settings': { title: 'Settings', subtitle: 'Preferences and configuration' },
+  '/app':              { title: 'Dashboard',  subtitle: 'Overview of clinical activity' },
+  '/app/screening':    { title: 'Screening',  subtitle: 'Administer and manage assessments' },
+  '/app/results':      { title: 'Results',    subtitle: 'Review SHAP-explained outcomes' },
+  '/app/cases':        { title: 'Cases',      subtitle: 'Patient case management' },
+  '/app/settings':     { title: 'Settings',   subtitle: 'Preferences and configuration' },
 };
 
 const styles = {
@@ -100,7 +100,11 @@ const styles = {
 
 export default function Navbar() {
   const { pathname } = useLocation();
-  const page = PAGE_TITLES[pathname] || { title: 'NeuroSense', subtitle: '' };
+  // Match exact first, then by prefix for parameterised routes like /app/results/:id
+  const page =
+    PAGE_TITLES[pathname] ||
+    Object.entries(PAGE_TITLES).find(([key]) => pathname.startsWith(key + '/'))?.[1] ||
+    { title: 'NeuroSense', subtitle: '' };
   const [searchFocused, setSearchFocused] = useState(false);
 
   return (

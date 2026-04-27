@@ -1,221 +1,345 @@
 /**
- * Dashboard.jsx
- * Overview page — stats, recent cases, activity summary.
+ * Dashboard.jsx — Redesigned with rich cards, activity feed, risk distribution, quick actions.
  */
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 
-import React from 'react';
-import { Link } from 'react-router-dom';
-import StatCard from '../components/StatCard';
+import { useAuth } from '../context/AuthContext';
 import RiskBadge from '../components/RiskBadge';
 import { MOCK_CASES, DASHBOARD_STATS } from '../data/mockData';
 
-const styles = {
-  page: { display: 'flex', flexDirection: 'column', gap: 'var(--space-8)' },
-  statsGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-    gap: 'var(--space-5)',
-  },
-  section: { display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' },
-  sectionHeader: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  sectionTitle: {
-    fontSize: 'var(--font-size-lg)',
-    fontWeight: 'var(--font-weight-semibold)',
-    color: 'var(--color-neutral-900)',
-  },
-  viewAll: {
-    fontSize: 'var(--font-size-sm)',
-    color: 'var(--color-primary)',
-    textDecoration: 'none',
-    fontWeight: 'var(--font-weight-medium)',
-  },
-  caseTable: {
-    backgroundColor: 'var(--color-bg-card)',
-    border: '1px solid var(--color-neutral-200)',
-    borderRadius: 'var(--radius-xl)',
-    overflow: 'hidden',
-    boxShadow: 'var(--shadow-sm)',
-  },
-  tableRow: {
-    display: 'grid',
-    gridTemplateColumns: '1fr 120px 140px 140px 100px',
-    alignItems: 'center',
-    padding: 'var(--space-4) var(--space-6)',
-    borderBottom: '1px solid var(--color-neutral-100)',
-    gap: 'var(--space-4)',
-    transition: 'background-color var(--transition-fast)',
-  },
-  tableHeader: {
-    fontSize: 'var(--font-size-xs)',
-    fontWeight: 'var(--font-weight-semibold)',
-    color: 'var(--color-neutral-400)',
-    letterSpacing: 'var(--letter-spacing-wider)',
-    textTransform: 'uppercase',
-    backgroundColor: 'var(--color-bg)',
-  },
-  caseId: {
-    fontFamily: 'var(--font-mono)',
-    fontSize: 'var(--font-size-xs)',
-    color: 'var(--color-neutral-500)',
-  },
-  patientName: {
-    fontSize: 'var(--font-size-sm)',
-    fontWeight: 'var(--font-weight-medium)',
-    color: 'var(--color-neutral-800)',
-  },
-  statusChip: (status) => {
-    const map = {
-      reviewed: { color: 'var(--color-risk-low)', bg: 'var(--color-risk-low-muted)' },
-      'pending-review': { color: 'var(--color-risk-moderate)', bg: 'var(--color-risk-moderate-muted)' },
-      'in-progress': { color: 'var(--color-primary)', bg: 'var(--color-primary-muted)' },
-      closed: { color: 'var(--color-neutral-500)', bg: 'var(--color-neutral-100)' },
-    };
-    const s = map[status] || map.closed;
-    return {
-      display: 'inline-block',
-      padding: '2px 10px',
-      borderRadius: 'var(--radius-full)',
-      fontSize: 'var(--font-size-xs)',
-      fontWeight: 'var(--font-weight-semibold)',
-      fontFamily: 'var(--font-mono)',
-      color: s.color,
-      backgroundColor: s.bg,
-      whiteSpace: 'nowrap',
-    };
-  },
+/* ── helpers ─────────────────────────────────────────────── */
+const GREETING = () => {
+  const h = new Date().getHours();
+  if (h < 12) return 'Good morning';
+  if (h < 17) return 'Good afternoon';
+  return 'Good evening';
 };
 
-const ICONS = {
-  total: (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" />
-      <path d="M23 21v-2a4 4 0 00-3-3.87" /><path d="M16 3.13a4 4 0 010 7.75" />
-    </svg>
-  ),
-  high: (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
-      <line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" />
-    </svg>
-  ),
-  pending: (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
-    </svg>
-  ),
-  completion: (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="9 11 12 14 22 4" /><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
-    </svg>
-  ),
+const TODAY = new Date().toLocaleDateString('en-IN', {
+  weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+});
+
+const STATUS_META = {
+  reviewed:       { label: 'Reviewed',       color: 'var(--color-risk-low)',      bg: 'var(--color-risk-low-muted)' },
+  'pending-review':{ label: 'Pending',        color: 'var(--color-risk-moderate)', bg: 'var(--color-risk-moderate-muted)' },
+  'in-progress':  { label: 'In Progress',     color: 'var(--color-primary)',       bg: 'var(--color-primary-muted)' },
+  closed:         { label: 'Closed',          color: 'var(--color-neutral-400)',   bg: 'var(--color-neutral-100)' },
 };
 
-const STATUS_LABELS = {
-  reviewed: 'Reviewed',
-  'pending-review': 'Pending Review',
-  'in-progress': 'In Progress',
-  closed: 'Closed',
+const ACTIVITY = [
+  { time: '09:41', actor: 'Dr. Mehta',  action: 'completed RAADS-R for',   subject: 'Morgan L.',  type: 'screen' },
+  { time: '09:18', actor: 'System',     action: 'flagged high-risk case',   subject: 'NS-2024-005',type: 'flag' },
+  { time: '08:55', actor: 'Dr. Torres', action: 'reviewed results for',     subject: 'Sam T.',     type: 'review' },
+  { time: '08:30', actor: 'Dr. Okafor', action: 'closed case',              subject: 'NS-2024-004',type: 'close' },
+  { time: 'Yesterday', actor: 'Dr. Mehta', action: 'added notes to',        subject: 'Jordan A.', type: 'note' },
+];
+
+const ACTIVITY_ICONS = {
+  screen: { icon: '📋', color: 'rgba(124,154,133,0.15)' },
+  flag:   { icon: '🚩', color: 'rgba(192,85,90,0.12)' },
+  review: { icon: '✅', color: 'rgba(94,122,103,0.12)' },
+  close:  { icon: '🔒', color: 'rgba(138,129,120,0.12)' },
+  note:   { icon: '📝', color: 'rgba(184,135,58,0.10)' },
 };
 
+const RISK_DIST = [
+  { label: 'High',     count: 31, color: 'var(--color-risk-high)',     pct: 22 },
+  { label: 'Moderate', count: 58, color: 'var(--color-risk-moderate)', pct: 41 },
+  { label: 'Low',      count: 53, color: 'var(--color-risk-low)',      pct: 37 },
+];
+
+/* ── StatCard ─────────────────────────────────────────────── */
+function Stat({ id, label, value, sub, icon, iconColor, iconBg, accent }) {
+  const [hov, setHov] = useState(false);
+  return (
+    <div
+      id={id}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      style={{
+        backgroundColor: 'var(--color-bg-card)',
+        border: '1px solid var(--color-neutral-200)',
+        borderRadius: '16px',
+        padding: '24px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '16px',
+        boxShadow: hov ? 'var(--shadow-md)' : 'var(--shadow-xs)',
+        transform: hov ? 'translateY(-2px)' : 'none',
+        transition: 'all 250ms cubic-bezier(.4,0,.2,1)',
+        position: 'relative',
+        overflow: 'hidden',
+      }}
+    >
+      {/* Accent top border */}
+      <div style={{
+        position: 'absolute', top: 0, left: 0, right: 0, height: '3px',
+        background: accent || 'linear-gradient(90deg, var(--color-primary), var(--color-primary-light))',
+        borderRadius: '16px 16px 0 0',
+      }} />
+
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+        <span style={{ fontSize: '0.8125rem', fontWeight: 500, color: 'var(--color-neutral-500)', letterSpacing: '0.01em' }}>{label}</span>
+        <span style={{
+          width: '36px', height: '36px', borderRadius: '10px',
+          backgroundColor: iconBg || 'var(--color-primary-subtle)',
+          color: iconColor || 'var(--color-primary)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+        }}>{icon}</span>
+      </div>
+
+      <div style={{ fontFamily: 'var(--font-mono)', fontSize: '2rem', fontWeight: 700, color: 'var(--color-neutral-900)', lineHeight: 1 }}>
+        {value}
+      </div>
+
+      {sub && (
+        <div style={{ fontSize: '0.75rem', color: 'var(--color-neutral-400)', fontFamily: 'var(--font-mono)' }}>
+          {sub}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── Component ───────────────────────────────────────────── */
 export default function Dashboard() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const recent = MOCK_CASES.slice(0, 5);
+  const [hovRow, setHovRow] = useState(null);
 
   return (
-    <main id="dashboard-page" style={styles.page}>
-      {/* Stats */}
-      <section aria-label="Summary statistics">
-        <div style={styles.statsGrid}>
-          <StatCard
-            id="stat-total-cases"
-            label="Total Cases"
-            value={DASHBOARD_STATS.totalCases}
-            icon={ICONS.total}
-            iconBg="var(--color-primary-subtle)"
-            iconColor="var(--color-primary)"
-            trend="up"
-            trendValue="+8"
-            trendLabel="this month"
-          />
-          <StatCard
-            id="stat-high-risk"
-            label="High Risk"
-            value={DASHBOARD_STATS.highRisk}
-            icon={ICONS.high}
-            iconBg="var(--color-risk-high-muted)"
-            iconColor="var(--color-risk-high)"
-            trend="up"
-            trendValue="+3"
-            trendLabel="vs last month"
-          />
-          <StatCard
-            id="stat-awaiting"
-            label="Awaiting Review"
-            value={DASHBOARD_STATS.awaitingReview}
-            icon={ICONS.pending}
-            iconBg="var(--color-risk-moderate-muted)"
-            iconColor="var(--color-risk-moderate)"
-            trend="down"
-            trendValue="-2"
-            trendLabel="vs last month"
-          />
-          <StatCard
-            id="stat-completion"
-            label="Completion Rate"
-            value={`${Math.round(DASHBOARD_STATS.completionRate * 100)}%`}
-            icon={ICONS.completion}
-            iconBg="var(--color-risk-low-muted)"
-            iconColor="var(--color-risk-low)"
-            trend="up"
-            trendValue="+2%"
-            trendLabel="vs last month"
-          />
+    <main id="dashboard-page" style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
+
+      {/* ── Welcome strip ───────────────────────────────── */}
+      <section style={{
+        background: 'linear-gradient(135deg, var(--color-primary-dark) 0%, var(--color-primary) 100%)',
+        borderRadius: '16px',
+        padding: '28px 32px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: '16px',
+        flexWrap: 'wrap',
+        boxShadow: '0 4px 24px rgba(94,122,103,0.25)',
+      }}>
+        <div>
+          <div style={{ fontSize: '0.8125rem', color: 'rgba(255,255,255,0.65)', marginBottom: '4px', fontWeight: 500 }}>{TODAY}</div>
+          <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#fff', margin: 0, letterSpacing: '-0.025em' }}>
+            {GREETING()}, {user?.name?.split(' ')[0] ?? 'Doctor'} 👋
+          </h1>
+          <p style={{ fontSize: '0.875rem', color: 'rgba(255,255,255,0.7)', marginTop: '4px' }}>
+            {DASHBOARD_STATS.awaitingReview} cases awaiting your review today
+          </p>
         </div>
-      </section>
-
-      {/* Recent Cases */}
-      <section style={styles.section} aria-label="Recent cases">
-        <div style={styles.sectionHeader}>
-          <h2 style={styles.sectionTitle}>Recent Cases</h2>
-          <Link to="/cases" style={styles.viewAll}>View all →</Link>
-        </div>
-
-        <div style={styles.caseTable} role="table" aria-label="Recent patient cases">
-          {/* Header */}
-          <div style={{ ...styles.tableRow, ...styles.tableHeader }} role="row">
-            <div role="columnheader">Patient</div>
-            <div role="columnheader">Risk Level</div>
-            <div role="columnheader">Clinician</div>
-            <div role="columnheader">Screening</div>
-            <div role="columnheader">Status</div>
-          </div>
-
-          {/* Rows */}
-          {recent.map((c) => (
-            <div key={c.id} style={styles.tableRow} role="row">
-              <div role="cell">
-                <div style={styles.patientName}>{c.patientName}</div>
-                <div style={styles.caseId}>{c.id} · {c.age}yo</div>
-              </div>
-              <div role="cell">
-                <RiskBadge level={c.riskLevel} size="sm" showScore score={c.riskScore} />
-              </div>
-              <div role="cell" style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-neutral-600)' }}>
-                {c.clinician}
-              </div>
-              <div role="cell" style={{ fontSize: 'var(--font-size-xs)', fontFamily: 'var(--font-mono)', color: 'var(--color-neutral-500)' }}>
-                {c.completedScreenings[0]}
-              </div>
-              <div role="cell">
-                <span style={styles.statusChip(c.status)}>{STATUS_LABELS[c.status]}</span>
-              </div>
-            </div>
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+          {[
+            { label: 'New Screening', to: '/app/screening', primary: true },
+            { label: 'View Cases',    to: '/app/cases',     primary: false },
+          ].map(({ label, to, primary }) => (
+            <button
+              key={label}
+              onClick={() => navigate(to)}
+              style={{
+                padding: '9px 18px',
+                borderRadius: '10px',
+                border: primary ? 'none' : '1.5px solid rgba(255,255,255,0.4)',
+                backgroundColor: primary ? '#fff' : 'transparent',
+                color: primary ? 'var(--color-primary-dark)' : '#fff',
+                fontSize: '0.875rem', fontWeight: 600,
+                cursor: 'pointer', fontFamily: 'var(--font-body)',
+                transition: 'all 150ms',
+              }}
+            >{label}</button>
           ))}
         </div>
       </section>
+
+      {/* ── Stat cards ──────────────────────────────────── */}
+      <section aria-label="Summary statistics" style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+        gap: '16px',
+      }}>
+        <Stat
+          id="stat-total-cases" label="Total Cases" value={142}
+          sub="+8 this month"
+          accent="linear-gradient(90deg, #7C9A85, #9DB5A4)"
+          iconBg="rgba(124,154,133,0.12)" iconColor="#5E7A67"
+          icon={<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>}
+        />
+        <Stat
+          id="stat-high-risk" label="High Risk" value={31}
+          sub="+3 vs last month"
+          accent="linear-gradient(90deg, #C0555A, #E8898D)"
+          iconBg="rgba(192,85,90,0.1)" iconColor="#C0555A"
+          icon={<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>}
+        />
+        <Stat
+          id="stat-awaiting" label="Awaiting Review" value={9}
+          sub="−2 vs last week"
+          accent="linear-gradient(90deg, #B8873A, #D4AA72)"
+          iconBg="rgba(184,135,58,0.1)" iconColor="#B8873A"
+          icon={<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>}
+        />
+        <Stat
+          id="stat-completion" label="Completion Rate" value="94%"
+          sub="+2% vs last month"
+          accent="linear-gradient(90deg, #5E7A67, #7C9A85)"
+          iconBg="rgba(94,122,103,0.12)" iconColor="#5E7A67"
+          icon={<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>}
+        />
+        <Stat
+          id="stat-avg-time" label="Avg. Screen Time" value="22m"
+          sub="Across 7 tools"
+          accent="linear-gradient(90deg, #8A8178, #A89E94)"
+          iconBg="rgba(138,129,120,0.1)" iconColor="#6B6560"
+          icon={<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>}
+        />
+      </section>
+
+      {/* ── Two-column lower section ─────────────────────── */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: '20px', alignItems: 'start' }}>
+
+        {/* LEFT — Recent cases table */}
+        <section style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <h2 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--color-neutral-900)', margin: 0 }}>Recent Cases</h2>
+            <Link to="/app/cases" style={{ fontSize: '0.8125rem', color: 'var(--color-primary)', fontWeight: 500, textDecoration: 'none' }}>View all →</Link>
+          </div>
+
+          <div style={{
+            backgroundColor: 'var(--color-bg-card)',
+            border: '1px solid var(--color-neutral-200)',
+            borderRadius: '14px',
+            overflow: 'hidden',
+            boxShadow: 'var(--shadow-xs)',
+          }}>
+            {/* Table header */}
+            <div style={{
+              display: 'grid', gridTemplateColumns: '1fr 110px 130px 90px 90px',
+              padding: '11px 20px', gap: '12px',
+              backgroundColor: 'var(--color-bg)',
+              borderBottom: '1px solid var(--color-neutral-200)',
+            }}>
+              {['Patient', 'Risk', 'Clinician', 'Tool', 'Status'].map((h) => (
+                <span key={h} style={{ fontSize: '0.6875rem', fontWeight: 600, color: 'var(--color-neutral-400)', letterSpacing: '0.07em', textTransform: 'uppercase' }}>{h}</span>
+              ))}
+            </div>
+
+            {/* Rows */}
+            {recent.map((c, i) => {
+              const sm = STATUS_META[c.status] || STATUS_META.closed;
+              return (
+                <div
+                  key={c.id}
+                  onClick={() => navigate(`/app/results/${c.id}`)}
+                  onMouseEnter={() => setHovRow(c.id)}
+                  onMouseLeave={() => setHovRow(null)}
+                  style={{
+                    display: 'grid', gridTemplateColumns: '1fr 110px 130px 90px 90px',
+                    padding: '13px 20px', gap: '12px', alignItems: 'center',
+                    borderBottom: i < recent.length - 1 ? '1px solid var(--color-neutral-100)' : 'none',
+                    cursor: 'pointer',
+                    backgroundColor: hovRow === c.id ? 'var(--color-bg)' : 'transparent',
+                    transition: 'background-color 150ms',
+                  }}
+                >
+                  <div>
+                    <div style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-neutral-800)' }}>{c.patientName}</div>
+                    <div style={{ fontSize: '0.6875rem', fontFamily: 'var(--font-mono)', color: 'var(--color-neutral-400)', marginTop: '1px' }}>{c.id} · {c.age}yo</div>
+                  </div>
+                  <RiskBadge level={c.riskLevel} size="sm" showScore score={c.riskScore} />
+                  <span style={{ fontSize: '0.8125rem', color: 'var(--color-neutral-600)' }}>{c.clinician.replace('Dr. ', 'Dr.')}</span>
+                  <span style={{ fontSize: '0.75rem', fontFamily: 'var(--font-mono)', color: 'var(--color-neutral-500)' }}>{c.completedScreenings[0]}</span>
+                  <span style={{
+                    display: 'inline-block', padding: '3px 9px',
+                    borderRadius: '999px', fontSize: '0.6875rem', fontWeight: 600,
+                    fontFamily: 'var(--font-mono)',
+                    color: sm.color, backgroundColor: sm.bg,
+                    whiteSpace: 'nowrap',
+                  }}>{sm.label}</span>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+
+        {/* RIGHT — Risk distribution + Activity */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+
+          {/* Risk distribution */}
+          <div style={{
+            backgroundColor: 'var(--color-bg-card)',
+            border: '1px solid var(--color-neutral-200)',
+            borderRadius: '14px',
+            padding: '20px',
+            boxShadow: 'var(--shadow-xs)',
+          }}>
+            <h3 style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-neutral-800)', margin: '0 0 16px' }}>Risk Distribution</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {RISK_DIST.map((r) => (
+                <div key={r.label}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
+                    <span style={{ fontSize: '0.8125rem', color: 'var(--color-neutral-600)', fontWeight: 500 }}>{r.label}</span>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.8125rem', color: 'var(--color-neutral-700)', fontWeight: 600 }}>{r.count}</span>
+                  </div>
+                  <div style={{ height: '7px', borderRadius: '999px', backgroundColor: 'var(--color-neutral-100)', overflow: 'hidden' }}>
+                    <div style={{
+                      height: '100%', width: `${r.pct}%`, borderRadius: '999px',
+                      backgroundColor: r.color,
+                      transition: 'width 800ms cubic-bezier(.4,0,.2,1)',
+                    }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div style={{ marginTop: '14px', paddingTop: '14px', borderTop: '1px solid var(--color-neutral-100)', fontFamily: 'var(--font-mono)', fontSize: '0.75rem', color: 'var(--color-neutral-400)' }}>
+              142 total · last 30 days
+            </div>
+          </div>
+
+          {/* Activity feed */}
+          <div style={{
+            backgroundColor: 'var(--color-bg-card)',
+            border: '1px solid var(--color-neutral-200)',
+            borderRadius: '14px',
+            padding: '20px',
+            boxShadow: 'var(--shadow-xs)',
+          }}>
+            <h3 style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-neutral-800)', margin: '0 0 14px' }}>Recent Activity</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
+              {ACTIVITY.map((a, i) => {
+                const meta = ACTIVITY_ICONS[a.type];
+                return (
+                  <div key={i} style={{
+                    display: 'flex', gap: '10px', alignItems: 'flex-start',
+                    paddingBottom: i < ACTIVITY.length - 1 ? '12px' : '0',
+                    marginBottom: i < ACTIVITY.length - 1 ? '12px' : '0',
+                    borderBottom: i < ACTIVITY.length - 1 ? '1px solid var(--color-neutral-100)' : 'none',
+                  }}>
+                    <span style={{
+                      fontSize: '14px', width: '28px', height: '28px',
+                      borderRadius: '8px', backgroundColor: meta.color,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      flexShrink: 0,
+                    }}>{meta.icon}</span>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ margin: 0, fontSize: '0.8125rem', color: 'var(--color-neutral-700)', lineHeight: 1.4 }}>
+                        <strong style={{ fontWeight: 600, color: 'var(--color-neutral-800)' }}>{a.actor}</strong>{' '}
+                        {a.action}{' '}
+                        <strong style={{ fontWeight: 500, color: 'var(--color-primary-dark)' }}>{a.subject}</strong>
+                      </p>
+                      <span style={{ fontSize: '0.6875rem', fontFamily: 'var(--font-mono)', color: 'var(--color-neutral-400)', marginTop: '2px', display: 'block' }}>{a.time}</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </div>
     </main>
   );
 }
