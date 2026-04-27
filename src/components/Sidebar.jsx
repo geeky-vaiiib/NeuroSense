@@ -2,6 +2,7 @@
  * Sidebar.jsx — Persistent 240px nav, uses AuthContext for user info + logout.
  */
 import React from 'react';
+import { NeuroLogo } from '../pages/Landing';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
@@ -80,7 +81,7 @@ export default function Sidebar() {
 
       {/* Brand */}
       <div className="ns-sb-brand">
-        <span className="ns-sb-logomark" aria-hidden="true">N</span>
+        <NeuroLogo size={34} />
         <div className="ns-sb-brand-text">
           <span className="ns-sb-app-name">NeuroSense</span>
           <span className="ns-sb-app-sub">Clinical Intelligence</span>
