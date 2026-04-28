@@ -265,6 +265,44 @@ export default function Results() {
 
         {loadingList ? (
           <p style={{ margin: 0, color: 'var(--color-neutral-500)' }}>Loading cases…</p>
+        ) : cases.length === 0 ? (
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '14px',
+            padding: '40px 20px',
+            textAlign: 'center',
+          }}>
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--color-neutral-300)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/>
+              <rect x="9" y="3" width="6" height="4" rx="1"/>
+              <line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/>
+            </svg>
+            <div>
+              <p style={{ margin: '0 0 6px', fontWeight: 600, color: 'var(--color-neutral-700)' }}>No cases yet</p>
+              <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--color-neutral-400)', lineHeight: 1.6 }}>
+                Complete a screening to generate your first result and explainability report.
+              </p>
+            </div>
+            <a
+              href="/app/screening"
+              onClick={(e) => { e.preventDefault(); navigate('/app/screening'); }}
+              style={{
+                padding: '9px 20px',
+                borderRadius: '10px',
+                border: 'none',
+                background: 'linear-gradient(135deg, var(--color-primary), var(--color-primary-dark))',
+                color: '#fff',
+                fontWeight: 600,
+                fontSize: '0.875rem',
+                textDecoration: 'none',
+                cursor: 'pointer',
+              }}
+            >
+              Start a screening →
+            </a>
+          </div>
         ) : (
           <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', paddingBottom: '4px' }}>
             {cases.map((item) => (
