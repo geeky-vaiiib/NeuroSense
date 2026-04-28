@@ -98,14 +98,79 @@ export const casesApi = {
 };
 
 export const screeningApi = {
-  async submit(payload) {
+  async submit(formData) {
+    // Build multimodal payload — exclude large fields if null/empty
+    const payload = {
+      category: formData.category,
+      demo: formData.demo,
+      answers: formData.answers,
+      aq10Score: formData.aq10Score,
+      gazePoints: formData.gazePoints || [],
+      gazeSkipped: formData.gazeSkipped || false,
+      audioBase64: formData.audioBase64 || null,
+      audioMimeType: formData.audioMimeType || null,
+      transcriptHint: formData.transcriptHint || '',
+      speechSkipped: formData.speechSkipped || false,
+    };
+
+    // Warn if payload is very large (audio can be 500KB–1MB base64)
+    const payloadStr = JSON.stringify(payload);
+    if (payloadStr.length > 5_000_000) {
+      console.warn(
+        '[NeuroSense] Payload exceeds 5MB — audio data may be too large. ' +
+          `Size: ${(payloadStr.length / 1_048_576).toFixed(1)}MB`
+      );
+    }
+
+    // Use fetch with AbortController for a 30s timeout (audio processing takes longer)
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30_000);
+
     try {
-      return await api.post('/screening/screen', payload);
-    } catch (error) {
-      if (shouldFallback(error)) {
-        return submitMockScreening(payload);
+      const res = await fetch(`${api.defaults.baseURL}/screening/screen`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+          ...(localStorage.getItem('neurosense_token')
+            ? { Authorization: `Bearer ${localStorage.getItem('neurosense_token')}` }
+            : {}),
+        },
+        body: payloadStr,
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body?.detail || `API_ERROR: ${res.status}`);
       }
-      throw error;
+
+      return res.json();
+    } catch (err) {
+      clearTimeout(timeoutId);
+
+      // Network / abort → fall back to mock
+      if (err.name === 'AbortError') {
+        const timeoutErr = new Error('Request timed out after 30 seconds');
+        timeoutErr.isNetworkError = true;
+        if (shouldFallback(timeoutErr)) {
+          return submitMockScreening(formData);
+        }
+        throw timeoutErr;
+      }
+
+      if (err.name === 'TypeError' || err.message?.includes('fetch')) {
+        // Network error (server not reachable) → mock fallback
+        const netErr = new Error(err.message);
+        netErr.isNetworkError = true;
+        if (shouldFallback(netErr)) {
+          return submitMockScreening(formData);
+        }
+      }
+
+      throw err;
     }
   },
 };

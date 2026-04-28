@@ -812,6 +812,41 @@ export async function submitMockScreening(payload) {
     interpretation: content.riskCopy[riskLevel],
     demo: payload.demo,
     answers: payload.answers,
+    // Pass through multimodal payload fields
+    gaze_skipped: payload.gazeSkipped ?? true,
+    gaze_features: payload.gazeSkipped === false && payload.gazePoints?.length >= 20
+      ? {
+          mean_fixation_duration: 180,
+          social_attention_ratio: 0.42,
+          gaze_variability: 0.29,
+          scanpath_length: 1.44,
+          stimulus_transitions: 5,
+        }
+      : null,
+    gaze_mock: true,
+    gaze_interpretation: payload.gazeSkipped === false && payload.gazePoints?.length >= 20
+      ? 'Gaze patterns analysed using heuristic model (mock pipeline).'
+      : '',
+    speech_skipped: payload.speechSkipped ?? true,
+    speech_features: payload.speechSkipped === false && payload.audioBase64
+      ? {
+          pitch_mean: 155.2,
+          pitch_std: 28.4,
+          voiced_fraction: 0.52,
+          speech_rate: 2.8,
+          energy_mean: 0.0388,
+          energy_std: 0.0195,
+          mfcc_mean: [-305.1, -58.3, 10.2, -3.4, 7.5, -1.8, 4.3, -1.2, 2.7, -0.6, 1.1, -0.3, 0.6],
+          mfcc_std: [40.5, 17.0, 8.6, 6.1, 5.5, 4.0, 3.6, 2.9, 2.6, 2.2, 1.9, 1.7, 1.5],
+        }
+      : null,
+    speech_mock: true,
+    speech_interpretation: payload.speechSkipped === false && payload.audioBase64
+      ? 'Speech acoustic features analysed using heuristic model (mock pipeline).'
+      : '',
+    speech_flags: payload.speechSkipped === false && payload.audioBase64
+      ? []
+      : [],
   });
 
   const existing = loadStoredCases().filter((record) => record.id !== caseRecord.id);
@@ -830,6 +865,9 @@ export async function submitMockScreening(payload) {
     isMock: true,
     dataSource: 'mock',
     interpretation: caseRecord.interpretation,
+    gazeInterpretation: caseRecord.gaze_interpretation || null,
+    speechInterpretation: caseRecord.speech_interpretation || null,
+    speechFlags: caseRecord.speech_flags || [],
     submittedAt,
   };
 }
