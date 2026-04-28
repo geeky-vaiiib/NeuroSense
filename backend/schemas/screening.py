@@ -300,6 +300,10 @@ class HealthResponse(BaseModel):
         alias="modelsLoaded",
         description="Per-category model status",
     )
-    version: str = "2.0.0"
+    modalities: dict = Field(
+        default_factory=dict,
+        description="Per-modality engine availability",
+    )
+    version: str = "3.0.0"
 
     model_config = ConfigDict(populate_by_name=True)
