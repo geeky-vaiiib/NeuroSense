@@ -80,6 +80,14 @@ class AQ10Answers(BaseModel):
     A10: str
 
 
+class GazePoint(BaseModel):
+    """A single gaze-coordinate sample from the frontend GazeSession."""
+    x: float = Field(..., ge=0.0, le=1.0, description="Normalised horizontal position")
+    y: float = Field(..., ge=0.0, le=1.0, description="Normalised vertical position")
+    timestamp: float = Field(..., description="Unix timestamp in milliseconds")
+    stimulus: int = Field(..., ge=0, le=4, description="Active stimulus index (0–4)")
+
+
 class ScreeningRequest(BaseModel):
     category: CategoryEnum = Field(..., description="adult, child, or toddler")
     demo: Demographics
@@ -90,6 +98,36 @@ class ScreeningRequest(BaseModel):
         le=10,
         alias="aq10Score",
         description="Pre-computed AQ-10 / Q-CHAT-10 sum score",
+    )
+    gaze_points: Optional[list[GazePoint]] = Field(
+        default=[],
+        alias="gazePoints",
+        description="Gaze coordinate sequence from the eye-tracking step",
+    )
+    gaze_skipped: Optional[bool] = Field(
+        default=False,
+        alias="gazeSkipped",
+        description="True if the user explicitly skipped the gaze step",
+    )
+    audio_base64: Optional[str] = Field(
+        default=None,
+        alias="audioBase64",
+        description="Base64-encoded speech audio from the recording step",
+    )
+    audio_mime_type: Optional[str] = Field(
+        default="audio/webm",
+        alias="audioMimeType",
+        description="MIME type of the recorded audio",
+    )
+    transcript_hint: Optional[str] = Field(
+        default="",
+        alias="transcriptHint",
+        description="Optional user-provided transcript of what was said",
+    )
+    speech_skipped: Optional[bool] = Field(
+        default=False,
+        alias="speechSkipped",
+        description="True if the user explicitly skipped the speech step",
     )
 
     model_config = ConfigDict(populate_by_name=True)
@@ -121,6 +159,21 @@ class ScreeningResponse(BaseModel):
     is_mock: bool = Field(False, alias="isMock")
     data_source: str = Field(..., alias="dataSource")
     interpretation: str
+    gaze_interpretation: Optional[str] = Field(
+        None,
+        alias="gazeInterpretation",
+        description="Plain-English interpretation of gaze analysis results",
+    )
+    speech_interpretation: Optional[str] = Field(
+        None,
+        alias="speechInterpretation",
+        description="Plain-English interpretation of speech analysis results",
+    )
+    speech_flags: Optional[list[str]] = Field(
+        None,
+        alias="speechFlags",
+        description="Clinical flags raised by speech analysis",
+    )
     submitted_at: str = Field(..., alias="submittedAt")
 
     model_config = ConfigDict(populate_by_name=True)

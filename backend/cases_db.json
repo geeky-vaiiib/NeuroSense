@@ -21,11 +21,19 @@
     "updated_at": "2026-04-21T09:15:00Z",
     "clinician": "Dr. Priya Mehta",
     "screening_tool": "Adult AQ-10",
-    "completed_screenings": ["Adult AQ-10", "RAADS-R follow-up"],
+    "completed_screenings": [
+      "Adult AQ-10",
+      "RAADS-R follow-up"
+    ],
     "model_used": "adult_MockProxy",
     "is_mock": true,
     "data_source": "mock",
-    "tags": ["adult-track", "self-report", "high-risk", "mock-pipeline"],
+    "tags": [
+      "adult-track",
+      "self-report",
+      "high-risk",
+      "mock-pipeline"
+    ],
     "notes": "Adult self-report highlighted sensory sensitivity, pattern-based interests, and social inference strain.",
     "interpretation": "This adult self-report screening shows a high concentration of ASD-related traits. A clinician-led adult follow-up assessment is recommended.",
     "demo": {
@@ -73,11 +81,18 @@
     "updated_at": "2026-04-16T10:30:00Z",
     "clinician": "Dr. Lena Torres",
     "screening_tool": "Adult AQ-10",
-    "completed_screenings": ["Adult AQ-10"],
+    "completed_screenings": [
+      "Adult AQ-10"
+    ],
     "model_used": "adult_MockProxy",
     "is_mock": true,
     "data_source": "mock",
-    "tags": ["adult-track", "self-report", "moderate-risk", "mock-pipeline"],
+    "tags": [
+      "adult-track",
+      "self-report",
+      "moderate-risk",
+      "mock-pipeline"
+    ],
     "notes": "Adult self-report suggests mixed social inference and attention-switching challenges.",
     "interpretation": "This adult self-report screening shows several ASD-related traits. A structured adult follow-up assessment may be helpful.",
     "demo": {
@@ -125,11 +140,18 @@
     "updated_at": "2026-04-08T08:45:00Z",
     "clinician": "Dr. James Okafor",
     "screening_tool": "Adult AQ-10",
-    "completed_screenings": ["Adult AQ-10"],
+    "completed_screenings": [
+      "Adult AQ-10"
+    ],
     "model_used": "adult_MockProxy",
     "is_mock": true,
     "data_source": "mock",
-    "tags": ["adult-track", "self-report", "low-risk", "mock-pipeline"],
+    "tags": [
+      "adult-track",
+      "self-report",
+      "low-risk",
+      "mock-pipeline"
+    ],
     "notes": "Low adult score with stronger social interpretation and flexible task switching.",
     "interpretation": "This adult self-report screening shows a lower concentration of ASD-related traits at this time. Continue monitoring if concerns remain.",
     "demo": {
@@ -177,11 +199,19 @@
     "updated_at": "2026-04-22T11:20:00Z",
     "clinician": "Dr. Priya Mehta",
     "screening_tool": "Child AQ-10",
-    "completed_screenings": ["Child AQ-10", "SRS-2 follow-up"],
+    "completed_screenings": [
+      "Child AQ-10",
+      "SRS-2 follow-up"
+    ],
     "model_used": "child_MockProxy",
     "is_mock": true,
     "data_source": "mock",
-    "tags": ["child-track", "caregiver-report", "high-risk", "mock-pipeline"],
+    "tags": [
+      "child-track",
+      "caregiver-report",
+      "high-risk",
+      "mock-pipeline"
+    ],
     "notes": "Caregiver report highlights sensory sensitivity, rigid interests, and difficulty reading social cues.",
     "interpretation": "This caregiver-completed child screening shows a high concentration of ASD-related traits. A developmental specialist review is recommended.",
     "demo": {
@@ -229,11 +259,18 @@
     "updated_at": "2026-04-14T10:10:00Z",
     "clinician": "Dr. Lena Torres",
     "screening_tool": "Child AQ-10",
-    "completed_screenings": ["Child AQ-10"],
+    "completed_screenings": [
+      "Child AQ-10"
+    ],
     "model_used": "child_MockProxy",
     "is_mock": true,
     "data_source": "mock",
-    "tags": ["child-track", "caregiver-report", "moderate-risk", "mock-pipeline"],
+    "tags": [
+      "child-track",
+      "caregiver-report",
+      "moderate-risk",
+      "mock-pipeline"
+    ],
     "notes": "Caregiver report points to transition difficulty and variable peer communication.",
     "interpretation": "This caregiver-completed child screening shows several traits associated with ASD. A pediatric follow-up assessment may be helpful.",
     "demo": {
@@ -281,11 +318,18 @@
     "updated_at": "2026-04-09T08:05:00Z",
     "clinician": "Dr. James Okafor",
     "screening_tool": "Child AQ-10",
-    "completed_screenings": ["Child AQ-10"],
+    "completed_screenings": [
+      "Child AQ-10"
+    ],
     "model_used": "child_MockProxy",
     "is_mock": true,
     "data_source": "mock",
-    "tags": ["child-track", "caregiver-report", "low-risk", "mock-pipeline"],
+    "tags": [
+      "child-track",
+      "caregiver-report",
+      "low-risk",
+      "mock-pipeline"
+    ],
     "notes": "Caregiver report reflects age-appropriate development with ongoing routine monitoring only.",
     "interpretation": "This caregiver-completed child screening shows fewer ASD-related traits at this time. Continue routine developmental monitoring if concerns remain.",
     "demo": {
@@ -309,6 +353,66 @@
       "A8": "Slightly disagree",
       "A9": "Definitely agree",
       "A10": "Slightly disagree"
+    }
+  },
+  "NS-A-20260428-2B73": {
+    "id": "NS-A-20260428-2B73",
+    "category": "adult",
+    "category_label": "Adult",
+    "subject_name": "Vaibhav",
+    "respondent_name": "Tarun",
+    "respondent_relationship": "Self",
+    "age": 21,
+    "gender": "Male",
+    "ethnicity": "South Asian",
+    "jaundice": "Yes",
+    "family_asd": "No",
+    "risk_level": "Low",
+    "risk_score": 0.0471,
+    "aq10_score": 6,
+    "status": "pending-review",
+    "diagnosis": "Lower adult ASD likelihood on screening",
+    "screening_date": "2026-04-28",
+    "referral_date": "2026-04-28",
+    "created_at": "2026-04-28T04:35:18.376883+00:00",
+    "updated_at": "2026-04-28T04:35:18.376883+00:00",
+    "clinician": "Awaiting clinician assignment",
+    "screening_tool": "Adult AQ-10",
+    "completed_screenings": [
+      "Adult AQ-10"
+    ],
+    "model_used": "adult_XGBClassifier",
+    "is_mock": false,
+    "data_source": "model",
+    "tags": [
+      "adult-track",
+      "self-report",
+      "low-risk",
+      "live-model"
+    ],
+    "notes": "Adult self-report submitted at age 21. Awaiting clinician review and adult-context interpretation.",
+    "interpretation": "This adult self-report screening shows a lower concentration of ASD-related traits at this time. Continue monitoring if concerns remain.",
+    "demo": {
+      "subjectName": "Vaibhav",
+      "respondentName": "Tarun",
+      "respondentRelationship": "Self",
+      "age": 21,
+      "gender": "Male",
+      "ethnicity": "South Asian",
+      "jaundice": "Yes",
+      "familyAsd": "No"
+    },
+    "answers": {
+      "A1": "Slightly disagree",
+      "A2": "Slightly disagree",
+      "A3": "Definitely disagree",
+      "A4": "Slightly disagree",
+      "A5": "Slightly disagree",
+      "A6": "Definitely disagree",
+      "A7": "Definitely disagree",
+      "A8": "Slightly agree",
+      "A9": "Slightly agree",
+      "A10": "Definitely disagree"
     }
   }
 }

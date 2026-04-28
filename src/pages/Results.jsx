@@ -194,6 +194,22 @@ export default function Results() {
   const features = getSortedFeatures(selectedCaseId);
   const content = selectedCase ? getCategoryContent(selectedCase.category) : null;
 
+  // Gaze data from case record
+  const gazeFeatures = selectedCase?.gaze_features || selectedCase?.gazeFeatures || null;
+  const gazeInterpretation = selectedCase?.gaze_interpretation || selectedCase?.gazeInterpretation || '';
+  const gazeMock = selectedCase?.gaze_mock ?? selectedCase?.gazeMock ?? true;
+  const gazeSkipped = selectedCase?.gaze_skipped ?? selectedCase?.gazeSkipped ?? false;
+  const hasGazeData = gazeFeatures && typeof gazeFeatures === 'object' && Object.keys(gazeFeatures).length > 0;
+  const isToddler = selectedCase?.category === 'toddler';
+
+  // Speech data from case record
+  const speechFeatures = selectedCase?.speech_features || selectedCase?.speechFeatures || null;
+  const speechInterpretation = selectedCase?.speech_interpretation || selectedCase?.speechInterpretation || '';
+  const speechMock = selectedCase?.speech_mock ?? selectedCase?.speechMock ?? true;
+  const speechSkipped = selectedCase?.speech_skipped ?? selectedCase?.speechSkipped ?? false;
+  const speechFlags = selectedCase?.speech_flags || selectedCase?.speechFlags || [];
+  const hasSpeechData = speechFeatures && typeof speechFeatures === 'object' && Object.keys(speechFeatures).length > 0;
+
   const topMetadata = useMemo(() => {
     if (!selectedCase) return [];
     return [
@@ -520,6 +536,97 @@ export default function Results() {
                     </div>
                   ))}
                 </div>
+
+                {/* Gaze report box */}
+                {gazeInterpretation && (
+                  <div
+                    style={{
+                      padding: '14px 16px',
+                      background: '#E8F4EC',
+                      borderRadius: '10px',
+                      border: '1px solid rgba(124,154,133,0.35)',
+                      marginTop: '16px',
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontSize: '0.6875rem',
+                        fontWeight: 700,
+                        letterSpacing: '0.05em',
+                        color: 'var(--color-primary-dark)',
+                        marginBottom: '6px',
+                        textTransform: 'uppercase',
+                      }}
+                    >
+                      Eye Gaze Analysis
+                    </div>
+                    <p
+                      style={{
+                        fontSize: '0.8125rem',
+                        color: 'var(--color-neutral-700)',
+                        lineHeight: 1.6,
+                        margin: 0,
+                      }}
+                    >
+                      {gazeInterpretation}
+                    </p>
+                  </div>
+                )}
+
+                {/* Speech report box */}
+                {speechInterpretation && (
+                  <div
+                    style={{
+                      padding: '14px 16px',
+                      background: '#FDF3E7',
+                      borderRadius: '10px',
+                      border: '1px solid #C98B2E',
+                      marginTop: '12px',
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontSize: '0.6875rem',
+                        fontWeight: 700,
+                        letterSpacing: '0.05em',
+                        color: '#8A5A0A',
+                        marginBottom: '6px',
+                        textTransform: 'uppercase',
+                      }}
+                    >
+                      Speech Analysis
+                    </div>
+                    <p
+                      style={{
+                        fontSize: '0.8125rem',
+                        color: 'var(--color-neutral-700)',
+                        lineHeight: 1.6,
+                        margin: 0,
+                      }}
+                    >
+                      {speechInterpretation}
+                    </p>
+                    {speechFlags && speechFlags.length > 0 && (
+                      <div style={{ marginTop: '8px', display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                        {speechFlags.map((flag, i) => (
+                          <span
+                            key={i}
+                            style={{
+                              fontSize: '0.6875rem',
+                              padding: '3px 8px',
+                              background: '#FEF3C7',
+                              color: '#92400E',
+                              borderRadius: '20px',
+                              fontWeight: 500,
+                            }}
+                          >
+                            {flag}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
               </section>
             </div>
           </section>
@@ -548,6 +655,510 @@ export default function Results() {
                 </div>
               ))}
             </div>
+          </section>
+
+          {/* ── Gaze Analysis Section ────────────────────────────── */}
+          <section style={styles.card}>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                gap: '16px',
+                alignItems: 'center',
+                marginBottom: '16px',
+              }}
+            >
+              <div>
+                <h3 style={{ margin: 0, color: 'var(--color-neutral-900)' }}>
+                  Gaze Analysis
+                </h3>
+                <p style={{ margin: '6px 0 0', color: 'var(--color-neutral-500)' }}>
+                  Eye movement features from the 30-second visual task.
+                </p>
+              </div>
+              {hasGazeData ? (
+                <span
+                  style={{
+                    padding: '4px 10px',
+                    borderRadius: '999px',
+                    backgroundColor: gazeMock
+                      ? 'var(--color-risk-moderate-bg)'
+                      : 'var(--color-risk-low-bg)',
+                    color: gazeMock
+                      ? 'var(--color-risk-moderate)'
+                      : 'var(--color-primary-dark)',
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: '0.75rem',
+                    fontWeight: 600,
+                  }}
+                >
+                  {gazeMock ? 'Heuristic model' : 'Live session'}
+                </span>
+              ) : (
+                <span
+                  style={{
+                    padding: '4px 10px',
+                    borderRadius: '999px',
+                    backgroundColor: 'var(--color-neutral-100)',
+                    color: 'var(--color-neutral-500)',
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: '0.75rem',
+                    fontWeight: 600,
+                  }}
+                >
+                  Not captured
+                </span>
+              )}
+            </div>
+
+            {hasGazeData ? (
+              <>
+                {/* Score progress bar */}
+                <div style={{ marginBottom: '18px' }}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      marginBottom: '6px',
+                    }}
+                  >
+                    <span style={{ color: 'var(--color-neutral-600)', fontSize: '0.85rem' }}>
+                      Gaze risk score
+                    </span>
+                    <strong
+                      style={{
+                        fontFamily: 'var(--font-mono)',
+                        color: 'var(--color-neutral-900)',
+                      }}
+                    >
+                      {selectedCase.riskScore != null
+                        ? ((selectedCase.riskScore) * 100).toFixed(0) + '%'
+                        : 'N/A'}
+                    </strong>
+                  </div>
+                  <div
+                    style={{
+                      height: '10px',
+                      borderRadius: '999px',
+                      backgroundColor: 'var(--color-neutral-100)',
+                      overflow: 'hidden',
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: `${Math.min((selectedCase.riskScore || 0) * 100, 100)}%`,
+                        height: '100%',
+                        borderRadius: '999px',
+                        backgroundColor: 'var(--color-primary)',
+                        transition: 'width 600ms ease',
+                      }}
+                    />
+                  </div>
+                </div>
+
+                {/* Feature table */}
+                <div
+                  style={{
+                    display: 'grid',
+                    gap: '10px',
+                    padding: '16px',
+                    borderRadius: '16px',
+                    border: '1px solid var(--color-neutral-200)',
+                    backgroundColor: 'var(--color-bg)',
+                  }}
+                >
+                  {[
+                    [
+                      'Social attention ratio',
+                      gazeFeatures.social_attention_ratio != null
+                        ? `${(gazeFeatures.social_attention_ratio * 100).toFixed(0)}%`
+                        : '—',
+                    ],
+                    [
+                      'Mean fixation duration',
+                      gazeFeatures.mean_fixation_duration != null
+                        ? `${gazeFeatures.mean_fixation_duration.toFixed(0)} ms`
+                        : '—',
+                    ],
+                    [
+                      'Gaze variability',
+                      gazeFeatures.gaze_variability != null
+                        ? gazeFeatures.gaze_variability.toFixed(2)
+                        : '—',
+                    ],
+                    [
+                      'Scanpath length',
+                      gazeFeatures.scanpath_length != null
+                        ? gazeFeatures.scanpath_length.toFixed(2)
+                        : '—',
+                    ],
+                    [
+                      'Stimulus transitions',
+                      gazeFeatures.stimulus_transitions != null
+                        ? String(gazeFeatures.stimulus_transitions)
+                        : '—',
+                    ],
+                  ].map(([label, value]) => (
+                    <div
+                      key={label}
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        gap: '12px',
+                      }}
+                    >
+                      <span style={{ color: 'var(--color-neutral-500)', fontSize: '0.85rem' }}>
+                        {label}
+                      </span>
+                      <strong
+                        style={{
+                          color: 'var(--color-neutral-900)',
+                          fontFamily: 'var(--font-mono)',
+                          fontSize: '0.85rem',
+                          textAlign: 'right',
+                        }}
+                      >
+                        {value}
+                      </strong>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Interpretation */}
+                {gazeInterpretation && (
+                  <p
+                    style={{
+                      marginTop: '14px',
+                      color: 'var(--color-neutral-600)',
+                      lineHeight: 1.7,
+                      fontSize: '0.9rem',
+                    }}
+                  >
+                    {gazeInterpretation}
+                  </p>
+                )}
+              </>
+            ) : (
+              <div
+                style={{
+                  padding: '28px 20px',
+                  textAlign: 'center',
+                  borderRadius: '16px',
+                  border: '1px solid var(--color-neutral-200)',
+                  backgroundColor: 'var(--color-bg)',
+                  color: 'var(--color-neutral-400)',
+                }}
+              >
+                {isToddler
+                  ? 'Gaze session is not available for the toddler track.'
+                  : gazeSkipped
+                    ? 'Gaze session was skipped by the respondent.'
+                    : 'Gaze session was skipped or not available for this track.'}
+              </div>
+            )}
+          </section>
+
+          {/* ── Speech Analysis Section ───────────────────────────── */}
+          <section style={styles.card}>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                gap: '16px',
+                alignItems: 'center',
+                marginBottom: '16px',
+              }}
+            >
+              <div>
+                <h3 style={{ margin: 0, color: 'var(--color-neutral-900)' }}>
+                  Speech Analysis
+                </h3>
+                <p style={{ margin: '6px 0 0', color: 'var(--color-neutral-500)' }}>
+                  Acoustic features from the 20-second speech sample.
+                </p>
+              </div>
+              {hasSpeechData ? (
+                <span
+                  style={{
+                    padding: '4px 10px',
+                    borderRadius: '999px',
+                    backgroundColor: speechMock
+                      ? 'var(--color-risk-moderate-bg)'
+                      : 'var(--color-risk-low-bg)',
+                    color: speechMock
+                      ? 'var(--color-risk-moderate)'
+                      : 'var(--color-primary-dark)',
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: '0.75rem',
+                    fontWeight: 600,
+                  }}
+                >
+                  {speechMock ? 'Heuristic model' : 'Acoustic analysis'}
+                </span>
+              ) : (
+                <span
+                  style={{
+                    padding: '4px 10px',
+                    borderRadius: '999px',
+                    backgroundColor: 'var(--color-neutral-100)',
+                    color: 'var(--color-neutral-500)',
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: '0.75rem',
+                    fontWeight: 600,
+                  }}
+                >
+                  Not captured
+                </span>
+              )}
+            </div>
+
+            {hasSpeechData ? (
+              <>
+                {/* Score progress bar */}
+                <div style={{ marginBottom: '18px' }}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      marginBottom: '6px',
+                    }}
+                  >
+                    <span style={{ color: 'var(--color-neutral-600)', fontSize: '0.85rem' }}>
+                      Speech risk score
+                    </span>
+                    <strong
+                      style={{
+                        fontFamily: 'var(--font-mono)',
+                        color: 'var(--color-neutral-900)',
+                      }}
+                    >
+                      {selectedCase.riskScore != null
+                        ? ((selectedCase.riskScore) * 100).toFixed(0) + '%'
+                        : 'N/A'}
+                    </strong>
+                  </div>
+                  <div
+                    style={{
+                      height: '10px',
+                      borderRadius: '999px',
+                      backgroundColor: 'var(--color-neutral-100)',
+                      overflow: 'hidden',
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: `${Math.min((selectedCase.riskScore || 0) * 100, 100)}%`,
+                        height: '100%',
+                        borderRadius: '999px',
+                        backgroundColor: '#C98B2E',
+                        transition: 'width 600ms ease',
+                      }}
+                    />
+                  </div>
+                </div>
+
+                {/* Feature table */}
+                <div
+                  style={{
+                    display: 'grid',
+                    gap: '10px',
+                    padding: '16px',
+                    borderRadius: '16px',
+                    border: '1px solid var(--color-neutral-200)',
+                    backgroundColor: 'var(--color-bg)',
+                  }}
+                >
+                  {[
+                    [
+                      'Pitch variability',
+                      speechFeatures.pitch_std != null
+                        ? `${speechFeatures.pitch_std.toFixed(1)} Hz`
+                        : '\u2014',
+                    ],
+                    [
+                      'Voiced fraction',
+                      speechFeatures.voiced_fraction != null
+                        ? `${(speechFeatures.voiced_fraction * 100).toFixed(0)}%`
+                        : '\u2014',
+                    ],
+                    [
+                      'Speech rate',
+                      speechFeatures.speech_rate != null
+                        ? `${speechFeatures.speech_rate.toFixed(1)} syll/sec`
+                        : '\u2014',
+                    ],
+                    [
+                      'Mean energy',
+                      speechFeatures.energy_mean != null
+                        ? speechFeatures.energy_mean.toFixed(4)
+                        : '\u2014',
+                    ],
+                    [
+                      'MFCC-1 mean',
+                      speechFeatures.mfcc_mean && speechFeatures.mfcc_mean.length > 1
+                        ? speechFeatures.mfcc_mean[1].toFixed(1)
+                        : '\u2014',
+                    ],
+                  ].map(([label, value]) => (
+                    <div
+                      key={label}
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        gap: '12px',
+                      }}
+                    >
+                      <span style={{ color: 'var(--color-neutral-500)', fontSize: '0.85rem' }}>
+                        {label}
+                      </span>
+                      <strong
+                        style={{
+                          color: 'var(--color-neutral-900)',
+                          fontFamily: 'var(--font-mono)',
+                          fontSize: '0.85rem',
+                          textAlign: 'right',
+                        }}
+                      >
+                        {value}
+                      </strong>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Clinical flags */}
+                {speechFlags && speechFlags.length > 0 && (
+                  <div style={{ marginTop: '14px', display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                    {speechFlags.map((flag, i) => (
+                      <span
+                        key={i}
+                        style={{
+                          fontSize: '0.75rem',
+                          padding: '4px 10px',
+                          background: '#FEF3C7',
+                          color: '#92400E',
+                          borderRadius: '20px',
+                          fontWeight: 600,
+                        }}
+                      >
+                        {flag}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                {/* Interpretation */}
+                {speechInterpretation && (
+                  <p
+                    style={{
+                      marginTop: '14px',
+                      color: 'var(--color-neutral-600)',
+                      lineHeight: 1.7,
+                      fontSize: '0.9rem',
+                    }}
+                  >
+                    {speechInterpretation}
+                  </p>
+                )}
+              </>
+            ) : (
+              <div
+                style={{
+                  padding: '28px 20px',
+                  textAlign: 'center',
+                  borderRadius: '16px',
+                  border: '1px solid var(--color-neutral-200)',
+                  backgroundColor: 'var(--color-bg)',
+                  color: 'var(--color-neutral-400)',
+                }}
+              >
+                {isToddler
+                  ? 'Speech session is not available for the toddler track.'
+                  : speechSkipped
+                    ? 'Speech session was skipped by the respondent.'
+                    : 'Speech session was skipped or not available for this track.'}
+              </div>
+            )}
+          </section>
+
+          {/* ── Late Fusion Formula ──────────────────────────────── */}
+          <section style={styles.card}>
+            <h3 style={{ marginTop: 0, color: 'var(--color-neutral-900)' }}>
+              Late fusion formula
+            </h3>
+            <p style={{ margin: '6px 0 14px', color: 'var(--color-neutral-500)', fontSize: '0.85rem' }}>
+              Multimodal risk is computed as a weighted average of available modality scores.
+            </p>
+            <div
+              style={{
+                padding: '16px',
+                borderRadius: '12px',
+                backgroundColor: 'var(--color-neutral-900)',
+                color: 'var(--color-neutral-200)',
+                fontFamily: 'var(--font-mono)',
+                fontSize: '0.82rem',
+                lineHeight: 1.8,
+                overflowX: 'auto',
+              }}
+            >
+              <div>
+                <span style={{ color: 'var(--color-neutral-400)' }}>P</span>
+                <sub style={{ color: 'var(--color-neutral-500)' }}>final</sub>
+                {' = '}
+                <span style={{ color: '#FFD97D' }}>0.40</span>{' × '}
+                <span style={{ color: '#A8D8EA' }}>
+                  {selectedCase.riskScore != null ? selectedCase.riskScore.toFixed(4) : '?'}
+                </span>
+                {' + '}
+                <span style={{ color: '#FFD97D' }}>0.25</span>{' × '}
+                <span style={{ color: 'var(--color-neutral-500)' }}>N/A</span>
+                {' + '}
+                <span style={{ color: '#FFD97D' }}>0.20</span>{' × '}
+                <span style={{ color: hasGazeData ? '#B5EAD7' : 'var(--color-neutral-500)' }}>
+                  {hasGazeData && selectedCase.riskScore != null
+                    ? selectedCase.riskScore.toFixed(4)
+                    : 'N/A'}
+                </span>
+                {' + '}
+                <span style={{ color: '#FFD97D' }}>0.15</span>{' × '}
+                <span style={{ color: hasSpeechData ? '#FBBF24' : 'var(--color-neutral-500)' }}>
+                  {hasSpeechData && selectedCase.riskScore != null
+                    ? selectedCase.riskScore.toFixed(4)
+                    : 'N/A'}
+                </span>
+              </div>
+              <div style={{ marginTop: '4px' }}>
+                {'  = '}
+                <strong style={{ color: '#fff' }}>
+                  {selectedCase.fusionScore != null
+                    ? selectedCase.fusionScore.toFixed(4)
+                    : selectedCase.riskScore?.toFixed(4) ?? '?'}
+                </strong>
+              </div>
+            </div>
+            {!hasGazeData && !hasSpeechData && !isToddler && (
+              <p
+                style={{
+                  marginTop: '10px',
+                  fontSize: '0.8rem',
+                  color: 'var(--color-risk-moderate)',
+                  fontStyle: 'italic',
+                }}
+              >
+                Gaze and speech weights redistributed to questionnaire (weights renormalised).
+              </p>
+            )}
+            {(!hasGazeData || !hasSpeechData) && (hasGazeData || hasSpeechData) && !isToddler && (
+              <p
+                style={{
+                  marginTop: '10px',
+                  fontSize: '0.8rem',
+                  color: 'var(--color-risk-moderate)',
+                  fontStyle: 'italic',
+                }}
+              >
+                Unavailable modality weights redistributed to available modalities (weights renormalised).
+              </p>
+            )}
           </section>
 
           <section style={{

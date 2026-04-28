@@ -51,6 +51,36 @@ const SEEDED_CASES = [
       A9: 'Definitely disagree',
       A10: 'Definitely agree',
     },
+    // ── Multimodal: Gaze + Speech ──────────────────
+    gaze_skipped: false,
+    gaze_features: {
+      mean_fixation_duration: 145,
+      social_attention_ratio: 0.31,
+      gaze_variability: 0.38,
+      scanpath_length: 1.82,
+      stimulus_transitions: 3,
+    },
+    gaze_mock: true,
+    gaze_interpretation:
+      'Gaze patterns show reduced social attention and elevated fixation variability, consistent with ASD-related eye movement profiles.',
+    speech_skipped: false,
+    speech_features: {
+      pitch_mean: 142.3,
+      pitch_std: 16.8,
+      voiced_fraction: 0.44,
+      speech_rate: 1.9,
+      energy_mean: 0.0312,
+      energy_std: 0.0188,
+      mfcc_mean: [-312.4, -68.2, 12.3, -4.1, 8.7, -2.3, 5.1, -1.8, 3.2, -0.9, 1.4, -0.5, 0.8],
+      mfcc_std: [42.1, 18.3, 9.2, 6.4, 5.8, 4.3, 3.9, 3.1, 2.8, 2.4, 2.1, 1.9, 1.7],
+    },
+    speech_mock: true,
+    speech_interpretation:
+      'Speech analysis identified atypical prosodic and acoustic features consistent with ASD-related communication patterns.',
+    speech_flags: [
+      'Reduced pitch variability (monotone prosody)',
+      'Low speech density \u2014 extended silences detected',
+    ],
   },
   {
     id: 'NS-A-2026-0416',
@@ -171,6 +201,23 @@ const SEEDED_CASES = [
       A9: 'Definitely disagree',
       A10: 'Definitely agree',
     },
+    // ── Multimodal: Gaze skipped, Speech captured ──
+    gaze_skipped: true,
+    speech_skipped: false,
+    speech_features: {
+      pitch_mean: 198.7,
+      pitch_std: 54.3,
+      voiced_fraction: 0.61,
+      speech_rate: 3.2,
+      energy_mean: 0.0445,
+      energy_std: 0.0201,
+      mfcc_mean: [-298.1, -52.4, 8.9, -2.7, 6.1, -1.4, 3.8, -0.9, 2.1, -0.4, 0.9, -0.2, 0.4],
+      mfcc_std: [38.9, 15.7, 8.1, 5.9, 5.2, 3.8, 3.4, 2.7, 2.4, 2.1, 1.8, 1.6, 1.4],
+    },
+    speech_mock: true,
+    speech_interpretation:
+      'Speech acoustic features are within typical range for this age group.',
+    speech_flags: [],
   },
   {
     id: 'NS-C-2026-0414',
@@ -428,6 +475,16 @@ function toStorageCase(record) {
     interpretation,
     demo,
     answers: clone(record.answers ?? {}),
+    // Multimodal pass-through
+    gaze_features: record.gaze_features ?? null,
+    gaze_mock: record.gaze_mock ?? true,
+    gaze_interpretation: record.gaze_interpretation ?? '',
+    gaze_skipped: record.gaze_skipped ?? true,
+    speech_features: record.speech_features ?? null,
+    speech_mock: record.speech_mock ?? true,
+    speech_interpretation: record.speech_interpretation ?? '',
+    speech_flags: record.speech_flags ?? [],
+    speech_skipped: record.speech_skipped ?? true,
   };
 }
 
@@ -496,6 +553,13 @@ function buildExplanation(record) {
         : `${item.feature} helped lower the ${record.category} model risk estimate.`,
   }));
 
+  const gazeScore = record.gaze_features?.social_attention_ratio != null
+    ? (1.0 - Math.min(record.gaze_features.social_attention_ratio / 0.7, 1.0)) * 0.4 +
+      Math.min((record.gaze_features.gaze_variability ?? 0) / 0.5, 1.0) * 0.25 +
+      Math.min((record.gaze_features.scanpath_length ?? 0) / 2.0, 1.0) * 0.20 +
+      (1.0 - Math.min((record.gaze_features.mean_fixation_duration ?? 0) / 300, 1.0)) * 0.15
+    : null;
+
   return {
     caseId: record.id,
     category: record.category,
@@ -510,6 +574,16 @@ function buildExplanation(record) {
       .map((item) => item.feature.toLowerCase())
       .join(' and ')}.`,
     generatedAt: record.updatedAt,
+    // Multimodal explanation data
+    gaze_interpretation: record.gaze_interpretation || '',
+    speech_interpretation: record.speech_interpretation || '',
+    speech_flags: record.speech_flags || [],
+    modality_scores: {
+      questionnaire: record.riskScore,
+      facial: null,
+      gaze: gazeScore != null ? Number(gazeScore.toFixed(4)) : null,
+      speech: record.speech_features ? (record.speech_mock ? 0.64 : null) : null,
+    },
   };
 }
 
@@ -582,6 +656,16 @@ function toDetail(record) {
     interpretation: record.interpretation,
     demo: record.demo,
     answers: record.answers,
+    // Multimodal fields
+    gaze_features: record.gaze_features,
+    gaze_mock: record.gaze_mock,
+    gaze_interpretation: record.gaze_interpretation,
+    gaze_skipped: record.gaze_skipped,
+    speech_features: record.speech_features,
+    speech_mock: record.speech_mock,
+    speech_interpretation: record.speech_interpretation,
+    speech_flags: record.speech_flags,
+    speech_skipped: record.speech_skipped,
   };
 }
 

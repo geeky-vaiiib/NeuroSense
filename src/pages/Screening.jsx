@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import CategoryBadge from '../components/CategoryBadge';
+import GazeSession from '../components/GazeSession';
+import SpeechSession from '../components/SpeechSession';
 import { useScreening } from '../hooks/useScreening';
 import {
   ANSWER_OPTIONS,
@@ -15,7 +17,8 @@ import {
   validateCategoryAge,
 } from '../data/screeningContent';
 
-const STEP_LABELS = ['Track', 'Consent', 'Profile', 'Questions', 'Review'];
+const STEP_LABELS_FULL = ['Track', 'Consent', 'Demographics', 'AQ-10', 'Gaze', 'Speech', 'Review'];
+const STEP_LABELS_TODDLER = ['Track', 'Consent', 'Demographics', 'Q-CHAT-10', 'Review'];
 
 const BASE_DEMO = {
   subjectName: '',
@@ -115,10 +118,11 @@ const styles = {
   }),
 };
 
-function StepIndicator({ current }) {
+function StepIndicator({ current, isToddler }) {
+  const labels = isToddler ? STEP_LABELS_TODDLER : STEP_LABELS_FULL;
   return (
     <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-      {STEP_LABELS.map((label, index) => {
+      {labels.map((label, index) => {
         const active = current === index;
         const completed = current > index;
         return (
@@ -296,6 +300,11 @@ export default function Screening() {
   const [consents, setConsents] = useState(BASE_CONSENTS);
   const [demo, setDemo] = useState(BASE_DEMO);
   const [answers, setAnswers] = useState({});
+  const [gazeData, setGazeData] = useState(null);
+  const [gazeSkipped, setGazeSkipped] = useState(false);
+  const [audioBlob, setAudioBlob] = useState(null);
+  const [transcriptHint, setTranscriptHint] = useState('');
+  const [speechSkipped, setSpeechSkipped] = useState(false);
   const [validationMessage, setValidationMessage] = useState('');
 
   const category =
@@ -307,6 +316,13 @@ export default function Screening() {
     () => validateCategoryAge(category, Number(demo.age)),
     [category, demo.age]
   );
+
+  // Gaze + speech sessions are available for adult & child only (not toddler)
+  const isToddler = category === 'toddler';
+  const hasGaze = !isToddler && (category === 'adult' || category === 'child');
+  const GAZE_STEP = 4;    // adult/child only
+  const SPEECH_STEP = 5;  // adult/child only
+  const REVIEW_STEP = isToddler ? 4 : 6;
 
   function selectCategory(nextCategory) {
     setStep(1);
@@ -341,6 +357,22 @@ export default function Screening() {
     demo.gender &&
     (category === 'adult' || Boolean(demo.respondentRelationship));
   const questionnaireReady = questions.every((question) => answers[question.id]);
+  // Build gaze status label for the review summary
+  const gazeStatusLabel = (() => {
+    if (isToddler) return 'N/A — Toddler track';
+    if (gazeSkipped) return 'Skipped';
+    if (gazeData) return `${gazeData.length} fixation points captured`;
+    return 'Not started';
+  })();
+
+  // Build speech status label for the review summary
+  const speechStatusLabel = (() => {
+    if (isToddler) return 'N/A — Toddler track';
+    if (speechSkipped) return 'Skipped';
+    if (audioBlob) return '20-second sample recorded';
+    return 'Not started';
+  })();
+
   const summaryRows = [
     ['Category', content?.label],
     ['Screening tool', content?.screeningTool],
@@ -354,6 +386,8 @@ export default function Screening() {
     ],
     ['Age', demo.age || 'Not provided'],
     ['Gender', demo.gender || 'Not provided'],
+    ['Eye Gaze', gazeStatusLabel],
+    ['Speech Sample', speechStatusLabel],
   ];
 
   async function handlePrimaryAction() {
@@ -389,12 +423,33 @@ export default function Screening() {
         return;
       }
       setValidationMessage('');
-      setStep(4);
+      // For adult/child → go to gaze step (4). For toddler → skip to review (4).
+      setStep(hasGaze ? GAZE_STEP : REVIEW_STEP);
       return;
     }
 
-    if (step === 4) {
+    // Gaze and speech steps are handled internally by their own callbacks, not here.
+
+    if (step === REVIEW_STEP) {
       try {
+        // Encode audio blob to base64 if present
+        let audioBase64 = null;
+        if (audioBlob) {
+          if (audioBlob.size > 2_000_000) {
+            // Audio too large — skip speech to avoid payload issues
+            setSpeechSkipped(true);
+            setAudioBlob(null);
+          } else {
+            const arrayBuffer = await audioBlob.arrayBuffer();
+            const uint8 = new Uint8Array(arrayBuffer);
+            let binary = '';
+            for (let i = 0; i < uint8.length; i++) {
+              binary += String.fromCharCode(uint8[i]);
+            }
+            audioBase64 = btoa(binary);
+          }
+        }
+
         const payload = {
           category,
           demo: {
@@ -406,6 +461,12 @@ export default function Screening() {
           },
           answers,
           aq10Score,
+          gazePoints: gazeData || [],
+          gazeSkipped,
+          audioBase64: audioBase64,
+          audioMimeType: audioBlob?.type || null,
+          transcriptHint: transcriptHint,
+          speechSkipped: speechSkipped,
         };
         const result = await submit(payload);
         navigate(`/app/results/${result.caseId}`);
@@ -422,13 +483,19 @@ export default function Screening() {
       return;
     }
     setValidationMessage('');
+    // When going back from Review on gaze/speech tracks, skip back to AQ-10
+    // (gaze and speech are internally managed, not by the wizard's Continue button)
+    if (step === REVIEW_STEP && hasGaze) {
+      setStep(3); // back to AQ-10
+      return;
+    }
     setStep((current) => current - 1);
   }
 
   return (
     <main id="screening-page" style={styles.page}>
       <div style={styles.sectionCard}>
-        <StepIndicator current={step} />
+        <StepIndicator current={step} isToddler={isToddler} />
       </div>
 
       {step === 0 && (
@@ -713,7 +780,40 @@ export default function Screening() {
             </section>
           )}
 
-          {step === 4 && (
+          {hasGaze && step === GAZE_STEP && (
+            <GazeSession
+              category={category}
+              onComplete={(data) => {
+                setGazeData(data);
+                setGazeSkipped(false);
+                setStep(SPEECH_STEP);
+              }}
+              onSkip={() => {
+                setGazeData(null);
+                setGazeSkipped(true);
+                setStep(SPEECH_STEP);
+              }}
+            />
+          )}
+
+          {hasGaze && step === SPEECH_STEP && (
+            <SpeechSession
+              category={category}
+              onComplete={(blob, hint) => {
+                setAudioBlob(blob);
+                setTranscriptHint(hint || '');
+                setSpeechSkipped(false);
+                setStep(REVIEW_STEP);
+              }}
+              onSkip={() => {
+                setAudioBlob(null);
+                setSpeechSkipped(true);
+                setStep(REVIEW_STEP);
+              }}
+            />
+          )}
+
+          {step === REVIEW_STEP && (
             <section style={styles.sectionCard}>
               <h2 style={{ marginTop: 0, color: 'var(--color-neutral-900)' }}>
                 {content.reviewTitle}
@@ -722,20 +822,39 @@ export default function Screening() {
                 {content.reviewDescription}
               </p>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', marginTop: '18px' }}>
-                {summaryRows.map(([label, value]) => (
-                  <div
-                    key={label}
-                    style={{
-                      padding: '16px',
-                      borderRadius: '16px',
-                      border: '1px solid var(--color-neutral-200)',
-                      backgroundColor: 'var(--color-bg)',
-                    }}
-                  >
-                    <p style={{ ...styles.label, marginBottom: '6px' }}>{label}</p>
-                    <strong style={{ color: 'var(--color-neutral-900)' }}>{value}</strong>
-                  </div>
-                ))}
+                {summaryRows.map(([label, value]) => {
+                  // Style multimodal rows differently based on status
+                  const isGazeRow = label === 'Eye Gaze';
+                  const isSpeechRow = label === 'Speech Sample';
+                  const isMultimodal = isGazeRow || isSpeechRow;
+
+                  const hasCapturedData = isGazeRow
+                    ? (gazeData && !gazeSkipped)
+                    : isSpeechRow
+                      ? (audioBlob && !speechSkipped)
+                      : false;
+
+                  const valueColor = isMultimodal
+                    ? hasCapturedData
+                      ? 'var(--color-primary-dark)'
+                      : 'var(--color-neutral-400)'
+                    : 'var(--color-neutral-900)';
+
+                  return (
+                    <div
+                      key={label}
+                      style={{
+                        padding: '16px',
+                        borderRadius: '16px',
+                        border: `1px solid ${hasCapturedData ? 'var(--color-primary-muted)' : 'var(--color-neutral-200)'}`,
+                        backgroundColor: hasCapturedData ? 'var(--color-risk-low-bg)' : 'var(--color-bg)',
+                      }}
+                    >
+                      <p style={{ ...styles.label, marginBottom: '6px' }}>{label}</p>
+                      <strong style={{ color: valueColor }}>{value}</strong>
+                    </div>
+                  );
+                })}
               </div>
               <div
                 style={{
@@ -776,7 +895,7 @@ export default function Screening() {
               disabled={loading}
               style={styles.primaryButton(content, loading)}
             >
-              {step === 4
+              {step === REVIEW_STEP
                 ? loading
                   ? 'Submitting…'
                   : `Submit ${content.label.toLowerCase()} screening`
