@@ -4,7 +4,7 @@ import CategoryBadge from '../components/CategoryBadge';
 import RiskBadge from '../components/RiskBadge';
 import { casesApi } from '../services/api';
 
-const FILTERS = ['all', 'adult', 'child'];
+const FILTERS = ['all', 'adult', 'child', 'toddler'];
 
 const styles = {
   page: {

@@ -94,7 +94,7 @@ async def run_screening(body: ScreeningRequest, request: Request):
             "is_mock": is_mock,
             "data_source": "mock" if is_mock else "model",
             "tags": build_case_tags(category, risk_level, is_mock),
-            "notes": build_initial_notes(category, body.demo.age),
+            "notes": build_initial_notes(category, body.demo.age * 12 if category == "toddler" else body.demo.age),
             "interpretation": interpretation,
             "demo": demo_dict,
             "answers": answers_dict,

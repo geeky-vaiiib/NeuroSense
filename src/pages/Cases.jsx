@@ -5,7 +5,7 @@ import Modal from '../components/Modal';
 import RiskBadge from '../components/RiskBadge';
 import { casesApi } from '../services/api';
 
-const CATEGORY_FILTERS = ['all', 'adult', 'child'];
+const CATEGORY_FILTERS = ['all', 'adult', 'child', 'toddler'];
 const RISK_FILTERS = ['all', 'High', 'Moderate', 'Low'];
 
 const styles = {

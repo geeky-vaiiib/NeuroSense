@@ -240,8 +240,8 @@ def build_initial_notes(category: str, age: int) -> str:
         )
     if category == "toddler":
         return (
-            f"Caregiver-completed toddler Q-CHAT-10 screening submitted for age {age} months. "
-            "Awaiting developmental paediatric review and early-intervention assessment."
+            f"Caregiver-completed Q-CHAT-10 submitted for toddler aged approximately {age} months. "
+            "Awaiting developmental review and early-intervention context assessment."
         )
     return (
         f"Caregiver-completed child screening submitted for age {age}. Awaiting developmental "
