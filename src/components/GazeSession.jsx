@@ -229,7 +229,9 @@ export default function GazeSession({ onComplete, onSkip, category }) {
     // Sample mouse/touch position every 100 ms
     samplerRef.current = setInterval(() => {
       const { x, y } = lastMousePos.current;
-      gazeRef.current.push({ x, y, timestamp: Date.now(), stimulus: stimIdx });
+      const normX = Math.max(0, Math.min(x / window.innerWidth, 1));
+      const normY = Math.max(0, Math.min(y / window.innerHeight, 1));
+      gazeRef.current.push({ x: normX, y: normY, timestamp: Date.now(), stimulus: stimIdx });
     }, 100);
   };
 

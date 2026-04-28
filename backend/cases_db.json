@@ -414,5 +414,65 @@
       "A9": "Slightly agree",
       "A10": "Definitely disagree"
     }
+  },
+  "NS-A-20260428-6C65": {
+    "id": "NS-A-20260428-6C65",
+    "category": "adult",
+    "category_label": "Adult",
+    "subject_name": "Test",
+    "respondent_name": "Test",
+    "respondent_relationship": "Self",
+    "age": 25,
+    "gender": "Male",
+    "ethnicity": "South Asian",
+    "jaundice": "No",
+    "family_asd": "No",
+    "risk_level": "High",
+    "risk_score": 1.0,
+    "aq10_score": 7,
+    "status": "pending-review",
+    "diagnosis": "Adult ASD traits flagged — follow-up recommended",
+    "screening_date": "2026-04-28",
+    "referral_date": "2026-04-28",
+    "created_at": "2026-04-28T10:23:39.192616+00:00",
+    "updated_at": "2026-04-28T10:23:39.192616+00:00",
+    "clinician": "Awaiting clinician assignment",
+    "screening_tool": "Adult AQ-10",
+    "completed_screenings": [
+      "Adult AQ-10"
+    ],
+    "model_used": "adult_XGBClassifier",
+    "is_mock": false,
+    "data_source": "model",
+    "tags": [
+      "adult-track",
+      "self-report",
+      "high-risk",
+      "live-model"
+    ],
+    "notes": "Adult self-report submitted at age 25. Awaiting clinician review and adult-context interpretation.",
+    "interpretation": "This adult self-report screening shows a high concentration of ASD-related traits. A clinician-led adult follow-up assessment is recommended.",
+    "demo": {
+      "subjectName": "Test",
+      "respondentName": "Test",
+      "respondentRelationship": "Self",
+      "age": 25,
+      "gender": "Male",
+      "ethnicity": "South Asian",
+      "jaundice": "No",
+      "familyAsd": "No"
+    },
+    "answers": {
+      "A1": "Definitely agree",
+      "A2": "Slightly disagree",
+      "A3": "Definitely disagree",
+      "A4": "Slightly disagree",
+      "A5": "Definitely disagree",
+      "A6": "Definitely disagree",
+      "A7": "Definitely agree",
+      "A8": "Definitely agree",
+      "A9": "Definitely disagree",
+      "A10": "Definitely agree"
+    }
   }
 }
