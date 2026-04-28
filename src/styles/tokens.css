@@ -1,69 +1,103 @@
 /* ============================================================
    NeuroSense Design System — tokens.css
-   Neuroinclusive color palette + full design token library
+   Premium ASD-friendly design tokens with dark/light mode
    ============================================================ */
 
-/* ── Google Fonts ─────────────────────────────────────────── */
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@300;400;500&display=swap');
+/* ── Google Fonts — Inter + Space Grotesk + JetBrains Mono ── */
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300..800;1,14..32,300..800&family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap');
 
+/* ============================================================
+   LIGHT THEME (default)
+   ============================================================ */
 :root {
-  /* ── Core Palette ────────────────────────────────────────── */
-  --color-primary:          #7C9A85;   /* muted sage */
-  --color-primary-light:    #9DB5A4;
-  --color-primary-dark:     #5E7A67;
-  --color-primary-muted:    rgba(124, 154, 133, 0.15);
-  --color-primary-subtle:   rgba(124, 154, 133, 0.08);
+  /* ── Core Brand ─────────────────────────────────────────── */
+  --color-primary:          #5B8A72;
+  --color-primary-light:    #7BA695;
+  --color-primary-dark:     #3E6B54;
+  --color-primary-hover:    #4A7460;
+  --color-primary-muted:    rgba(91, 138, 114, 0.10);
+  --color-primary-subtle:   rgba(91, 138, 114, 0.06);
+  --color-primary-soft:     #E8F0EB;
+  --color-primary-glow:     0 0 0 4px rgba(91, 138, 114, 0.15);
 
-  --color-secondary:        #8A8178;   /* warm stone */
+  --color-secondary:        #8A8178;
   --color-secondary-light:  #A89E94;
   --color-secondary-dark:   #6B6560;
-  --color-secondary-muted:  rgba(138, 129, 120, 0.15);
+  --color-secondary-muted:  rgba(138, 129, 120, 0.12);
 
-  /* ── Background Layers ───────────────────────────────────── */
-  --color-bg:               #FAFAF8;   /* off-white */
-  --color-bg-alt:           #F3F3F0;
+  /* ── Background Layers ──────────────────────────────────── */
+  --color-bg:               #FAFAF8;
+  --color-bg-alt:           #F5F4F0;
   --color-bg-card:          #FFFFFF;
   --color-bg-elevated:      #FFFFFF;
   --color-bg-overlay:       rgba(250, 250, 248, 0.92);
-  --color-bg-sidebar:       #F0F0ED;
+  --color-bg-sidebar:       #F7F7F4;
+  --color-bg-input:         #FAFAF8;
+  --color-bg-glass:         rgba(255, 255, 255, 0.6);
 
-  /* ── Neutral Scale ───────────────────────────────────────── */
+  /* ── Neutral Scale ──────────────────────────────────────── */
   --color-neutral-50:       #FAFAF8;
   --color-neutral-100:      #F3F3F0;
   --color-neutral-200:      #E8E8E4;
-  --color-neutral-300:      #D2D2CC;
+  --color-neutral-300:      #D4D4CC;
   --color-neutral-400:      #B0B0A8;
   --color-neutral-500:      #8A8A82;
-  --color-neutral-600:      #6A6A62;
+  --color-neutral-600:      #6B7280;
   --color-neutral-700:      #4A4A44;
   --color-neutral-800:      #2E2E2A;
-  --color-neutral-900:      #1A1A18;
+  --color-neutral-900:      #1A1D1F;
 
-  /* ── Semantic Risk Colors ────────────────────────────────── */
-  /* HIGH RISK — Rose */
-  --color-risk-high:        #C0555A;
-  --color-risk-high-light:  #E8898D;
-  --color-risk-high-bg:     #FFF0F0;
-  --color-risk-high-border: rgba(192, 85, 90, 0.25);
-  --color-risk-high-muted:  rgba(192, 85, 90, 0.12);
+  /* ── Category Accents ───────────────────────────────────── */
+  --color-accent-adult:       #5B7FA6;
+  --color-accent-adult-bg:    rgba(91, 127, 166, 0.08);
+  --color-accent-adult-border: rgba(91, 127, 166, 0.20);
 
-  /* MODERATE RISK — Amber */
-  --color-risk-moderate:        #B8873A;
-  --color-risk-moderate-light:  #D4AA72;
-  --color-risk-moderate-bg:     #FFF8EE;
-  --color-risk-moderate-border: rgba(184, 135, 58, 0.25);
-  --color-risk-moderate-muted:  rgba(184, 135, 58, 0.12);
+  --color-accent-child:       #C4854C;
+  --color-accent-child-bg:    rgba(196, 133, 76, 0.08);
+  --color-accent-child-border: rgba(196, 133, 76, 0.20);
 
-  /* LOW RISK — Sage (primary) */
-  --color-risk-low:         #7C9A85;
-  --color-risk-low-light:   #9DB5A4;
-  --color-risk-low-bg:      #F0F5F1;
-  --color-risk-low-border:  rgba(124, 154, 133, 0.25);
-  --color-risk-low-muted:   rgba(124, 154, 133, 0.12);
+  --color-accent-toddler:       #8B6BAE;
+  --color-accent-toddler-bg:    rgba(139, 107, 174, 0.08);
+  --color-accent-toddler-border: rgba(139, 107, 174, 0.20);
 
-  /* ── Typography ──────────────────────────────────────────── */
-  --font-body:       'DM Sans', system-ui, -apple-system, sans-serif;
-  --font-mono:       'DM Mono', 'Cascadia Code', 'Fira Code', monospace;
+  /* ── Semantic Risk Colors ───────────────────────────────── */
+  --color-risk-high:         #C45C5C;
+  --color-risk-high-light:   #D88888;
+  --color-risk-high-bg:      #FDF2F2;
+  --color-risk-high-border:  rgba(196, 92, 92, 0.20);
+  --color-risk-high-muted:   rgba(196, 92, 92, 0.08);
+
+  --color-risk-moderate:         #C49A3C;
+  --color-risk-moderate-light:   #D4B468;
+  --color-risk-moderate-bg:      #FDF8EC;
+  --color-risk-moderate-border:  rgba(196, 154, 60, 0.20);
+  --color-risk-moderate-muted:   rgba(196, 154, 60, 0.08);
+
+  --color-risk-low:          #5B8A72;
+  --color-risk-low-light:    #7BA695;
+  --color-risk-low-bg:       #F0F7F3;
+  --color-risk-low-border:   rgba(91, 138, 114, 0.20);
+  --color-risk-low-muted:    rgba(91, 138, 114, 0.08);
+
+  /* ── Glassmorphism ──────────────────────────────────────── */
+  --glass-bg:               rgba(255, 255, 255, 0.7);
+  --glass-border:           rgba(255, 255, 255, 0.3);
+  --glass-blur:             16px;
+  --glass-shadow:           0 8px 32px rgba(0, 0, 0, 0.08);
+
+  /* ── Gradient Accents ───────────────────────────────────── */
+  --gradient-primary:       linear-gradient(135deg, #5B8A72 0%, #3E6B54 100%);
+  --gradient-hero:          linear-gradient(135deg, #5B8A72 0%, #4A7460 40%, #3E6B54 100%);
+  --gradient-accent:        linear-gradient(135deg, #6ee7b7 0%, #5B8A72 50%, #8B6BAE 100%);
+  --gradient-glow:          radial-gradient(ellipse at center, rgba(91,138,114,0.15) 0%, transparent 70%);
+  --gradient-mesh:          radial-gradient(ellipse 60% 50% at 25% 0%, rgba(110,231,183,0.08) 0%, transparent 50%),
+                            radial-gradient(ellipse 40% 40% at 75% 100%, rgba(139,107,174,0.06) 0%, transparent 50%),
+                            radial-gradient(ellipse 50% 50% at 50% 50%, rgba(196,133,76,0.04) 0%, transparent 50%);
+
+  /* ── Typography ─────────────────────────────────────────── */
+  --font-body:       'Inter', system-ui, -apple-system, sans-serif;
+  --font-display:    'Space Grotesk', 'Inter', system-ui, sans-serif;
+  --font-mono:       'JetBrains Mono', 'Cascadia Code', 'Fira Code', monospace;
 
   --font-size-xs:    0.6875rem;   /* 11px */
   --font-size-sm:    0.8125rem;   /* 13px */
@@ -74,66 +108,70 @@
   --font-size-2xl:   1.5rem;      /* 24px */
   --font-size-3xl:   1.875rem;    /* 30px */
   --font-size-4xl:   2.25rem;     /* 36px */
+  --font-size-5xl:   3rem;        /* 48px */
+  --font-size-6xl:   3.75rem;     /* 60px */
 
   --font-weight-light:    300;
   --font-weight-normal:   400;
   --font-weight-medium:   500;
   --font-weight-semibold: 600;
   --font-weight-bold:     700;
+  --font-weight-extrabold: 800;
 
   --line-height-tight:    1.25;
   --line-height-snug:     1.375;
   --line-height-normal:   1.5;
   --line-height-relaxed:  1.625;
-  --line-height-loose:    2;
+  --line-height-loose:    1.8;
 
   --letter-spacing-tight:  -0.025em;
-  --letter-spacing-normal:  0em;
+  --letter-spacing-normal:  0.01em;
   --letter-spacing-wide:    0.025em;
   --letter-spacing-wider:   0.05em;
   --letter-spacing-widest:  0.1em;
 
-  /* ── Spacing ─────────────────────────────────────────────── */
-  --space-1:   0.25rem;   /* 4px  */
-  --space-2:   0.5rem;    /* 8px  */
-  --space-3:   0.75rem;   /* 12px */
-  --space-4:   1rem;      /* 16px */
-  --space-5:   1.25rem;   /* 20px */
-  --space-6:   1.5rem;    /* 24px */
-  --space-8:   2rem;      /* 32px */
-  --space-10:  2.5rem;    /* 40px */
-  --space-12:  3rem;      /* 48px */
-  --space-16:  4rem;      /* 64px */
-  --space-20:  5rem;      /* 80px */
-  --space-24:  6rem;      /* 96px */
+  /* ── Spacing (strict 8px grid) ──────────────────────────── */
+  --space-1:   0.25rem;
+  --space-2:   0.5rem;
+  --space-3:   0.75rem;
+  --space-4:   1rem;
+  --space-5:   1.25rem;
+  --space-6:   1.5rem;
+  --space-8:   2rem;
+  --space-10:  2.5rem;
+  --space-12:  3rem;
+  --space-16:  4rem;
+  --space-20:  5rem;
+  --space-24:  6rem;
 
-  /* ── Border Radius ───────────────────────────────────────── */
-  --radius-xs:   2px;
-  --radius-sm:   4px;
-  --radius-md:   8px;
-  --radius-lg:   12px;
-  --radius-xl:   16px;
-  --radius-2xl:  20px;
-  --radius-3xl:  24px;
+  /* ── Border Radius ──────────────────────────────────────── */
+  --radius-xs:   4px;
+  --radius-sm:   8px;
+  --radius-md:   12px;
+  --radius-lg:   16px;
+  --radius-xl:   20px;
+  --radius-2xl:  24px;
+  --radius-3xl:  32px;
   --radius-full: 9999px;
 
-  /* ── Shadows ─────────────────────────────────────────────── */
-  --shadow-xs:  0 1px 2px 0 rgba(26, 26, 24, 0.04);
-  --shadow-sm:  0 1px 3px 0 rgba(26, 26, 24, 0.06), 0 1px 2px -1px rgba(26, 26, 24, 0.04);
-  --shadow-md:  0 4px 6px -1px rgba(26, 26, 24, 0.07), 0 2px 4px -2px rgba(26, 26, 24, 0.05);
-  --shadow-lg:  0 10px 15px -3px rgba(26, 26, 24, 0.08), 0 4px 6px -4px rgba(26, 26, 24, 0.05);
-  --shadow-xl:  0 20px 25px -5px rgba(26, 26, 24, 0.09), 0 8px 10px -6px rgba(26, 26, 24, 0.05);
-  --shadow-2xl: 0 25px 50px -12px rgba(26, 26, 24, 0.15);
-  --shadow-primary: 0 4px 14px rgba(124, 154, 133, 0.30);
-  --shadow-inset: inset 0 2px 4px 0 rgba(26, 26, 24, 0.06);
+  /* ── Shadows ────────────────────────────────────────────── */
+  --shadow-xs:   0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-sm:   0 2px 8px rgba(0, 0, 0, 0.05);
+  --shadow-md:   0 4px 16px rgba(0, 0, 0, 0.07);
+  --shadow-lg:   0 8px 32px rgba(0, 0, 0, 0.09);
+  --shadow-xl:   0 16px 48px rgba(0, 0, 0, 0.12);
+  --shadow-2xl:  0 24px 64px rgba(0, 0, 0, 0.15);
+  --shadow-primary: 0 4px 14px rgba(91, 138, 114, 0.25);
+  --shadow-glow:    0 0 40px rgba(91, 138, 114, 0.15);
+  --shadow-inset: inset 0 2px 4px rgba(0, 0, 0, 0.04);
 
-  /* ── Borders ─────────────────────────────────────────────── */
+  /* ── Borders ────────────────────────────────────────────── */
   --border-width:     1px;
   --border-color:     var(--color-neutral-200);
   --border-color-alt: var(--color-neutral-300);
-  --border-primary:   rgba(124, 154, 133, 0.30);
+  --border-primary:   rgba(91, 138, 114, 0.25);
 
-  /* ── Z-Index ─────────────────────────────────────────────── */
+  /* ── Z-Index ────────────────────────────────────────────── */
   --z-base:     0;
   --z-raised:   10;
   --z-dropdown: 100;
@@ -143,20 +181,130 @@
   --z-toast:    500;
   --z-tooltip:  600;
 
-  /* ── Transitions ─────────────────────────────────────────── */
-  --transition-fast:   150ms cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-base:   250ms cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-slow:   400ms cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-spring: 350ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  /* ── Motion & Easing ────────────────────────────────────── */
+  --ease-out:      cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out:   cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-spring:   cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-default:  cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-bounce:   cubic-bezier(0.68, -0.55, 0.265, 1.55);
 
-  /* ── Sidebar ─────────────────────────────────────────────── */
-  --sidebar-width:         240px;
+  --duration-fast:    150ms;
+  --duration-normal:  250ms;
+  --duration-slow:    400ms;
+  --duration-enter:   350ms;
+  --duration-exit:    200ms;
+
+  --transition-fast:   150ms var(--ease-default);
+  --transition-base:   250ms var(--ease-out);
+  --transition-slow:   400ms var(--ease-out);
+  --transition-spring: 350ms var(--ease-spring);
+
+  /* ── Layout ─────────────────────────────────────────────── */
+  --sidebar-width:         260px;
   --sidebar-width-compact: 64px;
-  --navbar-height:         60px;
+  --navbar-height:         64px;
+  --content-max-width:     1080px;
+  --card-padding:          var(--space-6);
+  --page-padding-x:        var(--space-8);
+  --page-padding-y:        var(--space-8);
+}
 
-  /* ── Layout ──────────────────────────────────────────────── */
-  --content-max-width: 1280px;
-  --card-padding:      var(--space-6);
-  --page-padding-x:    var(--space-8);
-  --page-padding-y:    var(--space-6);
+/* ============================================================
+   DARK THEME
+   ============================================================ */
+[data-theme="dark"] {
+  /* ── Core Brand (boosted for dark bg) ───────────────────── */
+  --color-primary:          #6ee7b7;
+  --color-primary-light:    #a7f3d0;
+  --color-primary-dark:     #34d399;
+  --color-primary-hover:    #5bd8a8;
+  --color-primary-muted:    rgba(110, 231, 183, 0.12);
+  --color-primary-subtle:   rgba(110, 231, 183, 0.06);
+  --color-primary-soft:     rgba(110, 231, 183, 0.08);
+  --color-primary-glow:     0 0 0 4px rgba(110, 231, 183, 0.15);
+
+  --color-secondary:        #a89e94;
+  --color-secondary-light:  #c4b8ac;
+  --color-secondary-dark:   #8a8178;
+  --color-secondary-muted:  rgba(168, 158, 148, 0.12);
+
+  /* ── Background Layers ──────────────────────────────────── */
+  --color-bg:               #0f172a;
+  --color-bg-alt:           #1e293b;
+  --color-bg-card:          #1e293b;
+  --color-bg-elevated:      #334155;
+  --color-bg-overlay:       rgba(15, 23, 42, 0.92);
+  --color-bg-sidebar:       #0f172a;
+  --color-bg-input:         #1e293b;
+  --color-bg-glass:         rgba(30, 41, 59, 0.6);
+
+  /* ── Neutral Scale ──────────────────────────────────────── */
+  --color-neutral-50:       #0f172a;
+  --color-neutral-100:      #1e293b;
+  --color-neutral-200:      #334155;
+  --color-neutral-300:      #475569;
+  --color-neutral-400:      #64748b;
+  --color-neutral-500:      #94a3b8;
+  --color-neutral-600:      #cbd5e1;
+  --color-neutral-700:      #e2e8f0;
+  --color-neutral-800:      #f1f5f9;
+  --color-neutral-900:      #f8fafc;
+
+  /* ── Category Accents ───────────────────────────────────── */
+  --color-accent-adult:       #60a5fa;
+  --color-accent-adult-bg:    rgba(96, 165, 250, 0.12);
+  --color-accent-adult-border: rgba(96, 165, 250, 0.25);
+
+  --color-accent-child:       #fbbf24;
+  --color-accent-child-bg:    rgba(251, 191, 36, 0.12);
+  --color-accent-child-border: rgba(251, 191, 36, 0.25);
+
+  --color-accent-toddler:       #c084fc;
+  --color-accent-toddler-bg:    rgba(192, 132, 252, 0.12);
+  --color-accent-toddler-border: rgba(192, 132, 252, 0.25);
+
+  /* ── Semantic Risk Colors ───────────────────────────────── */
+  --color-risk-high:         #f87171;
+  --color-risk-high-light:   #fca5a5;
+  --color-risk-high-bg:      rgba(248, 113, 113, 0.1);
+  --color-risk-high-border:  rgba(248, 113, 113, 0.25);
+  --color-risk-high-muted:   rgba(248, 113, 113, 0.08);
+
+  --color-risk-moderate:         #fbbf24;
+  --color-risk-moderate-light:   #fcd34d;
+  --color-risk-moderate-bg:      rgba(251, 191, 36, 0.1);
+  --color-risk-moderate-border:  rgba(251, 191, 36, 0.25);
+  --color-risk-moderate-muted:   rgba(251, 191, 36, 0.08);
+
+  --color-risk-low:          #6ee7b7;
+  --color-risk-low-light:    #a7f3d0;
+  --color-risk-low-bg:       rgba(110, 231, 183, 0.1);
+  --color-risk-low-border:   rgba(110, 231, 183, 0.25);
+  --color-risk-low-muted:    rgba(110, 231, 183, 0.08);
+
+  /* ── Glassmorphism (dark) ───────────────────────────────── */
+  --glass-bg:               rgba(30, 41, 59, 0.7);
+  --glass-border:           rgba(110, 231, 183, 0.1);
+  --glass-blur:             20px;
+  --glass-shadow:           0 8px 32px rgba(0, 0, 0, 0.3);
+
+  /* ── Gradient Accents (dark) ────────────────────────────── */
+  --gradient-primary:       linear-gradient(135deg, #6ee7b7 0%, #34d399 100%);
+  --gradient-hero:          linear-gradient(135deg, #6ee7b7 0%, #34d399 50%, #10b981 100%);
+  --gradient-accent:        linear-gradient(135deg, #6ee7b7 0%, #34d399 50%, #c084fc 100%);
+  --gradient-glow:          radial-gradient(ellipse at center, rgba(110,231,183,0.1) 0%, transparent 70%);
+  --gradient-mesh:          radial-gradient(ellipse 60% 50% at 25% 0%, rgba(110,231,183,0.06) 0%, transparent 50%),
+                            radial-gradient(ellipse 40% 40% at 75% 100%, rgba(192,132,252,0.05) 0%, transparent 50%),
+                            radial-gradient(ellipse 50% 50% at 50% 50%, rgba(251,191,36,0.03) 0%, transparent 50%);
+
+  /* ── Shadows (dark) ─────────────────────────────────────── */
+  --shadow-xs:   0 1px 2px rgba(0, 0, 0, 0.2);
+  --shadow-sm:   0 2px 8px rgba(0, 0, 0, 0.25);
+  --shadow-md:   0 4px 16px rgba(0, 0, 0, 0.3);
+  --shadow-lg:   0 8px 32px rgba(0, 0, 0, 0.35);
+  --shadow-xl:   0 16px 48px rgba(0, 0, 0, 0.4);
+  --shadow-2xl:  0 24px 64px rgba(0, 0, 0, 0.5);
+  --shadow-primary: 0 4px 14px rgba(110, 231, 183, 0.2);
+  --shadow-glow:    0 0 40px rgba(110, 231, 183, 0.1);
+  --shadow-inset: inset 0 2px 4px rgba(0, 0, 0, 0.15);
 }

@@ -16,15 +16,16 @@ const styles = {
   card: {
     backgroundColor: 'var(--color-bg-card)',
     border: '1px solid var(--color-neutral-200)',
-    borderRadius: '22px',
-    padding: '24px',
+    borderRadius: 'var(--radius-xl)',
+    padding: 'var(--card-padding)',
     boxShadow: 'var(--shadow-xs)',
+    transition: 'box-shadow 250ms cubic-bezier(0.16,1,0.3,1)',
   },
   metaLabel: {
-    fontSize: '0.75rem',
+    fontSize: '0.6875rem',
     fontWeight: 700,
     color: 'var(--color-neutral-400)',
-    letterSpacing: '0.05em',
+    letterSpacing: '0.06em',
     textTransform: 'uppercase',
   },
 };
@@ -33,8 +34,8 @@ function FeatureBars({ features }) {
   const maxValue = Math.max(...features.map((item) => Math.abs(item.shapValue)), 0.01);
 
   return (
-    <div style={{ display: 'grid', gap: '12px' }}>
-      {features.map((item) => {
+    <div style={{ display: 'grid', gap: '14px' }}>
+      {features.map((item, idx) => {
         const pct = Math.abs(item.shapValue) / maxValue;
         const color =
           item.direction === 'positive'
@@ -51,26 +52,38 @@ function FeatureBars({ features }) {
                 alignItems: 'baseline',
               }}
             >
-              <strong style={{ color: 'var(--color-neutral-800)' }}>{item.feature}</strong>
-              <span style={{ color, fontFamily: 'var(--font-mono)', fontSize: '0.85rem' }}>
+              <span style={{
+                color: 'var(--color-neutral-800)',
+                fontWeight: 600,
+                fontSize: 'var(--font-size-sm)',
+              }}>{item.feature}</span>
+              <span style={{
+                color,
+                fontFamily: 'var(--font-mono)',
+                fontSize: '0.8rem',
+                fontWeight: 500,
+              }}>
                 {item.shapValue > 0 ? '+' : ''}
-                {item.shapValue.toFixed(2)}
+                {item.shapValue.toFixed(3)}
               </span>
             </div>
             <div
               style={{
-                height: '10px',
-                borderRadius: '999px',
+                height: '8px',
+                borderRadius: 'var(--radius-full)',
                 backgroundColor: 'var(--color-neutral-100)',
                 overflow: 'hidden',
+                position: 'relative',
               }}
             >
               <div
                 style={{
-                  width: `${Math.max(pct * 100, 6)}%`,
+                  width: `${Math.max(pct * 100, 4)}%`,
                   height: '100%',
-                  borderRadius: '999px',
+                  borderRadius: 'var(--radius-full)',
                   backgroundColor: color,
+                  animation: `ns-bar-fill 600ms cubic-bezier(0.16,1,0.3,1) ${idx * 50}ms both`,
+                  opacity: 0.85,
                 }}
               />
             </div>
@@ -175,6 +188,8 @@ export default function Results() {
     };
   }, [detailCache, fetchExplanation, selectedCaseId]);
 
+  // Load clinician notes when selected case changes
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (!selectedCaseId) return;
     const caseData = detailCache[selectedCaseId];
@@ -183,6 +198,7 @@ export default function Results() {
     setNotesSaved(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedCaseId]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   function handleSaveNotes() {
     localStorage.setItem(`ns_notes_${selectedCaseId}`, clinicianNotes);
@@ -242,7 +258,7 @@ export default function Results() {
               Category-aware results and explainability
             </h1>
             <p style={{ margin: 0, color: 'var(--color-neutral-600)', lineHeight: 1.7 }}>
-              Every case keeps its adult or child track visible through the result, model,
+              Every case keeps its track (adult, child, or toddler) visible through the result, model,
               explanation, and stored case summary.
             </p>
           </div>

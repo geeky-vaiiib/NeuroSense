@@ -1,20 +1,45 @@
+/**
+ * RiskBadge.jsx — ASD-friendly risk level pill with muted colors.
+ * Never uses bright/jarring reds — all colors are desaturated and calm.
+ */
 const CONFIG = {
-  High: { bg: '#F5DDE2', text: '#B05464', dot: '#B05464' },
-  Moderate: { bg: '#F5E4C3', text: '#C98B2E', dot: '#C98B2E' },
-  Low: { bg: '#E8F2EB', text: '#4A6B52', dot: '#7C9A85' },
-  Escalated: { bg: '#F0E0F5', text: '#7B3F9E', dot: '#7B3F9E' },
+  High: {
+    bg: 'var(--color-risk-high-muted)',
+    text: 'var(--color-risk-high)',
+    border: 'var(--color-risk-high-border)',
+    dot: 'var(--color-risk-high)',
+  },
+  Moderate: {
+    bg: 'var(--color-risk-moderate-muted)',
+    text: 'var(--color-risk-moderate)',
+    border: 'var(--color-risk-moderate-border)',
+    dot: 'var(--color-risk-moderate)',
+  },
+  Low: {
+    bg: 'var(--color-risk-low-muted)',
+    text: 'var(--color-risk-low)',
+    border: 'var(--color-risk-low-border)',
+    dot: 'var(--color-risk-low)',
+  },
+  Escalated: {
+    bg: 'var(--color-accent-toddler-bg)',
+    text: 'var(--color-accent-toddler)',
+    border: 'var(--color-accent-toddler-border)',
+    dot: 'var(--color-accent-toddler)',
+  },
 };
 
 const FALLBACK = {
-  bg: '#F0F0ED',
-  text: '#6A6A62',
-  dot: '#B0B0A8',
+  bg: 'var(--color-neutral-100)',
+  text: 'var(--color-neutral-600)',
+  border: 'var(--color-neutral-200)',
+  dot: 'var(--color-neutral-400)',
 };
 
 const SIZE_MAP = {
-  sm: { fontSize: '11px', padding: '2px 8px', dot: 5 },
-  md: { fontSize: '12px', padding: '3px 10px', dot: 6 },
-  lg: { fontSize: '13px', padding: '4px 12px', dot: 7 },
+  sm: { fontSize: '0.6875rem', padding: '3px 10px', dot: 5, height: 24 },
+  md: { fontSize: '0.75rem', padding: '4px 12px', dot: 6, height: 28 },
+  lg: { fontSize: '0.8125rem', padding: '5px 14px', dot: 7, height: 32 },
 };
 
 function normalizeRisk(value) {
@@ -36,20 +61,24 @@ export default function RiskBadge({ risk, level, size = 'md', showScore = false,
   return (
     <span
       role="status"
-      aria-label={`Risk level: ${label}`}
+      aria-label={`Risk level: ${label}${showNumericScore ? ` (${Math.round(score * 100)}%)` : ''}`}
       style={{
         display: 'inline-flex',
         alignItems: 'center',
-        gap: '5px',
+        gap: '6px',
         padding: metric.padding,
-        borderRadius: '20px',
+        height: metric.height,
+        borderRadius: 'var(--radius-full)',
         backgroundColor: cfg.bg,
         color: cfg.text,
+        border: `1px solid ${cfg.border}`,
         fontSize: metric.fontSize,
-        fontWeight: 500,
-        fontFamily: "'DM Sans', system-ui, sans-serif",
-        lineHeight: 1.6,
+        fontWeight: 600,
+        fontFamily: 'var(--font-body)',
+        lineHeight: 1,
         whiteSpace: 'nowrap',
+        letterSpacing: '0.02em',
+        transition: 'all 200ms cubic-bezier(0.16,1,0.3,1)',
       }}
     >
       <span
@@ -60,11 +89,17 @@ export default function RiskBadge({ risk, level, size = 'md', showScore = false,
           borderRadius: '50%',
           backgroundColor: cfg.dot,
           flexShrink: 0,
+          opacity: 0.85,
         }}
       />
       {label}
       {showNumericScore && (
-        <span style={{ fontFamily: 'var(--font-mono)', opacity: 0.85 }}>
+        <span style={{
+          fontFamily: 'var(--font-mono)',
+          fontSize: '0.65rem',
+          opacity: 0.8,
+          fontWeight: 500,
+        }}>
           {Math.round(score * 100)}%
         </span>
       )}

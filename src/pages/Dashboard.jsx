@@ -155,7 +155,7 @@ export default function Dashboard() {
           <div>
             <h1 style={{ margin: '0 0 6px', color: 'var(--color-neutral-900)' }}>Overview</h1>
             <p style={{ margin: 0, color: 'var(--color-neutral-600)', lineHeight: 1.7 }}>
-              Track mixed adult and child screening activity with category-aware counts, explainability readiness, and recent cases.
+              Track adult, child, and toddler screening activity with category-aware counts, explainability readiness, and recent cases.
             </p>
           </div>
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
@@ -208,7 +208,7 @@ export default function Dashboard() {
               Category mix
             </h2>
             <p style={{ margin: 0, color: 'var(--color-neutral-500)' }}>
-              Adult and child counts remain visible even while filtering the dashboard.
+              Category counts remain visible even while filtering the dashboard.
             </p>
           </div>
           <div style={{ display: 'grid', gap: '12px' }}>
@@ -299,7 +299,7 @@ export default function Dashboard() {
               Recent cases
             </h2>
             <p style={{ margin: 0, color: 'var(--color-neutral-500)' }}>
-              Each row retains its adult or child tag for quick routing and review.
+              Each row retains its category tag for quick routing and review.
             </p>
           </div>
           <Link

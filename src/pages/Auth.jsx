@@ -39,7 +39,7 @@ function Field({ id, label, type = 'text', value, onChange, placeholder, require
         {icon && (
           <span style={{
             position: 'absolute', left: '13px', top: '50%', transform: 'translateY(-50%)',
-            color: foc ? '#7C9A85' : 'var(--color-neutral-400)',
+            color: foc ? 'var(--color-primary)' : 'var(--color-neutral-400)',
             display: 'flex', alignItems: 'center', pointerEvents: 'none',
             transition: 'color 150ms',
           }}>{icon}</span>
@@ -52,12 +52,12 @@ function Field({ id, label, type = 'text', value, onChange, placeholder, require
           style={{
             width: '100%', height: '44px',
             padding: `0 ${rightEl ? '46px' : '14px'} 0 ${icon ? '42px' : '14px'}`,
-            border: `1.5px solid ${foc ? '#7C9A85' : 'var(--color-neutral-200)'}`,
+            border: `1.5px solid ${foc ? 'var(--color-primary)' : 'var(--color-neutral-200)'}`,
             borderRadius: '10px',
-            backgroundColor: foc ? '#fff' : 'var(--color-bg)',
+            backgroundColor: foc ? 'var(--color-bg-card)' : 'var(--color-bg)',
             fontSize: '0.9375rem', color: 'var(--color-neutral-800)',
             fontFamily: 'var(--font-body)', outline: 'none',
-            boxShadow: foc ? '0 0 0 3px rgba(124,154,133,0.12)' : 'none',
+            boxShadow: foc ? 'var(--color-primary-glow)' : 'none',
             transition: 'all 150ms',
           }}
         />

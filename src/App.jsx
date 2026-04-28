@@ -186,7 +186,7 @@ function AppShell() {
             padding: '8px',
             borderRadius: '8px',
             border: '1px solid var(--color-neutral-200)',
-            background: '#fff',
+            background: 'var(--color-bg-card)',
             cursor: 'pointer',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}
