@@ -1,4 +1,4 @@
-export const CATEGORY_ORDER = ['adult', 'child'];
+export const CATEGORY_ORDER = ['adult', 'child', 'toddler'];
 
 export const ANSWER_OPTIONS = [
   'Definitely disagree',
@@ -147,6 +147,63 @@ export const CATEGORY_CONTENT = {
       { id: 'xai-ready', label: 'Explainability readiness', pct: 93 },
     ],
   },
+  toddler: {
+    label: 'Toddler',
+    shortLabel: 'Toddler Track',
+    accent: '#9B59B6',
+    accentSoft: 'rgba(155, 89, 182, 0.10)',
+    accentBorder: '#E8D5F5',
+    entryTitle: 'Toddler early screening',
+    entryDescription: 'For parents or guardians completing an early ASD screening for a child aged 0\u20134 years.',
+    introTitle: 'Toddler Q-CHAT-10 intake',
+    introDescription:
+      'This track is completed by a parent or guardian on behalf of a toddler. Each question asks about your child\'s typical day-to-day behaviour over the past month.',
+    consentTitle: 'Parental consent \u2014 toddler screening',
+    consentDescription:
+      'Because this screening involves a child under 5, parental or guardian consent is required before any data is collected or processed.',
+    consentItems: [
+      'I am the parent or legal guardian of the toddler being assessed.',
+      'I understand this is an early screening tool, not a clinical diagnosis.',
+      'I consent to this data being processed by the toddler screening model under the DPDP Act 2023.',
+      'I have read and understood the privacy notice and data retention policy.',
+    ],
+    demographics: {
+      subjectNameLabel: "Child's name (optional)",
+      respondentNameLabel: 'Your name (parent/guardian)',
+      respondentRelationshipLabel: 'Your relationship to the child',
+      ageLabel: "Child's age (in years, e.g. 1, 2, 3)",
+      genderLabel: "Child's sex",
+      ethnicityLabel: "Child's ethnicity",
+      familyAsdLabel: 'Family history of ASD',
+      jaundiceLabel: 'Did the child have jaundice at birth?',
+      respondentRelationshipValue: 'Parent / Guardian',
+    },
+    questionnaireTitle: 'Q-CHAT-10 \u2014 Toddler Questionnaire',
+    questionnaireDescription:
+      'Answer each item based on what you typically observe in your child over the past month. There are no right or wrong answers.',
+    reviewTitle: 'Review your toddler Q-CHAT-10',
+    reviewDescription:
+      'Confirm the details below before we run the toddler screening model. The result is a screening score only \u2014 it is not a diagnosis.',
+    resultsTitle: 'Toddler Early Screening Result',
+    riskCopy: {
+      High: 'This caregiver-completed toddler screening shows a high concentration of early ASD-related traits. A developmental paediatrician review is recommended as early as possible.',
+      Moderate: 'This caregiver-completed toddler screening shows several early traits associated with ASD. A paediatric follow-up assessment is recommended.',
+      Low: 'This caregiver-completed toddler screening shows fewer early ASD-related traits at this time. Continue routine developmental monitoring.',
+    },
+    diagnosisCopy: {
+      High: 'Toddler early ASD traits flagged \u2014 urgent developmental review recommended',
+      Moderate: 'Toddler early ASD traits present \u2014 paediatric review recommended',
+      Low: 'Lower toddler ASD likelihood on screening',
+    },
+    screeningTool: 'Q-CHAT-10',
+    trackSummary: 'Caregiver report',
+    modalityConfidence: [
+      { id: 'questionnaire',         label: 'Q-CHAT-10 caregiver report',    pct: 88 },
+      { id: 'developmental-history', label: 'Early developmental milestones', pct: 82 },
+      { id: 'birth-context',         label: 'Birth and family context',       pct: 74 },
+      { id: 'xai-ready',            label: 'Explainability readiness',       pct: 91 },
+    ],
+  },
 };
 
 export const QUESTION_BANK = {
@@ -174,6 +231,18 @@ export const QUESTION_BANK = {
     { id: 'A9', prompt: 'The child works out what someone is thinking by looking at their face.', featureLabel: 'Child reads facial cues' },
     { id: 'A10', prompt: 'The child understands what someone means even when it is not said directly.', featureLabel: 'Child understands indirect meaning' },
   ],
+  toddler: [
+    { id: 'A1', prompt: 'Does your child look at you when you call his/her name?', featureLabel: 'Responds to name' },
+    { id: 'A2', prompt: 'How easy is it for you to get eye contact with your child?', featureLabel: 'Eye contact' },
+    { id: 'A3', prompt: 'Does your child point to indicate that s/he wants something (e.g., a toy that is out of reach)?', featureLabel: 'Protodeclarative pointing (requesting)' },
+    { id: 'A4', prompt: 'Does your child point to share interest with you (e.g., pointing at an interesting sight)?', featureLabel: 'Protodeclarative pointing (sharing)' },
+    { id: 'A5', prompt: 'Does your child pretend (e.g., care for dolls, talk on a toy phone)?', featureLabel: 'Pretend play' },
+    { id: 'A6', prompt: 'Does your child follow where you\'re looking?', featureLabel: 'Follows gaze' },
+    { id: 'A7', prompt: 'If you or someone else in the family is visibly upset, does your child show signs of wanting to comfort them?', featureLabel: 'Social comfort response' },
+    { id: 'A8', prompt: 'Would you describe your child\'s first words as typical?', featureLabel: 'First words typicality' },
+    { id: 'A9', prompt: 'Does your child use simple gestures (e.g., wave goodbye)?', featureLabel: 'Gesture use' },
+    { id: 'A10', prompt: 'Does your child stare at nothing with no apparent purpose?', featureLabel: 'Purposeless staring' },
+  ],
 };
 
 const AGREE_MAP = {
@@ -184,6 +253,9 @@ const AGREE_MAP = {
 };
 
 const ASD_TRAIT_IDS = new Set(['A1', 'A7', 'A8', 'A10']);
+
+// Q-CHAT-10 (toddler): only A10 is ASD-trait direction
+const QCHAT_TRAIT_IDS = new Set(['A10']);
 
 export function categoryLabel(category) {
   return CATEGORY_CONTENT[category]?.label ?? CATEGORY_CONTENT.adult.label;
@@ -198,28 +270,21 @@ export function deriveCategoryFromAge(age) {
 }
 
 export function validateCategoryAge(category, age) {
-  if (!category || !Number.isFinite(Number(age)) || Number(age) <= 0) {
-    return { valid: true, suggestedCategory: category || 'adult', message: '' };
-  }
-
-  const suggestedCategory = deriveCategoryFromAge(Number(age));
-  if (category === suggestedCategory) {
-    return { valid: true, suggestedCategory, message: '' };
-  }
-
-  const expected = categoryLabel(category);
-  const suggested = categoryLabel(suggestedCategory);
-  return {
-    valid: false,
-    suggestedCategory,
-    message: `${expected} screening does not match age ${age}. Age ${age} belongs to the ${suggested.toLowerCase()} category.`,
-  };
+  if (!category) return { valid: true, message: '' };
+  if (category === 'adult' && age < 18)
+    return { valid: false, message: 'Adult screening is for individuals 18 years and older.' };
+  if (category === 'child' && (age < 5 || age > 17))
+    return { valid: false, message: 'Child screening is for individuals aged 5 to 17 years.' };
+  if (category === 'toddler' && (age < 0 || age > 4))
+    return { valid: false, message: 'Toddler screening is for children aged 0 to 4 years. Enter the age in whole years (e.g., 1 for a 12-month-old).' };
+  return { valid: true, message: '' };
 }
 
-export function buildAq10Score(answers) {
+export function buildAq10Score(answers, category = 'adult') {
+  const traitIds = category === 'toddler' ? QCHAT_TRAIT_IDS : ASD_TRAIT_IDS;
   return Object.entries(answers ?? {}).reduce((total, [questionId, answer]) => {
     const agreeScore = AGREE_MAP[answer] ?? 0;
-    if (ASD_TRAIT_IDS.has(questionId)) {
+    if (traitIds.has(questionId)) {
       return total + agreeScore;
     }
     return total + (1 - agreeScore);
@@ -228,9 +293,9 @@ export function buildAq10Score(answers) {
 
 export function getMixedModalityConfidence() {
   return [
-    { id: 'adult-track', label: 'Adult self-report', pct: 84 },
-    { id: 'child-track', label: 'Caregiver report', pct: 81 },
-    { id: 'routing', label: 'Category model routing', pct: 89 },
-    { id: 'xai-ready', label: 'Explainability readiness', pct: 92 },
+    { id: 'adult-track',   label: 'Adult self-report',      pct: 84 },
+    { id: 'child-track',   label: 'Child caregiver report',  pct: 81 },
+    { id: 'toddler-track', label: 'Toddler Q-CHAT-10',       pct: 88 },
+    { id: 'routing',       label: 'Category model routing',  pct: 89 },
   ];
 }

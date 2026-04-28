@@ -54,7 +54,7 @@ def _load_bundle(category: str) -> dict:
 def load_models() -> dict:
     """
     Load all category models at startup.
-    Returns { 'adult': bundle, 'child': bundle }
+    Returns { 'adult': bundle, 'child': bundle, 'toddler': bundle }
     """
     print("[NeuroSense] Loading model registry...")
     registry = {}
@@ -73,10 +73,10 @@ def predict(category: str, bundle: dict, demo: dict, answers: dict) -> dict:
     Run inference on a single screening submission.
 
     Args:
-        category:  'adult' or 'child'
+        category:  'adult', 'child', or 'toddler'
         bundle:    { 'model': clf, 'encoders': {...}, 'category': str }
         demo:      demographics dict
-        answers:   AQ-10 answers dict (A1–A10)
+        answers:   AQ-10 / Q-CHAT-10 answers dict (A1–A10)
 
     Returns:
         { 'probability', 'risk_level', 'prediction', 'mock', 'model_used' }
@@ -85,22 +85,24 @@ def predict(category: str, bundle: dict, demo: dict, answers: dict) -> dict:
     encoders = bundle.get("encoders")
 
     # Build feature vector
-    X = preprocess_for_inference(demo, answers, encoders)
+    X = preprocess_for_inference(demo, answers, encoders, category=category)
 
     model_type = type(clf).__name__ if clf else "MockProxy"
     model_used = f"{category}_{model_type}"
 
     if clf is None:
-        # Mock mode — use AQ-10 sum as a rough proxy
-        aq_sum = sum(encode_aq10_scores(answers))
-        # Slightly different mock thresholds for child vs adult
-        if category == "child":
-            mock_prob = min(aq_sum / 10.0 * 1.15, 1.0)  # children: slightly higher sensitivity
+        # Mock mode — use AQ-10 / Q-CHAT-10 sum as a rough proxy
+        aq_sum = sum(encode_aq10_scores(answers, category=category))
+        if category == "toddler":
+            # Q-CHAT-10 threshold is ≥3, so scale more aggressively
+            mock_prob = min(aq_sum / 10.0 * 1.4, 1.0)
+        elif category == "child":
+            mock_prob = min(aq_sum / 10.0 * 1.15, 1.0)
         else:
             mock_prob = min(aq_sum / 10.0 * 1.1, 1.0)
         return {
             "probability": round(mock_prob, 4),
-            "risk_level": _classify_risk(mock_prob),
+            "risk_level": _classify_risk(mock_prob, category=category),
             "prediction": 1 if mock_prob >= 0.5 else 0,
             "mock": True,
             "model_used": model_used,
@@ -116,18 +118,27 @@ def predict(category: str, bundle: dict, demo: dict, answers: dict) -> dict:
 
     return {
         "probability": round(positive_prob, 4),
-        "risk_level": _classify_risk(positive_prob),
+        "risk_level": _classify_risk(positive_prob, category=category),
         "prediction": int(clf.predict(X)[0]),
         "mock": False,
         "model_used": model_used,
     }
 
 
-def _classify_risk(prob: float) -> str:
-    """Map probability to risk level string."""
-    if prob >= 0.7:
-        return "High"
-    elif prob >= 0.4:
-        return "Moderate"
+def _classify_risk(prob: float, category: str = "adult") -> str:
+    """Map probability to risk level string (category-aware thresholds)."""
+    if category == "toddler":
+        # Q-CHAT-10 is more sensitive — lower thresholds
+        if prob >= 0.55:
+            return "High"
+        elif prob >= 0.30:
+            return "Moderate"
+        else:
+            return "Low"
     else:
-        return "Low"
+        if prob >= 0.7:
+            return "High"
+        elif prob >= 0.4:
+            return "Moderate"
+        else:
+            return "Low"
