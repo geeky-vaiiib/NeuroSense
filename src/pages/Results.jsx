@@ -177,10 +177,12 @@ export default function Results() {
 
   useEffect(() => {
     if (!selectedCaseId) return;
+    const caseData = detailCache[selectedCaseId];
     const saved = localStorage.getItem(`ns_notes_${selectedCaseId}`);
-    setClinicianNotes(saved || selectedCase?.notes || '');
+    setClinicianNotes(saved || caseData?.notes || '');
     setNotesSaved(false);
-  }, [selectedCaseId, selectedCase]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedCaseId]);
 
   function handleSaveNotes() {
     localStorage.setItem(`ns_notes_${selectedCaseId}`, clinicianNotes);

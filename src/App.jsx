@@ -1,7 +1,7 @@
 /**
  * App.jsx — Root with AuthProvider, protected routes, landing + auth pages.
  */
-import { useState } from 'react';
+import { Component, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -15,6 +15,118 @@ import Results   from './pages/Results';
 import Cases     from './pages/Cases';
 import Settings  from './pages/Settings';
 import Diagnostic from './pages/Diagnostic';
+
+/* ── Error Boundary ──────────────────────────────────────── */
+class ErrorBoundary extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, info) {
+    console.error('[NeuroSense] Unhandled error:', error, info.componentStack);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            height: '100vh',
+            padding: '32px',
+            textAlign: 'center',
+            backgroundColor: 'var(--color-bg)',
+          }}
+        >
+          <div
+            style={{
+              maxWidth: '480px',
+              padding: '32px',
+              borderRadius: '22px',
+              border: '1px solid var(--color-neutral-200)',
+              backgroundColor: 'var(--color-bg-card)',
+              boxShadow: 'var(--shadow-xs)',
+            }}
+          >
+            <div
+              style={{
+                fontSize: '2.5rem',
+                marginBottom: '12px',
+              }}
+            >
+              ⚠️
+            </div>
+            <h2
+              style={{
+                margin: '0 0 8px',
+                color: 'var(--color-neutral-900)',
+              }}
+            >
+              Something went wrong
+            </h2>
+            <p
+              style={{
+                color: 'var(--color-neutral-600)',
+                lineHeight: 1.7,
+                marginBottom: '20px',
+              }}
+            >
+              An unexpected error occurred. You can try reloading the page.
+            </p>
+            <pre
+              style={{
+                padding: '12px 16px',
+                borderRadius: '12px',
+                backgroundColor: 'var(--color-bg)',
+                border: '1px solid var(--color-neutral-200)',
+                color: 'var(--color-risk-high)',
+                fontSize: '0.78rem',
+                fontFamily: 'var(--font-mono)',
+                textAlign: 'left',
+                whiteSpace: 'pre-wrap',
+                wordBreak: 'break-word',
+                maxHeight: '120px',
+                overflow: 'auto',
+                marginBottom: '20px',
+              }}
+            >
+              {this.state.error?.message || 'Unknown error'}
+            </pre>
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              style={{
+                minHeight: '44px',
+                padding: '0 24px',
+                borderRadius: '12px',
+                border: 'none',
+                background:
+                  'linear-gradient(135deg, var(--color-primary), var(--color-primary-dark))',
+                color: '#fff',
+                fontSize: '0.95rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                boxShadow: '0 10px 24px rgba(26,26,24,0.10)',
+              }}
+            >
+              Reload page
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
 
 /* ── 404 ─────────────────────────────────────────────────── */
 function NotFound() {
@@ -124,7 +236,9 @@ function AppRoutes() {
         path="/app/*"
         element={
           <ProtectedRoute>
-            <AppShell />
+            <ErrorBoundary>
+              <AppShell />
+            </ErrorBoundary>
           </ProtectedRoute>
         }
       />

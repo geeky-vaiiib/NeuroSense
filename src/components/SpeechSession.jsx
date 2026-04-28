@@ -152,8 +152,7 @@ export default function SpeechSession({ onComplete, onSkip, category }) {
     }, 1000);
 
     return () => clearInterval(preTimerRef.current);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase]);
+  }, [phase]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /* ── Start MediaRecorder ────────────────────────────────── */
   const startRecording = () => {
@@ -205,7 +204,7 @@ export default function SpeechSession({ onComplete, onSkip, category }) {
   };
 
   /* ── Stop recording ─────────────────────────────────────── */
-  const stopRecording = () => {
+  const stopRecording = useCallback(() => {
     clearInterval(timerRef.current);
     const recorder = recorderRef.current;
     if (recorder && recorder.state !== 'inactive') {
@@ -219,10 +218,11 @@ export default function SpeechSession({ onComplete, onSkip, category }) {
     setPhase('done');
 
     // Auto-proceed after 5 seconds if user doesn't interact
+    // Use a ref-based call so the timeout always sees the latest finishSession
     autoProceedRef.current = setTimeout(() => {
-      finishSession();
+      finishSessionRef.current();
     }, 5000);
-  };
+  }, []);
 
   /* ── Stop early ─────────────────────────────────────────── */
   const handleStopEarly = () => {
@@ -239,6 +239,12 @@ export default function SpeechSession({ onComplete, onSkip, category }) {
       onComplete(blob, transcriptHint);
     }, 2000);
   }, [audioBlob, cleanup, onComplete, transcriptHint]);
+
+  // Keep a ref to finishSession so stopRecording's timeout always calls the latest version
+  const finishSessionRef = useRef(finishSession);
+  useEffect(() => {
+    finishSessionRef.current = finishSession;
+  }, [finishSession]);
 
   /* ── Amplitude visualiser (optional) ────────────────────── */
   const setupAnalyser = (stream) => {

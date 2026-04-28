@@ -1,12 +1,13 @@
 # NeuroSense
 
-NeuroSense is now a dual-track ASD screening product with first-class `adult` and `child` categories across the Vite/React frontend, FastAPI backend, mock data layer, case storage, explainability, and model training pipeline.
+NeuroSense is a triple-track multimodal ASD screening platform with first-class `adult`, `child`, and `toddler` categories across the Vite/React frontend, FastAPI backend, mock data layer, case storage, explainability, gaze analysis, speech analysis, and model training pipeline.
 
 ## What changed
 
-- Adult and child screenings are separate experiences with different copy, routing, validation, and interpretation.
+- Adult, child, and toddler screenings are separate experiences with different copy, routing, validation, and interpretation.
 - The backend routes screening requests to category-specific model artifacts and returns category/model metadata in screening, case, dashboard, and explainability responses.
-- Case records now persist category, respondent context, model info, and questionnaire data in `backend/cases_db.json`.
+- Multimodal pipeline: Questionnaire (all tracks) + Eye Gaze (adult/child) + Speech (adult/child) with late fusion scoring.
+- Case records now persist category, respondent context, model info, multimodal features, and questionnaire data in `backend/cases_db.json`.
 - Frontend pages use one shared contract for screening, results, cases, dashboard, and mock fallback behavior.
 
 ## Architecture
@@ -15,31 +16,41 @@ NeuroSense is now a dual-track ASD screening product with first-class `adult` an
 
 - `src/pages/Screening.jsx`
   Category-first wizard with `/app/screening` entry selection and `/app/screening/:category` routes.
+  Adult/child: 7-step flow (Track → Consent → Demographics → AQ-10 → Gaze → Speech → Review).
+  Toddler: 5-step flow (Track → Consent → Demographics → Q-CHAT-10 → Review).
+- `src/components/GazeSession.jsx`
+  30-second webcam-based fixation task for eye-gaze data capture (adult/child only).
+- `src/components/SpeechSession.jsx`
+  20-second mic recording with amplitude visualiser for speech analysis (adult/child only).
 - `src/pages/Results.jsx`
-  Category-aware results page with SHAP/LIME panels, model tags, and respondent metadata.
+  Category-aware results page with SHAP/LIME panels, gaze analysis, speech analysis, late fusion formula, and respondent metadata.
 - `src/pages/Cases.jsx`
-  Case history with adult/child filtering and visible category badges.
+  Case history with adult/child/toddler filtering and visible category badges.
 - `src/pages/Dashboard.jsx`
-  Mixed adult/child dashboard with category filters and pipeline confidence summaries.
+  Mixed adult/child/toddler dashboard with category filters and pipeline confidence summaries.
 - `src/data/screeningContent.js`
-  Central adult/child copy, question wording, validation helpers, and modality metadata.
+  Central adult/child/toddler copy, question wording, validation helpers, and modality metadata.
 - `src/data/mockData.js`
-  Seeded adult/child records plus local mock submission persistence when the backend is unavailable.
+  Seeded adult/child/toddler records with multimodal data plus local mock submission persistence when the backend is unavailable.
 
 ### Backend
 
 - `backend/core/categories.py`
-  Central category registry, age validation, category labels, interpretation copy, and feature labels.
+  Central category registry (adult, child, toddler), age validation, category labels, interpretation copy, and feature labels.
 - `backend/core/cases_store.py`
   Canonical case normalization, persistence, summaries, and dashboard aggregation.
 - `backend/routers/screening.py`
-  Category-aware screening submission and case creation.
+  Category-aware screening submission with multimodal fusion (questionnaire + gaze + speech) and case creation.
 - `backend/routers/cases.py`
   Case list, case detail, and dashboard summary endpoints.
 - `backend/routers/explainability.py`
   Category-aware SHAP/LIME payloads with model/data-source metadata.
+- `backend/ml/gaze_engine.py`
+  Rule-based fixation scoring (Jones & Klin 2013) with LSTM hot-swap via `backend/models/gaze_lstm.pt`.
+- `backend/ml/speech_engine.py`
+  MFCC/prosody/energy scoring (Bone et al. 2014) with 1D-CNN hot-swap via `backend/models/speech_cnn.pt`.
 - `backend/ml/config.py`
-  Shared artifact and dataset paths for adult and child pipelines.
+  Shared artifact and dataset paths for adult, child, and toddler pipelines.
 
 ## API contract
 
@@ -63,7 +74,13 @@ NeuroSense is now a dual-track ASD screening product with first-class `adult` an
   "answers": {
     "A1": "Definitely agree"
   },
-  "aq10Score": 8
+  "aq10Score": 8,
+  "gazePoints": [{"x": 0.5, "y": 0.3, "timestamp": 1714300000, "stimulus": 0}],
+  "gazeSkipped": false,
+  "audioBase64": "UklGRi...",
+  "audioMimeType": "audio/webm",
+  "transcriptHint": "The quick brown fox...",
+  "speechSkipped": false
 }
 ```
 
@@ -133,7 +150,7 @@ The background arrays are used to give LIME a category-aware reference sample.
 
 ## Mock mode
 
-If the backend is unavailable, the frontend falls back to seeded adult/child mock cases and still preserves:
+If the backend is unavailable, the frontend falls back to seeded adult/child/toddler mock cases and still preserves:
 
 - category badges
 - category validation
@@ -156,7 +173,14 @@ python3 -c "from backend.main import app; print(app.title)"
 
 ## Future extension
 
-The category registry and artifact configuration are intentionally structured so future tracks can be added without reworking the routing or storage model. For now, scope is intentionally limited to:
+The category registry and artifact configuration are intentionally structured so future tracks can be added without reworking the routing or storage model. Current supported tracks:
 
 - `adult`
 - `child`
+- `toddler`
+
+Multimodal extensions:
+
+- Dropping `gaze_lstm.pt` into `backend/models/` activates real LSTM-based gaze inference.
+- Dropping `speech_cnn.pt` into `backend/models/` activates real CNN-based speech inference.
+- The `facial` modality slot is reserved in the fusion formula and can be integrated following the same pattern.

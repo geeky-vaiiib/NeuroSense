@@ -118,7 +118,7 @@ export default function Dashboard() {
       label:
         categoryFilter === 'all'
           ? 'Total cases'
-          : `${categoryFilter === 'adult' ? 'Adult' : 'Child'} cases`,
+          : `${categoryFilter[0].toUpperCase() + categoryFilter.slice(1)} cases`,
       value: totals.totalCases,
       helper: 'Current dashboard scope',
     },
