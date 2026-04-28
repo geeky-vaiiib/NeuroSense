@@ -2,22 +2,25 @@
 """
 data/train_model.py — Category-aware training for NeuroSense ASD classifier.
 
-Supports dual-category: adult and child.
-CRITICAL: Drops the 'result' column to prevent data leakage.
+Supports triple-category: adult, child, and toddler.
+CRITICAL: Drops leakage columns to prevent data leakage.
 
 Usage:
   cd backend/
   python -m data.train_model --category adult
   python -m data.train_model --category child
-  python -m data.train_model                     # train both
+  python -m data.train_model --category toddler
+  python -m data.train_model                     # train all three
 
 Dataset expectations:
   backend/data/asd_screening_adult.csv    (or legacy asd_screening.csv)
   backend/data/asd_screening_child.csv
+  backend/data/asd_screening_toddler.csv
 
 Outputs:
   backend/ml/model_adult.pkl     / encoders_adult.pkl     / background_adult.npy
   backend/ml/model_child.pkl     / encoders_child.pkl     / background_child.npy
+  backend/ml/model_toddler.pkl   / encoders_toddler.pkl   / background_toddler.npy
 """
 import argparse
 
@@ -39,9 +42,9 @@ from xgboost import XGBClassifier
 from imblearn.over_sampling import SMOTE
 
 try:
-    from backend.ml.config import CATEGORY_MODEL_CONFIG
+    from backend.ml.config import CATEGORY_MODEL_CONFIG, TODDLER_LEAKAGE_COLUMNS
 except ImportError:  # pragma: no cover - fallback for backend cwd execution
-    from ml.config import CATEGORY_MODEL_CONFIG
+    from ml.config import CATEGORY_MODEL_CONFIG, TODDLER_LEAKAGE_COLUMNS
 
 warnings.filterwarnings("ignore", category=FutureWarning)
 warnings.filterwarnings("ignore", category=UserWarning)
@@ -328,17 +331,178 @@ def train_category(category: str):
     print(f"{'='*60}\n")
 
 
+def train_toddler():
+    """
+    Train the toddler model.
+
+    The toddler dataset (Thabtah 2018) uses a completely different column schema
+    from the adult/child UCI datasets, so we handle loading, cleaning, and
+    encoding separately, then feed into the shared train_and_evaluate pipeline.
+    """
+    config = CATEGORY_MODEL_CONFIG["toddler"]
+    data_path = None
+    for path in config["dataset_paths"]:
+        path_str = str(path)
+        if os.path.exists(path_str):
+            data_path = path_str
+            break
+    if data_path is None:
+        print(f"\n[SKIP] No dataset for 'toddler'. Expected at:")
+        for path in config["dataset_paths"]:
+            print(f"  {path}")
+        return
+
+    print(f"\n{'='*60}")
+    print(f"  NeuroSense — TODDLER Model Training")
+    print(f"{'='*60}\n")
+
+    df = pd.read_csv(data_path)
+    print(f"[1/8] Loaded dataset: {df.shape[0]} rows × {df.shape[1]} columns")
+
+    # ── Normalise column names (strip whitespace) ────────────────
+    df.columns = df.columns.str.strip().str.replace(" ", "_")
+
+    # ── Drop leakage / ID columns ────────────────────────────────
+    for col in TODDLER_LEAKAGE_COLUMNS:
+        normalized = col.strip().replace(" ", "_")
+        if normalized in df.columns:
+            df = df.drop(columns=[normalized])
+            print(f"  ⚠  DROPPED '{normalized}' — prevents data leakage")
+
+    # ── Identify and encode target ───────────────────────────────
+    target_col = None
+    for col in df.columns:
+        if "class" in col.lower() or "asd" in col.lower():
+            target_col = col
+            break
+
+    if target_col is None:
+        print(f"ERROR: Cannot find target column. Available: {list(df.columns)}")
+        sys.exit(1)
+
+    df["target"] = df[target_col].map(
+        lambda x: 1 if str(x).strip().lower() == "yes" else 0
+    )
+    print(f"       Target column: '{target_col}' → binary 'target'")
+    print(f"       Class distribution: {dict(df['target'].value_counts())}")
+
+    # ── Rename columns to unified schema ─────────────────────────
+    rename_map = {}
+    for i in range(1, 11):
+        rename_map[f"A{i}"] = f"A{i}_Score"
+    rename_map["Age_Mons"] = "age"
+    rename_map["Sex"] = "gender"
+    rename_map["Family_mem_with_ASD"] = "family_asd"
+    # Jaundice and Ethnicity keep their lowercase names after encoding
+
+    df = df.rename(columns=rename_map)
+
+    # ── Encode binary categoricals ───────────────────────────────
+    encoders = {}
+
+    # Gender: m → 1, f → 0
+    if "gender" in df.columns:
+        le_gender = LabelEncoder()
+        df["gender"] = df["gender"].astype(str).str.strip().str.lower()
+        df["gender"] = le_gender.fit_transform(df["gender"])
+        encoders["gender"] = le_gender
+        print(f"       Encoded 'gender' (Sex): {list(le_gender.classes_)}")
+
+    # Jaundice: yes → 1, no → 0
+    if "Jaundice" in df.columns:
+        le_jaundice = LabelEncoder()
+        df["Jaundice"] = df["Jaundice"].astype(str).str.strip().str.lower()
+        df["jaundice"] = le_jaundice.fit_transform(df["Jaundice"])
+        df = df.drop(columns=["Jaundice"])
+        encoders["jaundice"] = le_jaundice
+        print(f"       Encoded 'jaundice': {list(le_jaundice.classes_)}")
+
+    # Family ASD: yes → 1, no → 0
+    if "family_asd" in df.columns:
+        le_family = LabelEncoder()
+        df["family_asd"] = df["family_asd"].astype(str).str.strip().str.lower()
+        df["family_asd"] = le_family.fit_transform(df["family_asd"])
+        encoders["family_asd"] = le_family
+        print(f"       Encoded 'family_asd': {list(le_family.classes_)}")
+
+    # Ethnicity: label encode
+    if "Ethnicity" in df.columns:
+        le_eth = LabelEncoder()
+        df["Ethnicity"] = df["Ethnicity"].fillna("Unknown").astype(str).str.strip()
+        df["ethnicity"] = le_eth.fit_transform(df["Ethnicity"])
+        df = df.drop(columns=["Ethnicity"])
+        encoders["ethnicity"] = le_eth
+        print(f"       Encoded 'ethnicity': {len(le_eth.classes_)} classes")
+
+    print(f"\n[2/8] Encoding complete. Encoders: {list(encoders.keys())}")
+
+    # ── Build feature matrix ─────────────────────────────────────
+    aq_cols = [f"A{i}_Score" for i in range(1, 11)]
+    feature_cols = aq_cols + ["age", "gender", "jaundice", "family_asd", "ethnicity"]
+
+    # Verify all columns exist
+    missing = [c for c in feature_cols if c not in df.columns]
+    if missing:
+        print(f"ERROR: Missing feature columns after renaming: {missing}")
+        print(f"       Available: {list(df.columns)}")
+        sys.exit(1)
+
+    # Impute any remaining NaNs in numeric columns
+    for col in aq_cols + ["age"]:
+        if df[col].isnull().any():
+            df[col] = df[col].fillna(df[col].median())
+
+    X = df[feature_cols].values.astype(np.float64)
+    y = df["target"].values.astype(np.int32)
+    print(f"       Feature matrix: {X.shape[0]} samples × {X.shape[1]} features")
+    print(f"       Features: {feature_cols}")
+
+    # ── Split ────────────────────────────────────────────────────
+    print(f"\n[3/8] Splitting: 80% train / 20% test (stratified)")
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, random_state=42, stratify=y,
+    )
+    print(f"       Train: {X_train.shape[0]} samples")
+    print(f"       Test:  {X_test.shape[0]} samples")
+
+    # ── SMOTE ────────────────────────────────────────────────────
+    X_train_res, y_train_res = apply_smote(X_train, y_train)
+
+    # ── Train + evaluate ─────────────────────────────────────────
+    best_model, best_name, results = train_and_evaluate(
+        X_train_res, y_train_res, X_test, y_test,
+    )
+
+    # ── Save artifacts ───────────────────────────────────────────
+    background = X_train_res[: min(len(X_train_res), 256)]
+    save_artifacts(
+        best_model,
+        encoders,
+        background,
+        str(config["model_path"]),
+        str(config["encoders_path"]),
+        str(config["background_path"]),
+    )
+
+    print(f"\n{'='*60}")
+    print(f"  TODDLER training complete!")
+    print(f"{'='*60}\n")
+
+
 def main():
     parser = argparse.ArgumentParser(description="Train NeuroSense ASD models.")
     parser.add_argument(
         "--category",
         choices=sorted(CATEGORY_MODEL_CONFIG.keys()),
-        help="Train a specific category. Omit to train both.",
+        help="Train a specific category. Omit to train all.",
     )
     args = parser.parse_args()
     categories = [args.category] if args.category else sorted(CATEGORY_MODEL_CONFIG.keys())
     for cat in categories:
-        train_category(cat)
+        if cat == "toddler":
+            train_toddler()
+        else:
+            train_category(cat)
     print("\nDone. Run: uvicorn backend.main:app --reload")
 
 
