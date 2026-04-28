@@ -78,6 +78,13 @@ def load_and_clean(path: str, category: str = "adult") -> pd.DataFrame:
     # ── Normalise column names ────────────────────────────────────
     df.columns = df.columns.str.strip().str.replace("/", "_").str.replace(" ", "_")
 
+    # ── Unify family-history column name ──────────────────────────
+    # UCI adult uses 'family_pdd', UCI child uses 'autism', Kaggle uses 'austism'
+    for variant in ["family_pdd", "autism"]:
+        if variant in df.columns and "austism" not in df.columns:
+            df = df.rename(columns={variant: "austism"})
+            print(f"       Renamed '{variant}' → 'austism' (unified family-history column)")
+
     # ── Identify target column ────────────────────────────────────
     target_col = None
     for candidate in ["Class_ASD", "Class/ASD", "class_asd", "Class"]:
@@ -370,11 +377,28 @@ def train_toddler():
             print(f"  ⚠  DROPPED '{normalized}' — prevents data leakage")
 
     # ── Identify and encode target ───────────────────────────────
+    # The toddler target column is "Class/ASD Traits " → normalised to "Class/ASD_Traits"
     target_col = None
-    for col in df.columns:
-        if "class" in col.lower() or "asd" in col.lower():
-            target_col = col
+    # Try exact known candidates first
+    for candidate in ["Class/ASD_Traits", "Class_ASD_Traits", "Class/ASD"]:
+        normalized = candidate.replace("/", "_").replace(" ", "_")
+        if normalized in df.columns:
+            target_col = normalized
             break
+
+    if target_col is None:
+        # Fallback: column must contain BOTH 'class' and 'asd' (avoids Family_mem_with_ASD)
+        for col in df.columns:
+            if "class" in col.lower() and "asd" in col.lower():
+                target_col = col
+                break
+
+    if target_col is None:
+        # Last resort: any column starting with 'class'
+        for col in df.columns:
+            if col.lower().startswith("class"):
+                target_col = col
+                break
 
     if target_col is None:
         print(f"ERROR: Cannot find target column. Available: {list(df.columns)}")
