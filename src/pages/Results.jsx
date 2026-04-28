@@ -280,14 +280,13 @@ export default function Results() {
               <line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/>
             </svg>
             <div>
-              <p style={{ margin: '0 0 6px', fontWeight: 600, color: 'var(--color-neutral-700)' }}>No cases yet</p>
+              <p style={{ margin: '0 0 6px', fontWeight: 600, color: 'var(--color-neutral-700)' }}>No screening results yet</p>
               <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--color-neutral-400)', lineHeight: 1.6 }}>
-                Complete a screening to generate your first result and explainability report.
+                Complete an adult, child, or toddler screening to generate your first result and explainability report.
               </p>
             </div>
-            <a
-              href="/app/screening"
-              onClick={(e) => { e.preventDefault(); navigate('/app/screening'); }}
+            <button
+              onClick={() => navigate('/app/screening')}
               style={{
                 padding: '9px 20px',
                 borderRadius: '10px',
@@ -296,12 +295,12 @@ export default function Results() {
                 color: '#fff',
                 fontWeight: 600,
                 fontSize: '0.875rem',
-                textDecoration: 'none',
                 cursor: 'pointer',
+                fontFamily: 'var(--font-body)',
               }}
             >
               Start a screening →
-            </a>
+            </button>
           </div>
         ) : (
           <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', paddingBottom: '4px' }}>
