@@ -67,7 +67,7 @@ const NAV_ITEMS = [
   },
 ];
 
-export default function Sidebar() {
+export default function Sidebar({ isOpen, onClose }) {
   const { user, logout } = useAuth();
   const { isOnline, isChecking } = useBackendStatus();
   const navigate = useNavigate();
@@ -78,7 +78,7 @@ export default function Sidebar() {
   };
 
   return (
-    <aside className="ns-sidebar" role="navigation" aria-label="Main navigation">
+    <aside className={`ns-sidebar${isOpen ? ' ns-sidebar--open' : ''}`} role="navigation" aria-label="Main navigation">
 
       {/* Brand */}
       <div className="ns-sb-brand">
@@ -101,6 +101,7 @@ export default function Sidebar() {
                 end={end}
                 className={({ isActive }) => isActive ? 'ns-sb-link ns-sb-link--active' : 'ns-sb-link'}
                 aria-label={label}
+                onClick={onClose}
               >
                 <span className="ns-sb-link-icon">{icon}</span>
                 <span className="ns-sb-link-label">{label}</span>

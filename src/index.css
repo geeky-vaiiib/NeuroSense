@@ -199,6 +199,58 @@ code, kbd, samp, pre {
   width: 100%;
 }
 
+/* ── 11b. Mobile topbar ─────────────────────────────────── */
+.ns-mobile-topbar {
+  display: none;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--color-neutral-200);
+  background: var(--color-bg-card);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.ns-mobile-overlay { display: none; }
+
+/* ── 11c. Mobile responsive ─────────────────────────────── */
+@media (max-width: 768px) {
+  .ns-layout {
+    flex-direction: column;
+  }
+  .ns-sidebar {
+    display: none;
+  }
+  .ns-sidebar.ns-sidebar--open {
+    display: flex;
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    z-index: 100;
+    width: 240px;
+    box-shadow: 4px 0 24px rgba(0,0,0,0.12);
+  }
+  .ns-mobile-overlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.4);
+    z-index: 99;
+  }
+  .ns-mobile-topbar {
+    display: flex;
+  }
+  .ns-main {
+    height: auto;
+    min-height: 0;
+  }
+  .ns-page {
+    padding: 20px 16px;
+  }
+}
+
 /* ── 12. Utility classes ────────────────────────────────── */
 .sr-only {
   position: absolute;

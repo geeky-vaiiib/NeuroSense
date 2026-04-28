@@ -1,6 +1,7 @@
 /**
  * App.jsx — Root with AuthProvider, protected routes, landing + auth pages.
  */
+import { useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -58,9 +59,38 @@ function ProtectedRoute({ children }) {
 
 /* ── App shell (sidebar + main) ─────────────────────────── */
 function AppShell() {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
   return (
     <div className="ns-layout">
-      <Sidebar />
+      {/* Mobile top bar — hidden on desktop via CSS */}
+      <div className="ns-mobile-topbar">
+        <button
+          id="mobile-menu-btn"
+          onClick={() => setSidebarOpen(true)}
+          aria-label="Open navigation menu"
+          style={{
+            padding: '8px',
+            borderRadius: '8px',
+            border: '1px solid var(--color-neutral-200)',
+            background: '#fff',
+            cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+          </svg>
+        </button>
+        <span style={{ fontWeight: 700, color: 'var(--color-neutral-900)' }}>NeuroSense</span>
+      </div>
+
+      {/* Overlay backdrop for mobile sidebar */}
+      {sidebarOpen && (
+        <div className="ns-mobile-overlay" onClick={() => setSidebarOpen(false)} />
+      )}
+
+      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <main className="ns-main" id="main-content" tabIndex={-1}>
         <div className="ns-page">
           <Routes>
