@@ -1,10 +1,12 @@
 /**
  * Sidebar.jsx — Persistent 240px nav, uses AuthContext for user info + logout.
  */
+import { useEffect, useState } from 'react';
 import { NeuroLogo } from '../pages/Landing';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useBackendStatus } from '../hooks/useBackendStatus';
+import { casesApi } from '../services/api';
 
 const NAV_ITEMS = [
   {
@@ -45,7 +47,7 @@ const NAV_ITEMS = [
     to: '/app/cases',
     end: false,
     label: 'Case History',
-    badge: '9',
+    badge: null,
     icon: (
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
         <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/>
@@ -71,6 +73,11 @@ export default function Sidebar({ isOpen, onClose }) {
   const { user, logout } = useAuth();
   const { isOnline, isChecking } = useBackendStatus();
   const navigate = useNavigate();
+  const [caseCount, setCaseCount] = useState(null);
+
+  useEffect(() => {
+    casesApi.list().then(list => setCaseCount(Array.isArray(list) ? list.length : 0)).catch(() => {});
+  }, []);
 
   const handleLogout = () => {
     logout();
@@ -115,6 +122,20 @@ export default function Sidebar({ isOpen, onClose }) {
                     fontFamily: 'var(--font-mono)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                   }}>{badge}</span>
+                )}
+                {to === '/app/cases' && caseCount !== null && (
+                  <span style={{
+                    marginLeft: 'auto',
+                    backgroundColor: 'var(--color-primary-muted)',
+                    color: 'var(--color-primary-dark)',
+                    borderRadius: '999px',
+                    padding: '1px 7px',
+                    fontSize: '0.7rem',
+                    fontFamily: 'var(--font-mono)',
+                    fontWeight: 600,
+                  }}>
+                    {caseCount}
+                  </span>
                 )}
               </NavLink>
             </li>

@@ -14,6 +14,7 @@ import Screening from './pages/Screening';
 import Results   from './pages/Results';
 import Cases     from './pages/Cases';
 import Settings  from './pages/Settings';
+import Diagnostic from './pages/Diagnostic';
 
 /* ── 404 ─────────────────────────────────────────────────── */
 function NotFound() {
@@ -101,6 +102,7 @@ function AppShell() {
             <Route path="/results/:caseId" element={<Results />} />
             <Route path="/cases"           element={<Cases />} />
             <Route path="/settings"        element={<Settings />} />
+            <Route path="/diagnostic"      element={<Diagnostic />} />
             <Route path="*"               element={<NotFound />} />
           </Routes>
         </div>
