@@ -287,6 +287,7 @@ def dashboard_summary(category: str | None = None) -> dict[str, Any]:
     total_cases = len(records)
     adult_cases = len([record for record in records if record["category"] == "adult"])
     child_cases = len([record for record in records if record["category"] == "child"])
+    toddler_cases = len([record for record in records if record["category"] == "toddler"])
     high_risk = len([record for record in records if record["risk_level"] == "High"])
     moderate_risk = len([record for record in records if record["risk_level"] == "Moderate"])
     low_risk = len([record for record in records if record["risk_level"] == "Low"])
@@ -314,6 +315,7 @@ def dashboard_summary(category: str | None = None) -> dict[str, Any]:
             "total_cases": total_cases,
             "adult_cases": adult_cases,
             "child_cases": child_cases,
+            "toddler_cases": toddler_cases,
             "high_risk": high_risk,
             "moderate_risk": moderate_risk,
             "low_risk": low_risk,
@@ -326,6 +328,7 @@ def dashboard_summary(category: str | None = None) -> dict[str, Any]:
         "category_breakdown": [
             {"category": "adult", "label": "Adult", "count": adult_cases},
             {"category": "child", "label": "Child", "count": child_cases},
+            {"category": "toddler", "label": "Toddler", "count": toddler_cases},
         ],
         "modality_confidence": modality_confidence_for_category(category),
     }

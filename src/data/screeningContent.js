@@ -266,7 +266,10 @@ export function getCategoryContent(category) {
 }
 
 export function deriveCategoryFromAge(age) {
-  return Number(age) < 18 ? 'child' : 'adult';
+  const n = Number(age);
+  if (n <= 4) return 'toddler';
+  if (n < 18) return 'child';
+  return 'adult';
 }
 
 export function validateCategoryAge(category, age) {

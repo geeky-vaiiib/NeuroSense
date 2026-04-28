@@ -181,7 +181,11 @@ def default_respondent_relationship(category: str) -> str:
 
 def derive_category_from_age(age: int) -> ScreeningCategory:
     """Infer category from age using the product rule."""
-    return "child" if age < 18 else "adult"
+    if age <= 4:
+        return "toddler"
+    if age < 18:
+        return "child"
+    return "adult"
 
 
 def validate_age_for_category(category: str, age: int) -> None:

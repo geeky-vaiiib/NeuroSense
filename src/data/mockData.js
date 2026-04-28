@@ -378,7 +378,7 @@ function toStorageCase(record) {
     jaundice: record.demo?.jaundice ?? record.jaundice ?? 'No',
     familyAsd: record.demo?.familyAsd ?? record.familyAsd ?? 'No',
   };
-  const aq10Score = record.aq10Score ?? buildAq10Score(record.answers ?? {});
+  const aq10Score = record.aq10Score ?? buildAq10Score(record.answers ?? {}, category);
   const riskScore = Number((record.riskScore ?? getRiskScore(category, aq10Score)).toFixed(2));
   const riskLevel = record.riskLevel ?? getRiskLevel(riskScore);
   const interpretation = record.interpretation ?? content.riskCopy[riskLevel];
@@ -683,7 +683,7 @@ export async function submitMockScreening(payload) {
   }
 
   const content = getCategoryContent(category);
-  const aq10Score = payload.aq10Score ?? buildAq10Score(payload.answers);
+  const aq10Score = payload.aq10Score ?? buildAq10Score(payload.answers, category);
   const riskScore = getRiskScore(category, aq10Score);
   const riskLevel = getRiskLevel(riskScore);
   const submittedAt = new Date().toISOString();

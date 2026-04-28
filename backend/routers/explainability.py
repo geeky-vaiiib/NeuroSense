@@ -77,7 +77,7 @@ async def explain_case(case_id: str, request: Request):
         f"{category}_{type(clf).__name__}" if clf else f"{category}_MockProxy"
     )
 
-    X_instance = preprocess_for_inference(demo, answers, encoders)
+    X_instance = preprocess_for_inference(demo, answers, encoders, category=category)
     background = _background_matrix(bundle, X_instance)
 
     shap_results = compute_shap(model=clf, X_instance=X_instance, feature_names=FEATURE_NAMES)

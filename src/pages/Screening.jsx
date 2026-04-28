@@ -302,7 +302,7 @@ export default function Screening() {
     routeCategory && CATEGORY_CONTENT[routeCategory] ? routeCategory : '';
   const content = category ? getCategoryContent(category) : null;
   const questions = category ? QUESTION_BANK[category] : [];
-  const aq10Score = useMemo(() => buildAq10Score(answers), [answers]);
+  const aq10Score = useMemo(() => buildAq10Score(answers, category || 'adult'), [answers, category]);
   const ageCheck = useMemo(
     () => validateCategoryAge(category, Number(demo.age)),
     [category, demo.age]
@@ -337,9 +337,9 @@ export default function Screening() {
 
   const allConsentsAccepted = consents.every(Boolean);
   const demographicsReady =
-    Number(demo.age) > 0 &&
+    Number(demo.age) >= 0 &&
     demo.gender &&
-    (category !== 'child' || Boolean(demo.respondentRelationship));
+    (category === 'adult' || Boolean(demo.respondentRelationship));
   const questionnaireReady = questions.every((question) => answers[question.id]);
   const summaryRows = [
     ['Category', content?.label],
@@ -463,9 +463,9 @@ export default function Screening() {
                 maxWidth: '700px',
               }}
             >
-              NeuroSense now routes every screening through an adult or child track. Each
-              track has its own language, validation rules, model pipeline, and results
-              interpretation.
+              NeuroSense routes every screening through an age-based track — adult, child, or
+              toddler. Each track has its own language, validation rules, model pipeline, and
+              results interpretation.
             </p>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
@@ -580,7 +580,9 @@ export default function Screening() {
               <p style={{ color: 'var(--color-neutral-600)', lineHeight: 1.7 }}>
                 {category === 'adult'
                   ? 'These details stay attached to the adult result, case record, and explanation.'
-                  : 'These details stay attached to the child result, case record, and caregiver context.'}
+                  : category === 'toddler'
+                    ? 'These details stay attached to the toddler result, case record, and caregiver context.'
+                    : 'These details stay attached to the child result, case record, and caregiver context.'}
               </p>
               <div style={styles.grid}>
                 <FormField label={content.demographics.subjectNameLabel}>
@@ -614,8 +616,8 @@ export default function Screening() {
                 <FormField label={content.demographics.ageLabel}>
                   <input
                     type="number"
-                    min="1"
-                    max="99"
+                    min={category === 'toddler' ? '0' : '1'}
+                    max={category === 'toddler' ? '4' : '99'}
                     value={demo.age}
                     onChange={(event) => updateDemo('age', event.target.value)}
                     style={styles.input}
