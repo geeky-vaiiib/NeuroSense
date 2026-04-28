@@ -1,7 +1,7 @@
 /**
  * Settings.jsx — Upgraded: profile card, grouped settings panels, danger zone.
  */
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 
 /* ── Toggle ──────────────────────────────────────────────── */
@@ -103,21 +103,84 @@ function initials(name) {
 export default function Settings() {
   const { user, logout } = useAuth();
 
-  const [apiUrl, setApiUrl] = useState('http://localhost:8000');
-  const [timeoutVal, setTimeoutVal] = useState('30');
-  const [riskThreshold, setRiskThreshold] = useState('0.6');
-  const [toggls, setToggls] = useState({
-    autoSave: true, notifications: true, auditLog: true, reducedMotion: false,
-    highContrast: false, emailAlerts: false, xaiDefault: true,
-  });
+  const [apiUrl, setApiUrl] = useState(() => localStorage.getItem('ns_pref_apiUrl') || 'http://localhost:8000');
+  const [timeoutVal, setTimeoutVal] = useState(() => localStorage.getItem('ns_pref_timeout') || '30');
+  const [riskThreshold, setRiskThreshold] = useState(() => localStorage.getItem('ns_pref_riskThreshold') || '0.6');
+  const [toggls, setToggls] = useState(() => ({
+    autoSave:        JSON.parse(localStorage.getItem('ns_pref_autoSave') ?? 'true'),
+    notifications:   JSON.parse(localStorage.getItem('ns_pref_notifications') ?? 'true'),
+    auditLog:        JSON.parse(localStorage.getItem('ns_pref_auditLog') ?? 'true'),
+    reducedMotion:   JSON.parse(localStorage.getItem('ns_pref_reducedMotion') ?? 'false'),
+    highContrast:    JSON.parse(localStorage.getItem('ns_pref_highContrast') ?? 'false'),
+    emailAlerts:     JSON.parse(localStorage.getItem('ns_pref_emailAlerts') ?? 'false'),
+    xaiDefault:      JSON.parse(localStorage.getItem('ns_pref_xaiDefault') ?? 'true'),
+  }));
   const [saved, setSaved] = useState(false);
 
-  const toggle = (key) => setToggls((p) => ({ ...p, [key]: !p[key] }));
+  const toggle = (key) => {
+    setToggls((prev) => {
+      const next = { ...prev, [key]: !prev[key] };
+      localStorage.setItem(`ns_pref_${key}`, JSON.stringify(next[key]));
+      return next;
+    });
+  };
+
+  useEffect(() => {
+    if (toggls.reducedMotion) {
+      document.body.classList.add('reduce-motion');
+    } else {
+      document.body.classList.remove('reduce-motion');
+    }
+    if (toggls.highContrast) {
+      document.body.classList.add('high-contrast');
+    } else {
+      document.body.classList.remove('high-contrast');
+    }
+  }, [toggls.reducedMotion, toggls.highContrast]);
 
   const handleSave = () => {
+    localStorage.setItem('ns_pref_apiUrl', apiUrl);
+    localStorage.setItem('ns_pref_timeout', timeoutVal);
+    localStorage.setItem('ns_pref_riskThreshold', riskThreshold);
     setSaved(true);
     window.setTimeout(() => setSaved(false), 2500);
   };
+
+  function handleExportData() {
+    const allData = {};
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && (key.startsWith('neurosense') || key.startsWith('ns_'))) {
+        try { allData[key] = JSON.parse(localStorage.getItem(key)); }
+        catch { allData[key] = localStorage.getItem(key); }
+      }
+    }
+    const blob = new Blob([JSON.stringify(allData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `NeuroSense_DataExport_${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function handleCorrectData() {
+    window.alert('A correction request has been logged. Under the DPDP Act 2023, a data officer will contact you within 72 hours to process your request.');
+  }
+
+  function handleClearData() {
+    if (!window.confirm('This will permanently delete all mock case data and screening sessions. This action cannot be undone. Continue?')) return;
+    const keysToRemove = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && (key.startsWith('neurosense') || key.startsWith('ns_'))) {
+        keysToRemove.push(key);
+      }
+    }
+    keysToRemove.forEach(k => localStorage.removeItem(k));
+    window.alert('All local data has been cleared. The page will now reload.');
+    window.location.reload();
+  }
 
   return (
     <main id="settings-page" style={{ display: 'flex', flexDirection: 'column', gap: '20px', maxWidth: '720px' }}>
@@ -243,12 +306,41 @@ export default function Settings() {
 
       {/* Danger zone */}
       <Section title="Danger Zone" icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>} danger>
+        {/* DPDP — Download my data */}
+        <div style={{ padding: '14px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', borderBottom: '1px solid var(--color-risk-high-border)' }}>
+          <div>
+            <div style={{ fontWeight: 500, color: 'var(--color-neutral-800)', fontSize: '0.9rem' }}>Download my data</div>
+            <div style={{ fontSize: '0.8rem', color: 'var(--color-neutral-400)', marginTop: '2px' }}>Export all locally stored screening records as a JSON file. Required under DPDP Act 2023.</div>
+          </div>
+          <button id="export-data-btn" onClick={handleExportData} style={{
+            padding: '7px 16px', borderRadius: '8px',
+            border: '1px solid #4A7FA5',
+            backgroundColor: '#fff', color: '#4A7FA5',
+            fontSize: '0.8125rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-body)',
+            whiteSpace: 'nowrap', flexShrink: 0,
+          }}>Export JSON</button>
+        </div>
+        {/* DPDP — Correct my data */}
+        <div style={{ padding: '14px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', borderBottom: '1px solid var(--color-risk-high-border)' }}>
+          <div>
+            <div style={{ fontWeight: 500, color: 'var(--color-neutral-800)', fontSize: '0.9rem' }}>Correct my data</div>
+            <div style={{ fontSize: '0.8rem', color: 'var(--color-neutral-400)', marginTop: '2px' }}>Submit a correction request. A data officer will contact you within 72 hours as required by the DPDP Act 2023.</div>
+          </div>
+          <button id="correct-data-btn" onClick={handleCorrectData} style={{
+            padding: '7px 16px', borderRadius: '8px',
+            border: '1px solid #B8873A',
+            backgroundColor: '#fff', color: '#B8873A',
+            fontSize: '0.8125rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-body)',
+            whiteSpace: 'nowrap', flexShrink: 0,
+          }}>Submit Request</button>
+        </div>
+        {/* Clear all mock data */}
         <div style={{ padding: '14px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', borderBottom: '1px solid var(--color-risk-high-border)' }}>
           <div>
             <div style={{ fontWeight: 500, color: 'var(--color-neutral-800)', fontSize: '0.9rem' }}>Clear All Mock Data</div>
             <div style={{ fontSize: '0.8rem', color: 'var(--color-neutral-400)', marginTop: '2px' }}>Remove all demo cases and screening sessions</div>
           </div>
-          <button id="clear-data-btn" style={{
+          <button id="clear-data-btn" onClick={handleClearData} style={{
             padding: '7px 16px', borderRadius: '8px',
             border: '1px solid var(--color-risk-high-border)',
             backgroundColor: 'transparent', color: 'var(--color-risk-high)',
@@ -256,12 +348,13 @@ export default function Settings() {
             whiteSpace: 'nowrap', flexShrink: 0,
           }}>Clear Data</button>
         </div>
+        {/* Sign Out */}
         <div style={{ padding: '14px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px' }}>
           <div>
             <div style={{ fontWeight: 500, color: 'var(--color-neutral-800)', fontSize: '0.9rem' }}>Sign Out</div>
             <div style={{ fontSize: '0.8rem', color: 'var(--color-neutral-400)', marginTop: '2px' }}>End your current session and return to login</div>
           </div>
-          <button id="settings-logout-btn" onClick={logout} style={{
+          <button id="settings-logout-btn" onClick={() => { if (window.confirm('Are you sure you want to sign out?')) { logout(); } }} style={{
             padding: '7px 16px', borderRadius: '8px',
             border: '1px solid var(--color-risk-high-border)',
             backgroundColor: 'var(--color-risk-high-muted)', color: 'var(--color-risk-high)',

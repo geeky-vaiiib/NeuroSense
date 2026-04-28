@@ -4,6 +4,7 @@
 import { NeuroLogo } from '../pages/Landing';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useBackendStatus } from '../hooks/useBackendStatus';
 
 const NAV_ITEMS = [
   {
@@ -68,6 +69,7 @@ const NAV_ITEMS = [
 
 export default function Sidebar() {
   const { user, logout } = useAuth();
+  const { isOnline, isChecking } = useBackendStatus();
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -120,6 +122,36 @@ export default function Sidebar() {
       </nav>
 
       <div style={{ flex: 1 }} />
+
+      {/* Backend status indicator */}
+      <div style={{
+        padding: '10px 16px',
+        borderTop: '1px solid var(--color-neutral-100)',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px',
+      }}>
+        <span style={{
+          width: 7,
+          height: 7,
+          borderRadius: '50%',
+          flexShrink: 0,
+          backgroundColor: isChecking
+            ? 'var(--color-neutral-300)'
+            : isOnline
+              ? '#7CDE9A'
+              : 'var(--color-risk-high)',
+          transition: 'background-color 0.4s ease',
+        }} />
+        <span style={{
+          fontSize: '0.72rem',
+          color: 'var(--color-neutral-400)',
+          fontFamily: 'var(--font-mono)',
+        }}>
+          {isChecking ? 'checking…' : isOnline ? 'backend connected' : 'backend offline'}
+        </span>
+      </div>
+
       <div className="ns-sb-divider" />
 
       {/* User strip */}

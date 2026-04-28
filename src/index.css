@@ -388,3 +388,31 @@ code, kbd, samp, pre {
   line-height: var(--line-height-snug);
   letter-spacing: 0.01em;
 }
+
+/* ── 13. Accessibility: reduce motion (toggled via Settings) ── */
+.reduce-motion *,
+.reduce-motion *::before,
+.reduce-motion *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+
+/* ── 14. Accessibility: high contrast (toggled via Settings) ── */
+.high-contrast {
+  --color-neutral-200: #A0A0A0;
+  --color-neutral-300: #808080;
+  --color-neutral-400: #606060;
+  --color-neutral-500: #404040;
+  --color-neutral-600: #202020;
+}
+.high-contrast .ns-sidebar,
+.high-contrast [style*="border"] {
+  border-color: #707070 !important;
+}
+
+/* ── 15. Spinner animation (used by PDF download button) ───── */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}

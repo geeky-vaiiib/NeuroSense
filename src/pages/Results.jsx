@@ -5,6 +5,7 @@ import RiskBadge from '../components/RiskBadge';
 import { useShap } from '../hooks/useShap';
 import { casesApi } from '../services/api';
 import { getCategoryContent } from '../data/screeningContent';
+import { generatePDF } from '../utils/generatePDF';
 
 const styles = {
   page: {
@@ -90,6 +91,21 @@ export default function Results() {
   const [loadingList, setLoadingList] = useState(true);
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [pageError, setPageError] = useState('');
+  const [pdfLoading, setPdfLoading] = useState(false);
+  const [clinicianNotes, setClinicianNotes] = useState('');
+  const [notesSaved, setNotesSaved] = useState(false);
+
+  async function handleDownloadPDF() {
+    if (!selectedCase || !explanation) return;
+    setPdfLoading(true);
+    try {
+      await generatePDF(selectedCase, explanation);
+    } catch (err) {
+      console.error('PDF generation failed:', err);
+    } finally {
+      setPdfLoading(false);
+    }
+  }
 
   useEffect(() => {
     let active = true;
@@ -159,6 +175,19 @@ export default function Results() {
     };
   }, [detailCache, fetchExplanation, selectedCaseId]);
 
+  useEffect(() => {
+    if (!selectedCaseId) return;
+    const saved = localStorage.getItem(`ns_notes_${selectedCaseId}`);
+    setClinicianNotes(saved || selectedCase?.notes || '');
+    setNotesSaved(false);
+  }, [selectedCaseId, selectedCase]);
+
+  function handleSaveNotes() {
+    localStorage.setItem(`ns_notes_${selectedCaseId}`, clinicianNotes);
+    setNotesSaved(true);
+    setTimeout(() => setNotesSaved(false), 2500);
+  }
+
   const selectedSummary = cases.find((item) => item.id === selectedCaseId);
   const selectedCase = detailCache[selectedCaseId] ?? selectedSummary;
   const explanation = explanations[selectedCaseId];
@@ -199,6 +228,39 @@ export default function Results() {
               explanation, and stored case summary.
             </p>
           </div>
+          <button
+            id="download-pdf-btn"
+            onClick={handleDownloadPDF}
+            disabled={pdfLoading || !selectedCase || !explanation}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '9px 18px',
+              borderRadius: '10px',
+              border: '1px solid var(--color-neutral-200)',
+              backgroundColor: pdfLoading ? 'var(--color-neutral-100)' : '#fff',
+              color: 'var(--color-neutral-700)',
+              fontWeight: 600,
+              fontSize: '0.875rem',
+              cursor: pdfLoading || !selectedCase ? 'not-allowed' : 'pointer',
+              fontFamily: 'var(--font-body)',
+            }}
+          >
+            {pdfLoading ? (
+              <>
+                <span style={{ width: 14, height: 14, borderRadius: '50%', border: '2px solid var(--color-neutral-300)', borderTopColor: 'var(--color-primary)', animation: 'spin 0.7s linear infinite', display: 'inline-block' }} />
+                Generating…
+              </>
+            ) : (
+              <>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+                Download PDF
+              </>
+            )}
+          </button>
         </div>
 
         {loadingList ? (
@@ -449,6 +511,73 @@ export default function Results() {
                 </div>
               ))}
             </div>
+          </section>
+
+          <section style={{
+            backgroundColor: 'var(--color-bg-card)',
+            border: '1px solid var(--color-neutral-200)',
+            borderRadius: '22px',
+            padding: '24px',
+            boxShadow: 'var(--shadow-xs)',
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+              <div>
+                <h3 style={{ margin: '0 0 4px', color: 'var(--color-neutral-900)' }}>Clinician Notes</h3>
+                <p style={{ margin: 0, color: 'var(--color-neutral-500)', fontSize: '0.85rem' }}>
+                  Notes are stored locally and attached to this case ID. They are not transmitted to the backend.
+                </p>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                {notesSaved && (
+                  <span style={{ fontSize: '0.8rem', color: 'var(--color-primary-dark)', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="20 6 9 17 4 12"/>
+                    </svg>
+                    Saved
+                  </span>
+                )}
+                <button
+                  id="save-notes-btn"
+                  onClick={handleSaveNotes}
+                  style={{
+                    padding: '8px 18px',
+                    borderRadius: '10px',
+                    border: 'none',
+                    background: 'linear-gradient(135deg, var(--color-primary), var(--color-primary-dark))',
+                    color: '#fff',
+                    fontWeight: 600,
+                    fontSize: '0.875rem',
+                    cursor: 'pointer',
+                    fontFamily: 'var(--font-body)',
+                  }}
+                >
+                  Save Notes
+                </button>
+              </div>
+            </div>
+            <textarea
+              id="clinician-notes-input"
+              value={clinicianNotes}
+              onChange={(e) => { setClinicianNotes(e.target.value); setNotesSaved(false); }}
+              placeholder="Add clinical observations, referral notes, or follow-up plans here…"
+              rows={5}
+              style={{
+                width: '100%',
+                padding: '12px 14px',
+                borderRadius: '12px',
+                border: '1.5px solid var(--color-neutral-200)',
+                backgroundColor: 'var(--color-bg)',
+                color: 'var(--color-neutral-800)',
+                fontSize: '0.9375rem',
+                fontFamily: 'var(--font-body)',
+                lineHeight: 1.6,
+                resize: 'vertical',
+                outline: 'none',
+                transition: 'border-color 150ms',
+              }}
+              onFocus={(e) => e.target.style.borderColor = 'var(--color-primary)'}
+              onBlur={(e) => e.target.style.borderColor = 'var(--color-neutral-200)'}
+            />
           </section>
         </>
       )}
