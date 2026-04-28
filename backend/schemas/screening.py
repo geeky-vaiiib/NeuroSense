@@ -1,4 +1,4 @@
-"""Pydantic models for the dual-track NeuroSense screening API."""
+"""Pydantic models for the triple-track NeuroSense screening API."""
 
 from enum import Enum
 from typing import Optional
@@ -13,8 +13,9 @@ except ImportError:  # pragma: no cover - fallback for backend cwd execution
 
 # ── Enums ──────────────────────────────────────────────────────────
 class CategoryEnum(str, Enum):
-    adult = "adult"
-    child = "child"
+    adult   = "adult"
+    child   = "child"
+    toddler = "toddler"
 
 
 class GenderEnum(str, Enum):
@@ -45,7 +46,10 @@ class Demographics(BaseModel):
     subject_name: Optional[str] = Field(None, alias="subjectName")
     respondent_name: Optional[str] = Field(None, alias="respondentName")
     respondent_relationship: Optional[str] = Field(None, alias="respondentRelationship")
-    age: int = Field(..., ge=1, le=100, description="Patient age in years")
+    age: int = Field(
+        ..., ge=0, le=100,
+        description="Age in years for adult/child, or age in months if category is toddler",
+    )
     gender: GenderEnum
     ethnicity: Optional[str] = Field(None, description="Ethnicity label")
     jaundice: Optional[JaundiceEnum] = Field(None, description="Jaundice at birth")
@@ -53,6 +57,11 @@ class Demographics(BaseModel):
         None,
         alias="familyAsd",
         description="Family history of ASD",
+    )
+    age_unit: Optional[str] = Field(
+        None,
+        alias="ageUnit",
+        description="'months' for toddler, 'years' for others",
     )
 
     model_config = ConfigDict(populate_by_name=True)
@@ -72,7 +81,7 @@ class AQ10Answers(BaseModel):
 
 
 class ScreeningRequest(BaseModel):
-    category: CategoryEnum = Field(..., description="adult or child")
+    category: CategoryEnum = Field(..., description="adult, child, or toddler")
     demo: Demographics
     answers: AQ10Answers
     aq10_score: int = Field(
@@ -80,14 +89,16 @@ class ScreeningRequest(BaseModel):
         ge=0,
         le=10,
         alias="aq10Score",
-        description="Pre-computed AQ-10 sum score",
+        description="Pre-computed AQ-10 / Q-CHAT-10 sum score",
     )
 
     model_config = ConfigDict(populate_by_name=True)
 
     @model_validator(mode="after")
     def validate_age_category(self):
-        validate_age_for_category(self.category.value, self.demo.age)
+        # Toddler age validation is handled differently (age may be in months)
+        if self.category.value != "toddler":
+            validate_age_for_category(self.category.value, self.demo.age)
         return self
 
 
@@ -207,6 +218,7 @@ class DashboardTotalsResponse(BaseModel):
     mock_cases: int = Field(..., alias="mockCases")
     average_risk_score: float = Field(..., alias="averageRiskScore")
     average_aq10_score: float = Field(..., alias="averageAq10Score")
+    toddler_cases: int = Field(0, alias="toddlerCases")
 
     model_config = ConfigDict(populate_by_name=True)
 
