@@ -252,6 +252,84 @@ const SEEDED_CASES = [
       A10: 'Slightly disagree',
     },
   },
+  {
+    id: 'NS-T-2026-0418',
+    category: 'toddler',
+    subjectName: 'Leo M.',
+    respondentName: 'Sarah M.',
+    respondentRelationship: 'Mother',
+    age: 2,
+    gender: 'Male',
+    ethnicity: 'South Asian',
+    jaundice: 'No',
+    familyAsd: 'Yes',
+    riskLevel: 'High',
+    riskScore: 0.89,
+    aq10Score: 8,
+    status: 'in-progress',
+    diagnosis: 'Toddler early ASD traits flagged \u2014 urgent developmental review recommended',
+    screeningDate: '2026-04-18',
+    referralDate: '2026-04-18',
+    clinician: 'Dr. Priya Mehta',
+    screeningTool: 'Q-CHAT-10',
+    completedScreenings: ['Q-CHAT-10'],
+    notes: 'Caregiver reports limited eye contact, no pointing gesture, and no pretend play at 24 months. Family history positive.',
+    modelUsed: 'toddler_MockProxy',
+    isMock: true,
+    dataSource: 'mock',
+    tags: ['toddler-track', 'caregiver-report', 'high-risk', 'mock-pipeline'],
+    answers: {
+      A1: 'Slightly disagree',
+      A2: 'Definitely disagree',
+      A3: 'Definitely disagree',
+      A4: 'Definitely disagree',
+      A5: 'Definitely disagree',
+      A6: 'Slightly disagree',
+      A7: 'Slightly disagree',
+      A8: 'Definitely disagree',
+      A9: 'Definitely disagree',
+      A10: 'Definitely agree',
+    },
+  },
+  {
+    id: 'NS-T-2026-0410',
+    category: 'toddler',
+    subjectName: 'Zara R.',
+    respondentName: 'Anita R.',
+    respondentRelationship: 'Mother',
+    age: 3,
+    gender: 'Female',
+    ethnicity: 'East Asian',
+    jaundice: 'No',
+    familyAsd: 'No',
+    riskLevel: 'Low',
+    riskScore: 0.18,
+    aq10Score: 2,
+    status: 'reviewed',
+    diagnosis: 'Lower toddler ASD likelihood on screening',
+    screeningDate: '2026-04-10',
+    referralDate: '2026-04-10',
+    clinician: 'Dr. Lena Torres',
+    screeningTool: 'Q-CHAT-10',
+    completedScreenings: ['Q-CHAT-10'],
+    notes: 'Good eye contact, pointing present, pretend play observed. Low risk on Q-CHAT-10.',
+    modelUsed: 'toddler_MockProxy',
+    isMock: true,
+    dataSource: 'mock',
+    tags: ['toddler-track', 'caregiver-report', 'low-risk', 'mock-pipeline'],
+    answers: {
+      A1: 'Definitely agree',
+      A2: 'Definitely agree',
+      A3: 'Slightly agree',
+      A4: 'Definitely agree',
+      A5: 'Slightly agree',
+      A6: 'Definitely agree',
+      A7: 'Slightly agree',
+      A8: 'Slightly agree',
+      A9: 'Definitely agree',
+      A10: 'Slightly disagree',
+    },
+  },
 ];
 
 function clone(value) {
@@ -269,7 +347,14 @@ function getRiskLevel(score) {
 }
 
 function getRiskScore(category, aq10Score) {
-  const multiplier = category === 'child' ? 1.15 : 1.1;
+  let multiplier;
+  if (category === 'toddler') {
+    multiplier = 1.4;
+  } else if (category === 'child') {
+    multiplier = 1.15;
+  } else {
+    multiplier = 1.1;
+  }
   return Number(Math.min((aq10Score / 10) * multiplier, 1).toFixed(2));
 }
 
@@ -387,12 +472,14 @@ function buildExplanation(record) {
   }
   demographicInsights.push({
     feature:
-      record.category === 'child'
-        ? 'Child age at screening'
-        : 'Adult age at screening',
-    shapValue: record.category === 'child' && record.age < 8 ? 0.06 : -0.04,
+      record.category === 'toddler'
+        ? 'Toddler age in months'
+        : record.category === 'child'
+          ? 'Child age at screening'
+          : 'Adult age at screening',
+    shapValue: (record.category === 'child' && record.age < 8) || record.category === 'toddler' ? 0.06 : -0.04,
     direction:
-      record.category === 'child' && record.age < 8 ? 'positive' : 'negative',
+      (record.category === 'child' && record.age < 8) || record.category === 'toddler' ? 'positive' : 'negative',
   });
 
   const shap = [...answerInsights, ...demographicInsights]
@@ -501,7 +588,8 @@ function toDetail(record) {
 function buildCaseId(category) {
   const dateToken = new Date().toISOString().slice(0, 10).replaceAll('-', '');
   const suffix = Math.random().toString(16).slice(2, 6).toUpperCase();
-  return `NS-${category === 'child' ? 'C' : 'A'}-${dateToken}-${suffix}`;
+  const prefix = category === 'toddler' ? 'T' : category === 'child' ? 'C' : 'A';
+  return `NS-${prefix}-${dateToken}-${suffix}`;
 }
 
 export function getMockCaseSummaries(category) {
@@ -557,12 +645,15 @@ export function getMockDashboardSummary(category) {
       )
     : 0;
 
+  const toddlerCases = records.filter((record) => record.category === 'toddler').length;
+
   return {
     categoryFilter: category ?? 'all',
     totals: {
       totalCases,
       adultCases,
       childCases,
+      toddlerCases,
       highRisk,
       moderateRisk,
       lowRisk,
@@ -575,6 +666,7 @@ export function getMockDashboardSummary(category) {
     categoryBreakdown: [
       { category: 'adult', label: 'Adult', count: adultCases },
       { category: 'child', label: 'Child', count: childCases },
+      { category: 'toddler', label: 'Toddler', count: toddlerCases },
     ],
     modalityConfidence: category
       ? CATEGORY_CONTENT[category]?.modalityConfidence ??

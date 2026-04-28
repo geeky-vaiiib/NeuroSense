@@ -1,9 +1,10 @@
 /**
- * CategoryBadge.jsx — Reusable category pill badge (Adult / Child).
+ * CategoryBadge.jsx — Reusable category pill badge (Adult / Child / Toddler).
  *
  * Usage:
  *   <CategoryBadge category="adult" />
  *   <CategoryBadge category="child" size="sm" />
+ *   <CategoryBadge category="toddler" />
  */
 const CATEGORY_STYLES = {
   adult: {
@@ -17,6 +18,12 @@ const CATEGORY_STYLES = {
     color: '#E65100',
     dot: '#FF9800',
     label: 'Child',
+  },
+  toddler: {
+    bg: '#F3E8FD',
+    color: '#7B3F9E',
+    dot: '#9B59B6',
+    label: 'Toddler',
   },
 };
 
