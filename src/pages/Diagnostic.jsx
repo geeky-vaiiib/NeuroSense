@@ -232,7 +232,7 @@ export default function Diagnostic() {
             background: runningAll
               ? 'var(--color-neutral-300)'
               : 'linear-gradient(135deg, var(--color-primary), var(--color-primary-dark))',
-            color: '#fff', fontWeight: 700, fontSize: '0.9rem',
+            color: 'var(--clr-text-inverse)', fontWeight: 700, fontSize: '0.9rem',
             cursor: runningAll ? 'not-allowed' : 'pointer',
             fontFamily: 'var(--font-body)',
             display: 'flex', alignItems: 'center', gap: '8px',
@@ -345,7 +345,7 @@ export default function Diagnostic() {
 const btnStyle = {
   padding: '6px 16px', borderRadius: '8px',
   border: '1px solid var(--color-neutral-200)',
-  backgroundColor: '#fff', color: 'var(--color-neutral-700)',
+  backgroundColor: 'var(--clr-surface)', color: 'var(--color-neutral-700)',
   fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer',
   fontFamily: 'var(--font-body)',
 };

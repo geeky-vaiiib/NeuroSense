@@ -3,14 +3,15 @@
  * 260px fixed width, clear visual hierarchy, 48px min touch targets.
  */
 import { useEffect, useState } from 'react';
-import { NeuroLogo } from '../pages/Landing';
+import NeuroLogo from './NeuroLogo';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useBackendStatus } from '../hooks/useBackendStatus';
 import ThemeToggle from './ThemeToggle';
 import { casesApi } from '../services/api';
 
-const NAV_ITEMS = [
+/* ── Grouped navigation items ─────────────────────────────── */
+const SCREENING_ITEMS = [
   {
     to: '/app',
     end: true,
@@ -54,6 +55,9 @@ const NAV_ITEMS = [
       </svg>
     ),
   },
+];
+
+const SYSTEM_ITEMS = [
   {
     to: '/app/settings',
     end: false,
@@ -65,7 +69,51 @@ const NAV_ITEMS = [
       </svg>
     ),
   },
+  {
+    to: '/app/diagnostic',
+    end: false,
+    label: 'Diagnostic',
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+      </svg>
+    ),
+  },
 ];
+
+function NavItem({ to, end, label, icon, hasCaseBadge, caseCount, onClose }) {
+  return (
+    <li>
+      <NavLink
+        to={to}
+        end={end}
+        className={({ isActive }) => isActive ? 'ns-sb-link ns-sb-link--active' : 'ns-sb-link'}
+        aria-label={label}
+        onClick={onClose}
+      >
+        <span className="ns-sb-link-icon">{icon}</span>
+        <span className="ns-sb-link-label">{label}</span>
+        {hasCaseBadge && caseCount !== null && (
+          <span style={{
+            marginLeft: 'auto',
+            backgroundColor: 'var(--color-primary-muted)',
+            color: 'var(--color-primary-dark)',
+            borderRadius: 'var(--radius-full)',
+            padding: '2px 8px',
+            fontSize: '0.6875rem',
+            fontFamily: 'var(--font-mono)',
+            fontWeight: 600,
+            minWidth: '22px',
+            textAlign: 'center',
+            lineHeight: 1.5,
+          }}>
+            {caseCount}
+          </span>
+        )}
+      </NavLink>
+    </li>
+  );
+}
 
 export default function Sidebar({ isOpen, onClose }) {
   const { user, logout } = useAuth();
@@ -86,49 +134,28 @@ export default function Sidebar({ isOpen, onClose }) {
     <aside className={`ns-sidebar${isOpen ? ' ns-sidebar--open' : ''}`} role="navigation" aria-label="Main navigation">
 
       {/* Brand */}
-      <div className="ns-sb-brand">
-        <NeuroLogo size={36} />
-        <div className="ns-sb-brand-text">
-          <span className="ns-sb-app-name">NeuroSense</span>
-          <span className="ns-sb-app-sub">Clinical Intelligence</span>
-        </div>
+      <div style={{ padding: 'var(--space-5) var(--space-4) var(--space-4)', borderBottom: '1px solid var(--color-border)' }}>
+        <NeuroLogo variant="full" size={28} color="teal" />
       </div>
-
-      <div className="ns-sb-divider" />
 
       {/* Nav */}
       <nav className="ns-sb-nav">
+        {/* SCREENING section */}
+        <div className="ns-sb-section-label">Screening</div>
         <ul>
-          {NAV_ITEMS.map(({ to, end, label, icon, hasCaseBadge }) => (
-            <li key={to}>
-              <NavLink
-                to={to}
-                end={end}
-                className={({ isActive }) => isActive ? 'ns-sb-link ns-sb-link--active' : 'ns-sb-link'}
-                aria-label={label}
-                onClick={onClose}
-              >
-                <span className="ns-sb-link-icon">{icon}</span>
-                <span className="ns-sb-link-label">{label}</span>
-                {hasCaseBadge && caseCount !== null && (
-                  <span style={{
-                    marginLeft: 'auto',
-                    backgroundColor: 'var(--color-primary-muted)',
-                    color: 'var(--color-primary-dark)',
-                    borderRadius: 'var(--radius-full)',
-                    padding: '2px 8px',
-                    fontSize: '0.6875rem',
-                    fontFamily: 'var(--font-mono)',
-                    fontWeight: 600,
-                    minWidth: '22px',
-                    textAlign: 'center',
-                    lineHeight: 1.5,
-                  }}>
-                    {caseCount}
-                  </span>
-                )}
-              </NavLink>
-            </li>
+          {SCREENING_ITEMS.map((item) => (
+            <NavItem key={item.to} {...item} caseCount={caseCount} onClose={onClose} />
+          ))}
+        </ul>
+
+        {/* Section divider */}
+        <div className="ns-sb-section-divider" />
+
+        {/* SYSTEM section */}
+        <div className="ns-sb-section-label">System</div>
+        <ul>
+          {SYSTEM_ITEMS.map((item) => (
+            <NavItem key={item.to} {...item} caseCount={caseCount} onClose={onClose} />
           ))}
         </ul>
       </nav>
@@ -185,72 +212,71 @@ export default function Sidebar({ isOpen, onClose }) {
 
       <div className="ns-sb-divider" />
 
-      {/* User strip */}
+      {/* User profile strip */}
       <div style={{
-        padding: '14px 16px',
-        display: 'flex', alignItems: 'center', gap: '12px',
+        padding: 'var(--space-3) var(--space-4)',
+        borderTop: '1px solid var(--color-border)',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 'var(--space-3)',
+        cursor: 'pointer',
       }}>
-        {/* Avatar */}
+        {/* Avatar: initials in a circle */}
         <div style={{
-          width: '34px', height: '34px', borderRadius: '50%', flexShrink: 0,
-          background: `linear-gradient(135deg, var(--color-primary-light), var(--color-primary-dark))`,
+          width: 32, height: 32,
+          borderRadius: 'var(--radius-full)',
+          background: 'linear-gradient(135deg, var(--color-primary-400), var(--color-primary-700))',
+          color: 'white',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: '0.75rem', fontWeight: 700, color: '#fff',
-          position: 'relative',
-          boxShadow: 'var(--shadow-sm)',
+          fontSize: 'var(--text-xs)',
+          fontWeight: 'var(--weight-semibold)',
+          fontFamily: 'var(--font-body)',
+          flexShrink: 0,
         }}>
-          {user?.initials ?? 'U'}
-          <span style={{
-            position: 'absolute', bottom: '-1px', right: '-1px',
-            width: '10px', height: '10px', borderRadius: '50%',
-            backgroundColor: 'var(--color-primary)',
-            border: '2px solid var(--color-bg-sidebar)',
-          }} />
+          {user?.name?.slice(0, 2).toUpperCase() || 'NS'}
         </div>
 
+        {/* Name + role */}
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{
-            fontSize: '0.8125rem', fontWeight: 600,
+            fontSize: 'var(--text-xs)',
+            fontWeight: 'var(--weight-semibold)',
             color: 'var(--color-neutral-800)',
-            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-          }}>
-            {user?.name ?? 'Clinician'}
-          </div>
+            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+          }}>{user?.name || 'Clinician'}</div>
           <div style={{
-            fontSize: '0.6875rem', color: 'var(--color-neutral-400)',
-            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-          }}>
-            {user?.role ?? ''}
-          </div>
+            fontSize: 'var(--text-2xs)',
+            color: 'var(--color-neutral-400)',
+            fontFamily: 'var(--font-mono)',
+            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+          }}>{user?.role || 'Clinical Reviewer'}</div>
         </div>
 
-        {/* Logout button */}
+        {/* Sign out icon button */}
         <button
           id="sidebar-logout-btn"
           onClick={handleLogout}
           title="Sign out"
           aria-label="Sign out"
           style={{
-            width: '32px', height: '32px', borderRadius: 'var(--radius-sm)',
-            border: '1px solid var(--color-neutral-200)',
-            backgroundColor: 'transparent',
+            padding: 'var(--space-1)',
+            borderRadius: 'var(--radius-sm)',
+            border: 'none', background: 'transparent',
             color: 'var(--color-neutral-400)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
             cursor: 'pointer', flexShrink: 0,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
             transition: 'all 200ms var(--ease-out)',
           }}
           onMouseEnter={e => {
-            e.currentTarget.style.backgroundColor = 'var(--color-risk-high-muted)';
-            e.currentTarget.style.borderColor = 'var(--color-risk-high-border)';
-            e.currentTarget.style.color = 'var(--color-risk-high)';
+            e.currentTarget.style.backgroundColor = 'var(--color-neutral-100)';
+            e.currentTarget.style.color = 'var(--color-neutral-600)';
           }}
           onMouseLeave={e => {
             e.currentTarget.style.backgroundColor = 'transparent';
-            e.currentTarget.style.borderColor = 'var(--color-neutral-200)';
             e.currentTarget.style.color = 'var(--color-neutral-400)';
           }}
         >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
             <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
           </svg>
         </button>

@@ -52,7 +52,7 @@ function Particles({ count = 120, isDark }) {
       </bufferGeometry>
       <pointsMaterial
         size={0.03}
-        color={isDark ? '#6ee7b7' : '#7C9A85'}
+        color={isDark ? '#6ee7b7' : '#0ECFC8'}
         transparent
         opacity={isDark ? 0.5 : 0.35}
         sizeAttenuation

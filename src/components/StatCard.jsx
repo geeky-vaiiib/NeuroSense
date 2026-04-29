@@ -39,8 +39,10 @@ const styles = {
     flexDirection: 'column',
     gap: 'var(--space-4)',
     boxShadow: 'var(--shadow-sm)',
-    transition: 'box-shadow var(--transition-base), transform var(--transition-base)',
+    transition: 'box-shadow var(--duration-normal) var(--ease-out), transform var(--transition-base)',
     cursor: 'default',
+    position: 'relative',
+    overflow: 'hidden',
   },
   header: {
     display: 'flex',
@@ -58,18 +60,20 @@ const styles = {
     flexShrink: 0,
   },
   label: {
-    fontSize: 'var(--font-size-sm)',
-    fontWeight: 'var(--font-weight-medium)',
-    color: 'var(--color-neutral-500)',
-    letterSpacing: 'var(--letter-spacing-wide)',
+    fontSize: 'var(--text-2xs)',
+    fontWeight: 'var(--weight-semibold)',
+    letterSpacing: 'var(--tracking-widest)',
+    textTransform: 'uppercase',
+    color: 'var(--color-neutral-400)',
   },
   value: {
-    fontSize: 'var(--font-size-3xl)',
-    fontWeight: 'var(--font-weight-bold)',
-    fontFamily: 'var(--font-mono)',
+    fontSize: 'var(--text-4xl)',
+    fontWeight: 'var(--weight-light)',
+    fontFamily: 'var(--font-display)',
+    letterSpacing: 'var(--tracking-tight)',
+    lineHeight: 1,
+    marginBottom: 'var(--space-1)',
     color: 'var(--color-neutral-900)',
-    lineHeight: '1',
-    letterSpacing: 'var(--letter-spacing-tight)',
   },
   footer: {
     display: 'flex',
@@ -87,8 +91,9 @@ const styles = {
     padding: '2px var(--space-2)',
   },
   trendLabel: {
-    fontSize: 'var(--font-size-xs)',
+    fontSize: 'var(--text-xs)',
     color: 'var(--color-neutral-400)',
+    lineHeight: 'var(--leading-relaxed)',
   },
 };
 
@@ -100,6 +105,7 @@ const styles = {
  * @param {React.ReactNode} [props.icon] - Icon element
  * @param {string}  [props.iconBg]  - Icon background CSS color
  * @param {string}  [props.iconColor] - Icon color
+ * @param {string}  [props.accentColor] - Color for the left accent pill
  * @param {'up'|'down'|'neutral'} [props.trend]
  * @param {string}  [props.trendValue] - e.g. "+12%"
  * @param {string}  [props.trendLabel] - e.g. "vs last month"
@@ -111,6 +117,7 @@ export default function StatCard({
   icon,
   iconBg = 'var(--color-primary-subtle)',
   iconColor = 'var(--color-primary)',
+  accentColor = 'var(--color-primary)',
   trend = 'neutral',
   trendValue,
   trendLabel = 'vs last month',
@@ -124,12 +131,20 @@ export default function StatCard({
       aria-label={`${label}: ${value}`}
       style={{
         ...styles.card,
-        boxShadow: hovered ? 'var(--shadow-md)' : 'var(--shadow-sm)',
+        boxShadow: hovered ? 'var(--shadow-lg)' : 'var(--shadow-sm)',
         transform: hovered ? 'translateY(-2px)' : 'translateY(0)',
       }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
+      {/* Accent pill (replaces borderLeft) */}
+      <div style={{
+        position: 'absolute', top: 16, left: 0,
+        width: 3, height: 28,
+        borderRadius: '0 var(--radius-sm) var(--radius-sm) 0',
+        background: accentColor,
+      }} />
+
       <div style={styles.header}>
         <div>
           <div style={styles.label}>{label}</div>

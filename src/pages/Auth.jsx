@@ -5,7 +5,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { NeuroLogo } from './Landing';
+import NeuroLogo from '../components/NeuroLogo';
 
 const ROLES = [
   'Clinician / Doctor', 'Clinical Psychologist', 'Neuropsychologist',
@@ -227,16 +227,16 @@ export default function Auth() {
                 } />
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '-4px' }}>
-                <a href="#" style={{ fontSize: '0.8125rem', color: '#7C9A85', fontWeight: 500, textDecoration: 'none' }}>Forgot password?</a>
+                <a href="#" style={{ fontSize: '0.8125rem', color: 'var(--clr-primary)', fontWeight: 500, textDecoration: 'none' }}>Forgot password?</a>
               </div>
 
               <button id="login-submit-btn" type="submit" disabled={busy || isLoading}
                 style={{
                   height: '46px', borderRadius: '10px', border: 'none',
-                  background: 'linear-gradient(135deg, #7C9A85, #4A7259)',
-                  color: '#fff', fontSize: '0.9375rem', fontWeight: 700,
+                  background: 'var(--grad-cta)',
+                  color: 'var(--clr-text-inverse)', fontSize: '0.9375rem', fontWeight: 700,
                   cursor: busy ? 'not-allowed' : 'pointer', fontFamily: 'var(--font-body)',
-                  boxShadow: '0 4px 14px rgba(94,122,103,0.35)', opacity: busy ? 0.75 : 1,
+                  boxShadow: 'var(--shadow-glow)', opacity: busy ? 0.75 : 1,
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
                   marginTop: '4px',
                 }}>
@@ -253,7 +253,7 @@ export default function Auth() {
               <p style={{ fontSize: '0.8125rem', color: 'var(--color-neutral-500)', textAlign: 'center', margin: 0 }}>
                 Don't have an account?{' '}
                 <button type="button" onClick={() => switchTab('register')}
-                  style={{ background: 'none', border: 'none', color: '#7C9A85', fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-body)', fontSize: '0.8125rem', padding: 0 }}>
+                  style={{ background: 'none', border: 'none', color: 'var(--clr-primary)', fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-body)', fontSize: '0.8125rem', padding: 0 }}>
                   Create one →
                 </button>
               </p>
@@ -314,10 +314,10 @@ export default function Auth() {
               <button id="register-submit-btn" type="submit" disabled={busy}
                 style={{
                   height: '46px', borderRadius: '10px', border: 'none',
-                  background: 'linear-gradient(135deg, #7C9A85, #4A7259)',
-                  color: '#fff', fontSize: '0.9375rem', fontWeight: 700,
+                  background: 'var(--grad-cta)',
+                  color: 'var(--clr-text-inverse)', fontSize: '0.9375rem', fontWeight: 700,
                   cursor: busy ? 'not-allowed' : 'pointer', fontFamily: 'var(--font-body)',
-                  boxShadow: '0 4px 14px rgba(94,122,103,0.35)', opacity: busy ? 0.75 : 1,
+                  boxShadow: 'var(--shadow-glow)', opacity: busy ? 0.75 : 1,
                   marginTop: '4px',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                 }}>
@@ -326,15 +326,15 @@ export default function Auth() {
 
               <p style={{ fontSize: '0.75rem', color: 'var(--color-neutral-400)', textAlign: 'center', lineHeight: 1.5, margin: 0 }}>
                 By creating an account you agree to our{' '}
-                <a href="#" style={{ color: '#7C9A85', fontWeight: 500, textDecoration: 'none' }}>Terms</a>
+                <a href="#" style={{ color: 'var(--clr-primary)', fontWeight: 500, textDecoration: 'none' }}>Terms</a>
                 {' '}and{' '}
-                <a href="#" style={{ color: '#7C9A85', fontWeight: 500, textDecoration: 'none' }}>Privacy Policy</a>.
+                <a href="#" style={{ color: 'var(--clr-primary)', fontWeight: 500, textDecoration: 'none' }}>Privacy Policy</a>.
               </p>
 
               <p style={{ fontSize: '0.8125rem', color: 'var(--color-neutral-500)', textAlign: 'center', margin: 0 }}>
                 Already have an account?{' '}
                 <button type="button" onClick={() => switchTab('login')}
-                  style={{ background: 'none', border: 'none', color: '#7C9A85', fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-body)', fontSize: '0.8125rem', padding: 0 }}>
+                  style={{ background: 'none', border: 'none', color: 'var(--clr-primary)', fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-body)', fontSize: '0.8125rem', padding: 0 }}>
                   Sign in
                 </button>
               </p>
@@ -345,7 +345,7 @@ export default function Auth() {
 
       {/* Compliance */}
       <p style={{ marginTop: '24px', fontSize: '0.75rem', color: 'var(--color-neutral-400)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#7C9A85" strokeWidth="2.5" strokeLinecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--clr-primary)" strokeWidth="2.5" strokeLinecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>
         Protected under DPDP Act 2023 · End-to-end encrypted
       </p>
 

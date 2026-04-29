@@ -1,11 +1,11 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import CategoryBadge from '../components/CategoryBadge';
 import RiskBadge from '../components/RiskBadge';
 import { useShap } from '../hooks/useShap';
 import { casesApi } from '../services/api';
 import { getCategoryContent } from '../data/screeningContent';
-import { generatePDF } from '../utils/generatePDF';
+// generatePDF is dynamically imported on demand (code-split)
 
 const styles = {
   page: {
@@ -22,10 +22,10 @@ const styles = {
     transition: 'box-shadow 250ms cubic-bezier(0.16,1,0.3,1)',
   },
   metaLabel: {
-    fontSize: '0.6875rem',
-    fontWeight: 700,
+    fontSize: 'var(--text-2xs)',
+    fontWeight: 'var(--weight-semibold)',
     color: 'var(--color-neutral-400)',
-    letterSpacing: '0.06em',
+    letterSpacing: 'var(--tracking-widest)',
     textTransform: 'uppercase',
   },
 };
@@ -54,14 +54,15 @@ function FeatureBars({ features }) {
             >
               <span style={{
                 color: 'var(--color-neutral-800)',
-                fontWeight: 600,
-                fontSize: 'var(--font-size-sm)',
+                fontWeight: 'var(--weight-semibold)',
+                fontSize: 'var(--text-sm)',
               }}>{item.feature}</span>
               <span style={{
                 color,
                 fontFamily: 'var(--font-mono)',
-                fontSize: '0.8rem',
-                fontWeight: 500,
+                fontSize: 'var(--text-xs)',
+                fontWeight: 'var(--weight-medium)',
+                letterSpacing: 'var(--tracking-wide)',
               }}>
                 {item.shapValue > 0 ? '+' : ''}
                 {item.shapValue.toFixed(3)}
@@ -107,11 +108,13 @@ export default function Results() {
   const [pdfLoading, setPdfLoading] = useState(false);
   const [clinicianNotes, setClinicianNotes] = useState('');
   const [notesSaved, setNotesSaved] = useState(false);
+  const prevCaseIdRef = useRef(null);
 
   async function handleDownloadPDF() {
     if (!selectedCase || !explanation) return;
     setPdfLoading(true);
     try {
+      const { generatePDF } = await import('../utils/generatePDF');
       await generatePDF(selectedCase, explanation);
     } catch (err) {
       console.error('PDF generation failed:', err);
@@ -188,17 +191,17 @@ export default function Results() {
     };
   }, [detailCache, fetchExplanation, selectedCaseId]);
 
-  // Load clinician notes when selected case changes
-  /* eslint-disable react-hooks/set-state-in-effect */
-  useEffect(() => {
-    if (!selectedCaseId) return;
-    const caseData = detailCache[selectedCaseId];
+  // Render-time state update: derive notes from selectedCaseId (avoids setState-in-effect)
+  if (selectedCaseId && selectedCaseId !== prevCaseIdRef.current) {
+    prevCaseIdRef.current = selectedCaseId;
     const saved = localStorage.getItem(`ns_notes_${selectedCaseId}`);
-    setClinicianNotes(saved || caseData?.notes || '');
-    setNotesSaved(false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedCaseId]);
-  /* eslint-enable react-hooks/set-state-in-effect */
+    const caseData = detailCache[selectedCaseId];
+    const initialNotes = saved || caseData?.notes || '';
+    if (clinicianNotes !== initialNotes) {
+      setClinicianNotes(initialNotes);
+    }
+    if (notesSaved) setNotesSaved(false);
+  }
 
   function handleSaveNotes() {
     localStorage.setItem(`ns_notes_${selectedCaseId}`, clinicianNotes);
@@ -254,10 +257,10 @@ export default function Results() {
           }}
         >
           <div>
-            <h1 style={{ margin: '0 0 6px', color: 'var(--color-neutral-900)' }}>
+            <h1 style={{ margin: '0 0 6px', fontSize: 'var(--text-2xl)', fontWeight: 'var(--weight-semibold)', letterSpacing: 'var(--tracking-tight)', lineHeight: 'var(--leading-tight)', color: 'var(--color-neutral-900)', fontFamily: 'var(--font-display)' }}>
               Category-aware results and explainability
             </h1>
-            <p style={{ margin: 0, color: 'var(--color-neutral-600)', lineHeight: 1.7 }}>
+            <p style={{ margin: 0, fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-regular)', lineHeight: 'var(--leading-relaxed)', color: 'var(--color-neutral-500)' }}>
               Every case keeps its track (adult, child, or toddler) visible through the result, model,
               explanation, and stored case summary.
             </p>
@@ -273,10 +276,11 @@ export default function Results() {
               padding: '9px 18px',
               borderRadius: '10px',
               border: '1px solid var(--color-neutral-200)',
-              backgroundColor: pdfLoading ? 'var(--color-neutral-100)' : '#fff',
+              backgroundColor: pdfLoading ? 'var(--color-neutral-100)' : 'var(--clr-surface)',
               color: 'var(--color-neutral-700)',
-              fontWeight: 600,
-              fontSize: '0.875rem',
+              fontWeight: 'var(--weight-semibold)',
+              fontSize: 'var(--text-sm)',
+              letterSpacing: 'var(--tracking-normal)',
               cursor: pdfLoading || !selectedCase ? 'not-allowed' : 'pointer',
               fontFamily: 'var(--font-body)',
             }}
@@ -326,9 +330,10 @@ export default function Results() {
                 borderRadius: '10px',
                 border: 'none',
                 background: 'linear-gradient(135deg, var(--color-primary), var(--color-primary-dark))',
-                color: '#fff',
-                fontWeight: 600,
-                fontSize: '0.875rem',
+                color: 'var(--clr-text-inverse)',
+                fontWeight: 'var(--weight-semibold)',
+                fontSize: 'var(--text-sm)',
+                letterSpacing: 'var(--tracking-normal)',
                 cursor: 'pointer',
                 fontFamily: 'var(--font-body)',
               }}
@@ -371,7 +376,7 @@ export default function Results() {
                 >
                   {item.subjectName || 'Unnamed case'}
                 </strong>
-                <span style={{ fontSize: '0.8rem', color: 'var(--color-neutral-500)' }}>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', fontWeight: 'var(--weight-medium)', letterSpacing: 'var(--tracking-wide)', color: 'var(--color-neutral-500)' }}>
                   {item.id}
                 </span>
               </button>
@@ -1146,7 +1151,7 @@ export default function Results() {
               </div>
               <div style={{ marginTop: '4px' }}>
                 {'  = '}
-                <strong style={{ color: '#fff' }}>
+                <strong style={{ color: 'var(--clr-text-primary)' }}>
                   {selectedCase.fusionScore != null
                     ? selectedCase.fusionScore.toFixed(4)
                     : selectedCase.riskScore?.toFixed(4) ?? '?'}
@@ -1210,7 +1215,7 @@ export default function Results() {
                     borderRadius: '10px',
                     border: 'none',
                     background: 'linear-gradient(135deg, var(--color-primary), var(--color-primary-dark))',
-                    color: '#fff',
+                    color: 'var(--clr-text-primary)',
                     fontWeight: 600,
                     fontSize: '0.875rem',
                     cursor: 'pointer',

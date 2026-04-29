@@ -32,9 +32,12 @@ function FilterChip({ label, active, onClick }) {
         padding: '0 14px',
         borderRadius: '999px',
         border: `1px solid ${active ? 'var(--color-primary)' : 'var(--color-neutral-200)'}`,
-        backgroundColor: active ? 'var(--color-primary-muted)' : '#fff',
+        backgroundColor: active ? 'var(--color-primary-muted)' : 'var(--clr-surface)',
         color: active ? 'var(--color-primary-dark)' : 'var(--color-neutral-600)',
-        fontWeight: active ? 700 : 500,
+        fontSize: 'var(--text-sm)',
+        fontWeight: active ? 'var(--weight-semibold)' : 'var(--weight-regular)',
+        letterSpacing: 'var(--tracking-normal)',
+        fontFamily: 'var(--font-body)',
         cursor: 'pointer',
       }}
     >
@@ -53,13 +56,13 @@ function StatCard({ label, value, helper }) {
         backgroundColor: 'var(--color-bg)',
       }}
     >
-      <div style={{ fontFamily: 'var(--font-mono)', fontSize: '2rem', color: 'var(--color-neutral-900)' }}>
+      <div style={{ fontSize: 'var(--text-4xl)', fontWeight: 'var(--weight-light)', letterSpacing: 'var(--tracking-tight)', lineHeight: 1, fontFamily: 'var(--font-display)', color: 'var(--color-neutral-900)' }}>
         {value}
       </div>
-      <div style={{ marginTop: '6px', color: 'var(--color-neutral-600)', fontWeight: 600 }}>
+      <div style={{ marginTop: '6px', fontSize: 'var(--text-2xs)', fontWeight: 'var(--weight-semibold)', letterSpacing: 'var(--tracking-widest)', textTransform: 'uppercase', color: 'var(--color-neutral-400)' }}>
         {label}
       </div>
-      <div style={{ marginTop: '4px', color: 'var(--color-neutral-400)', fontSize: '0.82rem' }}>
+      <div style={{ marginTop: '4px', fontSize: 'var(--text-xs)', color: 'var(--color-neutral-400)', lineHeight: 'var(--leading-relaxed)' }}>
         {helper}
       </div>
     </div>
@@ -116,9 +119,10 @@ export default function Dashboard() {
   const statCards = [
     {
       label:
-        categoryFilter === 'all'
-          ? 'Total cases'
-          : `${categoryFilter[0].toUpperCase() + categoryFilter.slice(1)} cases`,
+        categoryFilter === 'adult' ? 'Adult cases' :
+        categoryFilter === 'child' ? 'Child cases' :
+        categoryFilter === 'toddler' ? 'Toddler cases' :
+        'All cases',
       value: totals.totalCases,
       helper: 'Current dashboard scope',
     },
@@ -153,8 +157,8 @@ export default function Dashboard() {
           }}
         >
           <div>
-            <h1 style={{ margin: '0 0 6px', color: 'var(--color-neutral-900)' }}>Overview</h1>
-            <p style={{ margin: 0, color: 'var(--color-neutral-600)', lineHeight: 1.7 }}>
+            <h1 style={{ margin: '0 0 6px', fontSize: 'var(--text-2xl)', fontWeight: 'var(--weight-semibold)', letterSpacing: 'var(--tracking-tight)', lineHeight: 'var(--leading-tight)', color: 'var(--color-neutral-900)', fontFamily: 'var(--font-display)' }}>Overview</h1>
+            <p style={{ margin: 0, fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-regular)', lineHeight: 'var(--leading-relaxed)', color: 'var(--color-neutral-500)' }}>
               Track adult, child, and toddler screening activity with category-aware counts, explainability readiness, and recent cases.
             </p>
           </div>
@@ -204,10 +208,10 @@ export default function Dashboard() {
       >
         <div style={styles.card}>
           <div style={{ marginBottom: '18px' }}>
-            <h2 style={{ margin: '0 0 6px', color: 'var(--color-neutral-900)' }}>
+            <h2 style={{ margin: '0 0 6px', fontSize: 'var(--text-base)', fontWeight: 'var(--weight-semibold)', letterSpacing: 'var(--tracking-tight)', color: 'var(--color-neutral-800)' }}>
               Category mix
             </h2>
-            <p style={{ margin: 0, color: 'var(--color-neutral-500)' }}>
+            <p style={{ margin: 0, fontSize: 'var(--text-xs)', color: 'var(--color-neutral-400)', lineHeight: 'var(--leading-relaxed)' }}>
               Category counts remain visible even while filtering the dashboard.
             </p>
           </div>
@@ -228,11 +232,11 @@ export default function Dashboard() {
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <CategoryBadge category={item.category} size="md" />
-                  <span style={{ color: 'var(--color-neutral-700)', fontWeight: 600 }}>
+                  <span style={{ color: 'var(--color-neutral-700)', fontWeight: 'var(--weight-semibold)', fontSize: 'var(--text-sm)' }}>
                     {item.label}
                   </span>
                 </div>
-                <strong style={{ fontFamily: 'var(--font-mono)', color: 'var(--color-neutral-900)' }}>
+                <strong style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', fontWeight: 'var(--weight-medium)', letterSpacing: 'var(--tracking-wide)', color: 'var(--color-neutral-900)' }}>
                   {item.count}
                 </strong>
               </div>
@@ -242,10 +246,10 @@ export default function Dashboard() {
 
         <div style={styles.card}>
           <div style={{ marginBottom: '18px' }}>
-            <h2 style={{ margin: '0 0 6px', color: 'var(--color-neutral-900)' }}>
+            <h2 style={{ margin: '0 0 6px', fontSize: 'var(--text-base)', fontWeight: 'var(--weight-semibold)', letterSpacing: 'var(--tracking-tight)', color: 'var(--color-neutral-800)' }}>
               Pipeline confidence
             </h2>
-            <p style={{ margin: 0, color: 'var(--color-neutral-500)' }}>
+            <p style={{ margin: 0, fontSize: 'var(--text-xs)', color: 'var(--color-neutral-400)', lineHeight: 'var(--leading-relaxed)' }}>
               Confidence indicators adapt to the active dashboard category.
             </p>
           </div>
@@ -253,10 +257,10 @@ export default function Dashboard() {
             {(summary?.modalityConfidence ?? []).map((item) => (
               <div key={item.id}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', marginBottom: '6px' }}>
-                  <span style={{ color: 'var(--color-neutral-700)', fontWeight: 600 }}>
+                  <span style={{ color: 'var(--color-neutral-700)', fontWeight: 'var(--weight-semibold)', fontSize: 'var(--text-sm)' }}>
                     {item.label}
                   </span>
-                  <span style={{ color: 'var(--color-primary-dark)', fontFamily: 'var(--font-mono)' }}>
+                  <span style={{ color: 'var(--color-primary-dark)', fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', fontWeight: 'var(--weight-medium)', letterSpacing: 'var(--tracking-wide)' }}>
                     {item.pct}%
                   </span>
                 </div>
@@ -295,10 +299,10 @@ export default function Dashboard() {
           }}
         >
           <div>
-            <h2 style={{ margin: '0 0 6px', color: 'var(--color-neutral-900)' }}>
+            <h2 style={{ margin: '0 0 6px', fontSize: 'var(--text-base)', fontWeight: 'var(--weight-semibold)', letterSpacing: 'var(--tracking-tight)', color: 'var(--color-neutral-800)' }}>
               Recent cases
             </h2>
-            <p style={{ margin: 0, color: 'var(--color-neutral-500)' }}>
+            <p style={{ margin: 0, fontSize: 'var(--text-xs)', color: 'var(--color-neutral-400)', lineHeight: 'var(--leading-relaxed)' }}>
               Each row retains its category tag for quick routing and review.
             </p>
           </div>
@@ -325,9 +329,10 @@ export default function Dashboard() {
                       textAlign: 'left',
                       padding: '10px 12px',
                       color: 'var(--color-neutral-400)',
-                      fontSize: '0.75rem',
+                      fontSize: 'var(--text-2xs)',
+                      fontWeight: 'var(--weight-semibold)',
                       textTransform: 'uppercase',
-                      letterSpacing: '0.05em',
+                      letterSpacing: 'var(--tracking-widest)',
                       borderBottom: '1px solid var(--color-neutral-100)',
                     }}
                   >
@@ -347,7 +352,7 @@ export default function Dashboard() {
                     <strong style={{ color: 'var(--color-neutral-900)' }}>
                       {record.subjectName || 'Unnamed case'}
                     </strong>
-                    <div style={{ color: 'var(--color-neutral-500)', fontSize: '0.82rem', marginTop: '4px' }}>
+                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', fontWeight: 'var(--weight-medium)', letterSpacing: 'var(--tracking-wide)', color: 'var(--color-neutral-500)', marginTop: '4px' }}>
                       {record.id}
                     </div>
                   </td>

@@ -34,9 +34,12 @@ function FilterChip({ label, active, onClick }) {
         padding: '0 14px',
         borderRadius: '999px',
         border: `1px solid ${active ? 'var(--color-primary)' : 'var(--color-neutral-200)'}`,
-        backgroundColor: active ? 'var(--color-primary-muted)' : '#fff',
+        backgroundColor: active ? 'var(--color-primary-muted)' : 'var(--clr-surface)',
         color: active ? 'var(--color-primary-dark)' : 'var(--color-neutral-600)',
-        fontWeight: active ? 700 : 500,
+        fontSize: 'var(--text-sm)',
+        fontWeight: active ? 'var(--weight-semibold)' : 'var(--weight-regular)',
+        letterSpacing: 'var(--tracking-normal)',
+        fontFamily: 'var(--font-body)',
         cursor: 'pointer',
       }}
     >
@@ -67,7 +70,7 @@ function CaseCard({ record, onOpen, onViewResults }) {
             <strong style={{ color: 'var(--color-neutral-900)' }}>
               {record.subjectName || 'Unnamed case'}
             </strong>
-            <p style={{ margin: '4px 0 0', color: 'var(--color-neutral-500)', fontSize: '0.82rem' }}>
+            <p style={{ margin: '4px 0 0', fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', fontWeight: 'var(--weight-medium)', letterSpacing: 'var(--tracking-wide)', color: 'var(--color-neutral-500)' }}>
               {record.id}
             </p>
           </div>
@@ -88,7 +91,7 @@ function CaseCard({ record, onOpen, onViewResults }) {
           ['Tool', record.screeningTool],
         ].map(([label, value]) => (
           <div key={label}>
-            <p style={{ margin: '0 0 4px', color: 'var(--color-neutral-400)', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            <p style={{ margin: '0 0 4px', fontSize: 'var(--text-2xs)', fontWeight: 'var(--weight-semibold)', letterSpacing: 'var(--tracking-widest)', textTransform: 'uppercase', color: 'var(--color-neutral-400)' }}>
               {label}
             </p>
             <strong style={{ color: 'var(--color-neutral-800)', fontSize: '0.9rem' }}>
@@ -133,7 +136,7 @@ styles.linkButton = {
   padding: '0 14px',
   borderRadius: '10px',
   border: '1px solid var(--color-neutral-200)',
-  backgroundColor: '#fff',
+  backgroundColor: 'var(--clr-surface)',
   color: 'var(--color-neutral-700)',
   fontWeight: 600,
   cursor: 'pointer',
@@ -206,14 +209,14 @@ export default function Cases() {
           }}
         >
           <div>
-            <h1 style={{ margin: '0 0 6px', color: 'var(--color-neutral-900)' }}>
+            <h1 style={{ margin: '0 0 6px', fontSize: 'var(--text-2xl)', fontWeight: 'var(--weight-semibold)', letterSpacing: 'var(--tracking-tight)', lineHeight: 'var(--leading-tight)', color: 'var(--color-neutral-900)', fontFamily: 'var(--font-display)' }}>
               Case history
             </h1>
-            <p style={{ margin: 0, color: 'var(--color-neutral-600)', lineHeight: 1.7 }}>
+            <p style={{ margin: 0, fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-regular)', lineHeight: 'var(--leading-relaxed)', color: 'var(--color-neutral-500)' }}>
               Filter across adult and child case records without losing category context.
             </p>
           </div>
-          <div style={{ fontFamily: 'var(--font-mono)', color: 'var(--color-neutral-500)' }}>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', fontWeight: 'var(--weight-medium)', letterSpacing: 'var(--tracking-wide)', color: 'var(--color-neutral-500)' }}>
             {filteredRecords.length} case{filteredRecords.length === 1 ? '' : 's'}
           </div>
         </div>
@@ -325,7 +328,7 @@ export default function Cases() {
                     padding: '14px',
                   }}
                 >
-                  <p style={{ margin: '0 0 6px', color: 'var(--color-neutral-400)', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  <p style={{ margin: '0 0 6px', fontSize: 'var(--text-2xs)', fontWeight: 'var(--weight-semibold)', letterSpacing: 'var(--tracking-widest)', textTransform: 'uppercase', color: 'var(--color-neutral-400)' }}>
                     {label}
                   </p>
                   <strong style={{ color: 'var(--color-neutral-900)' }}>{value}</strong>
@@ -334,7 +337,7 @@ export default function Cases() {
             </div>
 
             <div>
-              <p style={{ margin: '0 0 8px', fontWeight: 700, color: 'var(--color-neutral-800)' }}>
+              <p style={{ margin: '0 0 8px', fontSize: 'var(--text-base)', fontWeight: 'var(--weight-semibold)', letterSpacing: 'var(--tracking-tight)', color: 'var(--color-neutral-800)' }}>
                 Diagnosis summary
               </p>
               <p style={{ margin: 0, color: 'var(--color-neutral-600)', lineHeight: 1.7 }}>

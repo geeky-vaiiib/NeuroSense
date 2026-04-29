@@ -1,132 +1,44 @@
 /**
  * App.jsx — Root with AuthProvider, protected routes, landing + auth pages.
+ * Uses React.lazy() for code-split pages and an extracted ErrorBoundary.
  */
-import { Component, useState } from 'react';
+import React, { useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Sidebar from './components/Sidebar';
+import ErrorBoundary from './components/ErrorBoundary';
 
-import Landing   from './pages/Landing';
+/* Static imports — lightweight pages */
 import Auth      from './pages/Auth';
 import Dashboard from './pages/Dashboard';
-import Screening from './pages/Screening';
-import Results   from './pages/Results';
 import Cases     from './pages/Cases';
-import Settings  from './pages/Settings';
-import Diagnostic from './pages/Diagnostic';
 
-/* ── Error Boundary ──────────────────────────────────────── */
-class ErrorBoundary extends Component {
-  constructor(props) {
-    super(props);
-    this.state = { hasError: false, error: null };
-  }
+/* Lazy imports — heavy pages with code splitting */
+const Landing    = React.lazy(() => import('./pages/Landing'));
+const Screening  = React.lazy(() => import('./pages/Screening'));
+const Results    = React.lazy(() => import('./pages/Results'));
+const Settings   = React.lazy(() => import('./pages/Settings'));
+const Diagnostic = React.lazy(() => import('./pages/Diagnostic'));
 
-  static getDerivedStateFromError(error) {
-    return { hasError: true, error };
-  }
-
-  componentDidCatch(error, info) {
-    console.error('[NeuroSense] Unhandled error:', error, info.componentStack);
-  }
-
-  render() {
-    if (this.state.hasError) {
-      return (
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            height: '100vh',
-            padding: '32px',
-            textAlign: 'center',
-            backgroundColor: 'var(--color-bg)',
-          }}
-        >
-          <div
-            style={{
-              maxWidth: '480px',
-              padding: '32px',
-              borderRadius: '22px',
-              border: '1px solid var(--color-neutral-200)',
-              backgroundColor: 'var(--color-bg-card)',
-              boxShadow: 'var(--shadow-xs)',
-            }}
-          >
-            <div
-              style={{
-                fontSize: '2.5rem',
-                marginBottom: '12px',
-              }}
-            >
-              ⚠️
-            </div>
-            <h2
-              style={{
-                margin: '0 0 8px',
-                color: 'var(--color-neutral-900)',
-              }}
-            >
-              Something went wrong
-            </h2>
-            <p
-              style={{
-                color: 'var(--color-neutral-600)',
-                lineHeight: 1.7,
-                marginBottom: '20px',
-              }}
-            >
-              An unexpected error occurred. You can try reloading the page.
-            </p>
-            <pre
-              style={{
-                padding: '12px 16px',
-                borderRadius: '12px',
-                backgroundColor: 'var(--color-bg)',
-                border: '1px solid var(--color-neutral-200)',
-                color: 'var(--color-risk-high)',
-                fontSize: '0.78rem',
-                fontFamily: 'var(--font-mono)',
-                textAlign: 'left',
-                whiteSpace: 'pre-wrap',
-                wordBreak: 'break-word',
-                maxHeight: '120px',
-                overflow: 'auto',
-                marginBottom: '20px',
-              }}
-            >
-              {this.state.error?.message || 'Unknown error'}
-            </pre>
-            <button
-              type="button"
-              onClick={() => window.location.reload()}
-              style={{
-                minHeight: '44px',
-                padding: '0 24px',
-                borderRadius: '12px',
-                border: 'none',
-                background:
-                  'linear-gradient(135deg, var(--color-primary), var(--color-primary-dark))',
-                color: '#fff',
-                fontSize: '0.95rem',
-                fontWeight: 700,
-                cursor: 'pointer',
-                boxShadow: '0 10px 24px rgba(26,26,24,0.10)',
-              }}
-            >
-              Reload page
-            </button>
-          </div>
-        </div>
-      );
-    }
-
-    return this.props.children;
-  }
-}
+/* ── Suspense fallback spinner ──────────────────────────── */
+const SuspenseFallback = (
+  <div style={{
+    minHeight: '100vh',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    background: 'var(--color-bg)',
+  }}>
+    <div style={{
+      width: 28, height: 28,
+      border: '2.5px solid var(--color-primary-100)',
+      borderTopColor: 'var(--color-primary)',
+      borderRadius: '50%',
+      animation: 'spin 0.7s linear infinite',
+    }} />
+  </div>
+);
 
 /* ── 404 ─────────────────────────────────────────────────── */
 function NotFound() {
@@ -206,17 +118,19 @@ function AppShell() {
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <main className="ns-main" id="main-content" tabIndex={-1}>
         <div className="ns-page">
-          <Routes>
-            <Route path="/"                element={<Dashboard />} />
-            <Route path="/screening"       element={<Screening />} />
-            <Route path="/screening/:category" element={<Screening />} />
-            <Route path="/results"         element={<Results />} />
-            <Route path="/results/:caseId" element={<Results />} />
-            <Route path="/cases"           element={<Cases />} />
-            <Route path="/settings"        element={<Settings />} />
-            <Route path="/diagnostic"      element={<Diagnostic />} />
-            <Route path="*"               element={<NotFound />} />
-          </Routes>
+          <React.Suspense fallback={SuspenseFallback}>
+            <Routes>
+              <Route path="/"                element={<Dashboard />} />
+              <Route path="/screening"       element={<Screening />} />
+              <Route path="/screening/:category" element={<Screening />} />
+              <Route path="/results"         element={<Results />} />
+              <Route path="/results/:caseId" element={<Results />} />
+              <Route path="/cases"           element={<Cases />} />
+              <Route path="/settings"        element={<Settings />} />
+              <Route path="/diagnostic"      element={<Diagnostic />} />
+              <Route path="*"               element={<NotFound />} />
+            </Routes>
+          </React.Suspense>
         </div>
       </main>
     </div>
@@ -226,30 +140,32 @@ function AppShell() {
 /* ── Root ────────────────────────────────────────────────── */
 function AppRoutes() {
   return (
-    <Routes>
-      {/* Public */}
-      <Route path="/"     element={<Landing />} />
-      <Route path="/auth" element={<Auth />} />
+    <React.Suspense fallback={SuspenseFallback}>
+      <Routes>
+        {/* Public */}
+        <Route path="/"     element={<Landing />} />
+        <Route path="/auth" element={<Auth />} />
 
-      {/* Protected — all /app/* routes */}
-      <Route
-        path="/app/*"
-        element={
-          <ProtectedRoute>
-            <ErrorBoundary>
-              <AppShell />
-            </ErrorBoundary>
-          </ProtectedRoute>
-        }
-      />
+        {/* Protected — all /app/* routes */}
+        <Route
+          path="/app/*"
+          element={
+            <ProtectedRoute>
+              <ErrorBoundary>
+                <AppShell />
+              </ErrorBoundary>
+            </ProtectedRoute>
+          }
+        />
 
-      {/* Legacy redirects */}
-      <Route path="/screening" element={<Navigate to="/app/screening" replace />} />
-      <Route path="/results/*" element={<Navigate to="/app/results" replace />} />
-      <Route path="/cases"     element={<Navigate to="/app/cases" replace />} />
-      <Route path="/settings"  element={<Navigate to="/app/settings" replace />} />
-      <Route path="*"          element={<Navigate to="/" replace />} />
-    </Routes>
+        {/* Legacy redirects */}
+        <Route path="/screening" element={<Navigate to="/app/screening" replace />} />
+        <Route path="/results/*" element={<Navigate to="/app/results" replace />} />
+        <Route path="/cases"     element={<Navigate to="/app/cases" replace />} />
+        <Route path="/settings"  element={<Navigate to="/app/settings" replace />} />
+        <Route path="*"          element={<Navigate to="/" replace />} />
+      </Routes>
+    </React.Suspense>
   );
 }
 

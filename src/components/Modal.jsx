@@ -3,14 +3,14 @@
  * Accessible modal dialog with focus trap, backdrop click dismiss, and ESC key support.
  */
 
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 const styles = {
   backdrop: {
     position: 'fixed',
     inset: 0,
-    backgroundColor: 'rgba(26, 26, 24, 0.45)',
+    background: 'rgba(24,22,20,0.55)',
     backdropFilter: 'blur(4px)',
     WebkitBackdropFilter: 'blur(4px)',
     display: 'flex',
@@ -22,15 +22,15 @@ const styles = {
   },
   dialog: {
     backgroundColor: 'var(--color-bg-card)',
-    borderRadius: 'var(--radius-2xl)',
-    boxShadow: 'var(--shadow-2xl)',
+    borderRadius: 'var(--radius-xl)',
+    boxShadow: 'var(--shadow-xl)',
     width: '100%',
     maxHeight: '85vh',
     display: 'flex',
     flexDirection: 'column',
     animation: 'modal-slide-in 250ms cubic-bezier(0.34, 1.56, 0.64, 1)',
     overflow: 'hidden',
-    border: '1px solid var(--color-neutral-200)',
+    border: '1px solid var(--color-border)',
   },
   header: {
     display: 'flex',
@@ -49,14 +49,15 @@ const styles = {
     minWidth: 0,
   },
   title: {
-    fontSize: 'var(--font-size-lg)',
-    fontWeight: 'var(--font-weight-semibold)',
+    fontSize: 'var(--text-xl)',
+    fontWeight: 'var(--weight-semibold)',
+    letterSpacing: 'var(--tracking-tight)',
     color: 'var(--color-neutral-900)',
     margin: 0,
   },
   subtitle: {
-    fontSize: 'var(--font-size-sm)',
-    color: 'var(--color-neutral-500)',
+    fontSize: 'var(--text-sm)',
+    color: 'var(--color-neutral-400)',
     margin: 0,
   },
   closeBtn: {
@@ -68,7 +69,7 @@ const styles = {
     justifyContent: 'center',
     color: 'var(--color-neutral-400)',
     backgroundColor: 'transparent',
-    border: '1px solid var(--color-neutral-200)',
+    border: 'none',
     cursor: 'pointer',
     transition: 'all var(--transition-fast)',
     flexShrink: 0,
@@ -113,6 +114,7 @@ export default function Modal({
   closeOnBackdrop = true,
 }) {
   const dialogRef = useRef(null);
+  const [closeBtnHovered, setCloseBtnHovered] = useState(false);
 
   const handleKeyDown = useCallback((e) => {
     if (e.key === 'Escape') onClose();
@@ -156,12 +158,17 @@ export default function Modal({
           </div>
           <button
             id="modal-close-btn"
-            style={styles.closeBtn}
+            style={{
+              ...styles.closeBtn,
+              backgroundColor: closeBtnHovered ? 'var(--color-neutral-100)' : 'transparent',
+            }}
             onClick={onClose}
+            onMouseEnter={() => setCloseBtnHovered(true)}
+            onMouseLeave={() => setCloseBtnHovered(false)}
             aria-label="Close dialog"
             title="Close"
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
               <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
             </svg>
           </button>

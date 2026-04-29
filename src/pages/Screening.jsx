@@ -72,7 +72,7 @@ const styles = {
     padding: '10px 12px',
     borderRadius: '12px',
     border: '1px solid var(--color-neutral-200)',
-    backgroundColor: '#fff',
+    backgroundColor: 'var(--clr-surface)',
     color: 'var(--color-neutral-800)',
     fontSize: '0.95rem',
     fontFamily: 'var(--font-body)',
@@ -94,7 +94,7 @@ const styles = {
     padding: '0 20px',
     borderRadius: '12px',
     border: '1px solid var(--color-neutral-200)',
-    backgroundColor: '#fff',
+    backgroundColor: 'var(--clr-surface)',
     color: 'var(--color-neutral-700)',
     fontSize: '0.95rem',
     fontWeight: 600,
@@ -109,7 +109,7 @@ const styles = {
     background: disabled
       ? 'var(--color-neutral-200)'
       : `linear-gradient(135deg, ${content.accent}, var(--color-primary-dark))`,
-    color: disabled ? 'var(--color-neutral-500)' : '#fff',
+    color: disabled ? 'var(--clr-text-muted)' : 'var(--clr-text-inverse)',
     fontSize: '0.95rem',
     fontWeight: 700,
     fontFamily: 'var(--font-body)',
@@ -155,8 +155,8 @@ function StepIndicator({ current, isToddler }) {
                 display: 'inline-flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                backgroundColor: completed ? 'var(--color-primary)' : '#fff',
-                color: completed ? '#fff' : 'inherit',
+                backgroundColor: completed ? 'var(--color-primary)' : 'var(--clr-surface)',
+                color: completed ? 'var(--clr-text-inverse)' : 'inherit',
                 border: `1px solid ${
                   active || completed ? 'var(--color-primary)' : 'var(--color-neutral-300)'
                 }`,
@@ -274,7 +274,7 @@ function QuestionBlock({ question, value, onChange, accent }) {
                 padding: '0 12px',
                 borderRadius: '12px',
                 border: `1px solid ${active ? accent : 'var(--color-neutral-200)'}`,
-                backgroundColor: active ? 'rgba(124, 154, 133, 0.10)' : '#fff',
+                backgroundColor: active ? 'var(--clr-primary-dim)' : 'var(--clr-surface)',
                 color: active ? 'var(--color-neutral-900)' : 'var(--color-neutral-600)',
                 fontWeight: active ? 700 : 500,
                 cursor: 'pointer',
@@ -574,7 +574,7 @@ export default function Screening() {
             </div>
             <div
               style={{
-                backgroundColor: '#fff',
+                backgroundColor: 'var(--clr-surface)',
                 borderRadius: '18px',
                 padding: '18px',
                 border: '1px solid rgba(255,255,255,0.7)',
@@ -676,7 +676,7 @@ export default function Screening() {
                     style={{
                       ...styles.input,
                       backgroundColor:
-                        category === 'adult' ? 'var(--color-neutral-100)' : '#fff',
+                        category === 'adult' ? 'var(--color-neutral-100)' : 'var(--clr-surface)',
                     }}
                   />
                 </FormField>

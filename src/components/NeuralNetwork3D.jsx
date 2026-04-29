@@ -4,202 +4,97 @@
  */
 import { useRef, useMemo, useEffect, useState } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { Float, Sparkles } from '@react-three/drei';
+import { Float, ContactShadows, Points, PointMaterial } from '@react-three/drei';
 import * as THREE from 'three';
 
-/* ── Generate brain-like node positions ────────────────── */
-function generateBrainNodes(count = 80) {
-  const nodes = [];
-  for (let i = 0; i < count; i++) {
-    const theta = Math.random() * Math.PI * 2;
-    const phi = Math.acos(2 * Math.random() - 1);
-    // Mix of sphere + random displacement for organic look
-    const r = 1.8 + (Math.random() - 0.5) * 0.8;
-    const x = r * Math.sin(phi) * Math.cos(theta);
-    const y = r * Math.sin(phi) * Math.sin(theta) * 0.75; // flatten slightly
-    const z = r * Math.cos(phi);
-    nodes.push(new THREE.Vector3(x, y, z));
-  }
-  return nodes;
-}
+/* ── Generates a mathematical point cloud shaped like a human brain ── */
+function generateBrainPoints(count = 4000) {
+  const pts = [];
+  while (pts.length < count) {
+    const x = (Math.random() - 0.5) * 2;
+    const y = (Math.random() - 0.5) * 2;
+    const z = (Math.random() - 0.5) * 2;
 
-/* ── Generate connections between nearby nodes ─────────── */
-function generateConnections(nodes, maxDist = 1.2) {
-  const connections = [];
-  for (let i = 0; i < nodes.length; i++) {
-    for (let j = i + 1; j < nodes.length; j++) {
-      const dist = nodes[i].distanceTo(nodes[j]);
-      if (dist < maxDist) {
-        connections.push([i, j, dist]);
-      }
+    const d = Math.sqrt(x * x + y * y + z * z);
+    if (d > 1) continue;
+
+    let r = 0.9;
+    // Longitudinal fissure (gap between left and right hemispheres)
+    r -= Math.exp(-Math.pow(x * 6, 2)) * 0.3;
+    
+    // Flatten the bottom (temporallobes / cerebellum base)
+    if (y < -0.2) r -= Math.abs(y + 0.2) * 0.6;
+    
+    // Elongate the occipital lobe (back)
+    if (z < -0.2) r += Math.abs(z + 0.2) * 0.3;
+    
+    // Frontal lobe shaping
+    if (z > 0.4) r -= Math.abs(z - 0.4) * 0.2;
+
+    if (d < r) {
+      pts.push(
+        x * 2.5, 
+        y * 2.5 + 0.5, // shift up slightly
+        z * 2.5
+      );
     }
   }
-  return connections;
+  return new Float32Array(pts);
 }
 
-/* ── Neural Node (glowing sphere) ──────────────────────── */
-function NeuralNode({ position, color, pulseSpeed, baseSize }) {
-  const meshRef = useRef();
-  const glowRef = useRef();
+/* ── Synaptic Flashes (Simulating AI / Neural Activity) ── */
+function SynapticFlashes({ points, count = 20, color }) {
+  const flashes = useMemo(() => {
+    const arr = [];
+    const pointsCount = points.length / 3;
+    for (let i = 0; i < count; i++) {
+        // Pick a random point from the brain as the center of the flash
+        const idx = Math.floor(Math.random() * pointsCount) * 3;
+        arr.push({
+           x: points[idx], y: points[idx+1], z: points[idx+2],
+           speed: 0.5 + Math.random() * 1.5,
+           offset: Math.random() * Math.PI * 2,
+           size: Math.random() * 0.4 + 0.2
+        });
+    }
+    return arr;
+  }, [points, count]);
 
-  useFrame(({ clock }) => {
-    const t = clock.getElapsedTime() * pulseSpeed;
-    const scale = baseSize + Math.sin(t) * 0.03;
-    if (meshRef.current) {
-      meshRef.current.scale.setScalar(scale);
-    }
-    if (glowRef.current) {
-      glowRef.current.material.opacity = 0.15 + Math.sin(t + 1) * 0.1;
-    }
+  const groupRef = useRef();
+
+  useFrame((state) => {
+    const t = state.clock.getElapsedTime();
+    if (!groupRef.current) return;
+    
+    groupRef.current.children.forEach((mesh, i) => {
+       const flash = flashes[i];
+       const opacity = (Math.sin(t * flash.speed + flash.offset) + 1) / 2;
+       mesh.material.opacity = opacity * 0.8;
+       mesh.scale.setScalar(opacity * flash.size + 0.1);
+    });
   });
 
   return (
-    <group position={position}>
-      <mesh ref={meshRef}>
-        <sphereGeometry args={[0.06, 16, 16]} />
-        <meshStandardMaterial
-          color={color}
-          emissive={color}
-          emissiveIntensity={0.8}
-          toneMapped={false}
-        />
-      </mesh>
-      <mesh ref={glowRef} scale={3}>
-        <sphereGeometry args={[0.06, 8, 8]} />
-        <meshBasicMaterial
-          color={color}
-          transparent
-          opacity={0.15}
-          depthWrite={false}
-        />
-      </mesh>
+    <group ref={groupRef}>
+      {flashes.map((f, i) => (
+        <mesh key={i} position={[f.x, f.y, f.z]}>
+          <sphereGeometry args={[0.15, 16, 16]} />
+          <meshBasicMaterial color={color} transparent opacity={0} depthWrite={false} blending={THREE.AdditiveBlending} />
+        </mesh>
+      ))}
     </group>
   );
 }
 
-/* ── Neural Connections (glowing lines) ────────────────── */
-function NeuralConnections({ nodes, connections, color }) {
-  const lineRef = useRef();
-
-  const { positions, opacities } = useMemo(() => {
-    const pos = [];
-    const ops = [];
-    connections.forEach(([i, j, dist]) => {
-      pos.push(nodes[i].x, nodes[i].y, nodes[i].z);
-      pos.push(nodes[j].x, nodes[j].y, nodes[j].z);
-      const op = 1 - dist / 1.2;
-      ops.push(op, op);
-    });
-    return {
-      positions: new Float32Array(pos),
-      opacities: new Float32Array(ops),
-    };
-  }, [nodes, connections]);
-
-  useFrame(({ clock }) => {
-    if (!lineRef.current) return;
-    const t = clock.getElapsedTime();
-    const attr = lineRef.current.geometry.getAttribute('opacity');
-    if (!attr) return;
-    for (let i = 0; i < attr.count; i++) {
-      const base = opacities[i];
-      attr.array[i] = base * (0.3 + Math.sin(t * 0.5 + i * 0.1) * 0.3);
-    }
-    attr.needsUpdate = true;
-  });
-
-  return (
-    <lineSegments ref={lineRef}>
-      <bufferGeometry>
-        <bufferAttribute
-          attach="attributes-position"
-          count={positions.length / 3}
-          array={positions}
-          itemSize={3}
-        />
-        <bufferAttribute
-          attach="attributes-opacity"
-          count={opacities.length}
-          array={opacities}
-          itemSize={1}
-        />
-      </bufferGeometry>
-      <lineBasicMaterial
-        color={color}
-        transparent
-        opacity={0.25}
-        depthWrite={false}
-      />
-    </lineSegments>
-  );
-}
-
-/* ── Floating Signal Pulses ────────────────────────────── */
-function SignalPulses({ nodes, connections, color }) {
-  const count = Math.min(connections.length, 20);
-  const pulsesRef = useRef([]);
-
-  const pulseData = useMemo(() => {
-    const data = [];
-    for (let i = 0; i < count; i++) {
-      const [startIdx, endIdx] = connections[i % connections.length];
-      data.push({
-        start: nodes[startIdx],
-        end: nodes[endIdx],
-        speed: 0.3 + Math.random() * 0.5,
-        offset: Math.random() * Math.PI * 2,
-      });
-    }
-    return data;
-  }, [nodes, connections, count]);
-
-  return (
-    <>
-      {pulseData.map((pulse, i) => (
-        <PulseParticle key={i} pulse={pulse} color={color} ref={el => { pulsesRef.current[i] = el; }} />
-      ))}
-    </>
-  );
-}
-
-const PulseParticle = ({ pulse, color }) => {
-  const meshRef = useRef();
-
-  useFrame(({ clock }) => {
-    if (!meshRef.current) return;
-    const t = ((clock.getElapsedTime() * pulse.speed + pulse.offset) % 1);
-    meshRef.current.position.lerpVectors(pulse.start, pulse.end, t);
-    meshRef.current.material.opacity = Math.sin(t * Math.PI) * 0.9;
-    meshRef.current.scale.setScalar(0.8 + Math.sin(t * Math.PI) * 0.4);
-  });
-
-  return (
-    <mesh ref={meshRef}>
-      <sphereGeometry args={[0.025, 8, 8]} />
-      <meshBasicMaterial
-        color={color}
-        transparent
-        opacity={0.5}
-        depthWrite={false}
-      />
-    </mesh>
-  );
-};
-
-/* ── Main 3D Scene ─────────────────────────────────────── */
+/* ── Main Brain Scene ──────────────────────────────────── */
 function BrainScene({ isDark }) {
   const groupRef = useRef();
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
 
-  const { nodes, connections } = useMemo(() => {
-    const n = generateBrainNodes(85);
-    const c = generateConnections(n, 1.1);
-    return { nodes: n, connections: c };
-  }, []);
+  const brainPoints = useMemo(() => generateBrainPoints(3000), []);
 
-  const nodeColor = isDark ? '#6ee7b7' : '#5B8A72';
-  const lineColor = isDark ? '#34d399' : '#7BA695';
-  const pulseColor = isDark ? '#a7f3d0' : '#3E6B54';
+  const pointColor = isDark ? '#34d399' : '#5B8A72'; // Primary Green
+  const flashColor = isDark ? '#2DD4BF' : '#4EA88E'; // Tech Cyan
 
   useEffect(() => {
     const handler = (e) => {
@@ -215,40 +110,45 @@ function BrainScene({ isDark }) {
   useFrame(({ clock }) => {
     if (!groupRef.current) return;
     const t = clock.getElapsedTime();
-    groupRef.current.rotation.y = t * 0.08 + mousePos.x * 0.3;
-    groupRef.current.rotation.x = Math.sin(t * 0.05) * 0.1 + mousePos.y * 0.15;
+    // Gentle cinematic rotation + slight mouse follow
+    groupRef.current.rotation.y = t * 0.1 + mousePos.x * 0.15;
+    groupRef.current.rotation.x = Math.sin(t * 0.1) * 0.05 + mousePos.y * 0.1;
   });
 
   return (
     <>
-      <ambientLight intensity={isDark ? 0.3 : 0.5} />
-      <pointLight position={[5, 5, 5]} intensity={isDark ? 0.8 : 0.6} color={isDark ? '#6ee7b7' : '#7C9A85'} />
-      <pointLight position={[-5, -3, 3]} intensity={0.4} color={isDark ? '#818cf8' : '#8B6BAE'} />
-      <pointLight position={[0, -5, -3]} intensity={0.3} color={isDark ? '#f0abfc' : '#C4854C'} />
+      <fog attach="fog" args={[isDark ? '#0f172a' : '#fafaf8', 4, 10]} />
+      <ambientLight intensity={isDark ? 0.2 : 0.5} />
 
-      <Float speed={1.5} rotationIntensity={0.2} floatIntensity={0.5}>
+      <Float speed={1.5} rotationIntensity={0.1} floatIntensity={0.5}>
         <group ref={groupRef}>
-          {nodes.map((pos, i) => (
-            <NeuralNode
-              key={i}
-              position={[pos.x, pos.y, pos.z]}
-              color={nodeColor}
-              pulseSpeed={0.5 + Math.random() * 2}
-              baseSize={0.8 + Math.random() * 0.4}
+          {/* Dense Brain Point Cloud */}
+          <Points positions={brainPoints}>
+            <PointMaterial
+              transparent
+              depthWrite={false}
+              size={0.04}
+              color={pointColor}
+              opacity={isDark ? 0.5 : 0.4}
+              sizeAttenuation
+              blending={THREE.AdditiveBlending}
             />
-          ))}
-          <NeuralConnections nodes={nodes} connections={connections} color={lineColor} />
-          <SignalPulses nodes={nodes} connections={connections} color={pulseColor} />
+          </Points>
+          
+          {/* Activity bursts inside the lobes */}
+          <SynapticFlashes points={brainPoints} color={flashColor} count={25} />
+          <SynapticFlashes points={brainPoints} color={isDark ? '#60a5fa' : '#5B7FA6'} count={15} /> 
         </group>
       </Float>
 
-      <Sparkles
-        count={60}
-        scale={6}
-        size={isDark ? 2.5 : 1.5}
-        speed={0.3}
-        opacity={isDark ? 0.4 : 0.2}
-        color={isDark ? '#6ee7b7' : '#7C9A85'}
+      <ContactShadows
+        opacity={isDark ? 0.3 : 0.15}
+        scale={12}
+        blur={2.5}
+        far={10}
+        resolution={256}
+        color={isDark ? '#000000' : '#8a8178'}
+        position={[0, -2.5, 0]}
       />
     </>
   );
@@ -264,21 +164,22 @@ export default function NeuralNetwork3D({ isDark = false, style = {} }) {
       ...style,
     }}>
       <Canvas
-        camera={{ position: [0, 0, 5.5], fov: 45 }}
+        camera={{ position: [0, 0, 6], fov: 45 }}
         dpr={[1, 2]}
         style={{ background: 'transparent' }}
-        gl={{ alpha: true, antialias: true }}
+        gl={{ alpha: true, antialias: true, powerPreference: 'high-performance' }}
+        shadows
       >
         <BrainScene isDark={isDark} />
       </Canvas>
-      {/* Gradient overlay for blending */}
+      {/* Gradient overlay for blending - using exact background colors */}
       <div style={{
         position: 'absolute',
         inset: 0,
         pointerEvents: 'none',
         background: isDark
-          ? 'radial-gradient(ellipse at center, transparent 30%, rgba(15,23,42,0.6) 100%)'
-          : 'radial-gradient(ellipse at center, transparent 30%, rgba(250,250,248,0.5) 100%)',
+          ? 'radial-gradient(ellipse at center, transparent 30%, #0f172a 100%)'
+          : 'radial-gradient(ellipse at center, transparent 30%, #FAFAF8 100%)',
       }} />
     </div>
   );

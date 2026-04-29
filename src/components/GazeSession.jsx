@@ -356,7 +356,7 @@ export default function GazeSession({ onComplete, onSkip, category }) {
           Calibration
         </p>
         <p style={{ color: 'var(--color-neutral-400)', fontSize: '0.88rem', textAlign: 'center', marginBottom: '28px' }}>
-          Click each green dot to calibrate. <strong style={{ color: '#7C9A85' }}>{calibrationClicks.length} / 9</strong> points collected.
+          Click each green dot to calibrate. <strong style={{ color: 'var(--clr-primary)' }}>{calibrationClicks.length} / 9</strong> points collected.
         </p>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gridTemplateRows: 'repeat(3, 1fr)', gap: '16px', width: '100%', maxWidth: '420px', aspectRatio: '1', margin: '0 auto' }}>

@@ -4,42 +4,36 @@
  */
 const CONFIG = {
   High: {
-    bg: 'var(--color-risk-high-muted)',
-    text: 'var(--color-risk-high)',
-    border: 'var(--color-risk-high-border)',
-    dot: 'var(--color-risk-high)',
+    bg: 'var(--clr-danger-dim)',
+    text: 'var(--clr-danger)',
+    border: 'rgba(239,68,68,0.25)',
+    dot: 'var(--clr-danger)',
   },
   Moderate: {
-    bg: 'var(--color-risk-moderate-muted)',
-    text: 'var(--color-risk-moderate)',
-    border: 'var(--color-risk-moderate-border)',
-    dot: 'var(--color-risk-moderate)',
+    bg: 'var(--clr-warning-dim)',
+    text: 'var(--clr-warning)',
+    border: 'rgba(245,158,11,0.25)',
+    dot: 'var(--clr-warning)',
   },
   Low: {
-    bg: 'var(--color-risk-low-muted)',
-    text: 'var(--color-risk-low)',
-    border: 'var(--color-risk-low-border)',
-    dot: 'var(--color-risk-low)',
+    bg: 'var(--clr-success-dim)',
+    text: 'var(--clr-success)',
+    border: 'rgba(34,197,94,0.25)',
+    dot: 'var(--clr-success)',
   },
   Escalated: {
-    bg: 'var(--color-accent-toddler-bg)',
-    text: 'var(--color-accent-toddler)',
-    border: 'var(--color-accent-toddler-border)',
-    dot: 'var(--color-accent-toddler)',
+    bg: 'var(--clr-secondary-dim)',
+    text: 'var(--clr-secondary)',
+    border: 'rgba(123,97,255,0.25)',
+    dot: 'var(--clr-secondary)',
   },
 };
 
 const FALLBACK = {
-  bg: 'var(--color-neutral-100)',
-  text: 'var(--color-neutral-600)',
-  border: 'var(--color-neutral-200)',
-  dot: 'var(--color-neutral-400)',
-};
-
-const SIZE_MAP = {
-  sm: { fontSize: '0.6875rem', padding: '3px 10px', dot: 5, height: 24 },
-  md: { fontSize: '0.75rem', padding: '4px 12px', dot: 6, height: 28 },
-  lg: { fontSize: '0.8125rem', padding: '5px 14px', dot: 7, height: 32 },
+  bg: 'var(--clr-surface-2)',
+  text: 'var(--clr-text-secondary)',
+  border: 'var(--clr-border)',
+  dot: 'var(--clr-text-muted)',
 };
 
 function normalizeRisk(value) {
@@ -55,53 +49,54 @@ function normalizeRisk(value) {
 export default function RiskBadge({ risk, level, size = 'md', showScore = false, score }) {
   const label = normalizeRisk(level ?? risk);
   const cfg = CONFIG[label] ?? FALLBACK;
-  const metric = SIZE_MAP[size] ?? SIZE_MAP.md;
-  const showNumericScore = showScore && Number.isFinite(score);
+  const isLg = size === 'lg';
+  const isSm = size === 'sm';
+  const showNumericScore = showScore && score !== undefined && Number.isFinite(score);
 
   return (
     <span
       role="status"
-      aria-label={`Risk level: ${label}${showNumericScore ? ` (${Math.round(score * 100)}%)` : ''}`}
+      aria-label={`Risk level: ${label}${showNumericScore ? ` (${score.toFixed(2)})` : ''}`}
       style={{
         display: 'inline-flex',
         alignItems: 'center',
-        gap: '6px',
-        padding: metric.padding,
-        height: metric.height,
+        gap: '5px',
+        padding: isLg ? '4px 12px' : isSm ? '2px 8px' : '3px 10px',
         borderRadius: 'var(--radius-full)',
         backgroundColor: cfg.bg,
         color: cfg.text,
         border: `1px solid ${cfg.border}`,
-        fontSize: metric.fontSize,
-        fontWeight: 600,
+        fontSize: isLg ? 'var(--text-sm)' : 'var(--text-2xs)',
+        fontWeight: 'var(--weight-semibold)',
         fontFamily: 'var(--font-body)',
         lineHeight: 1,
         whiteSpace: 'nowrap',
-        letterSpacing: '0.02em',
+        letterSpacing: 'var(--tracking-wide)',
         transition: 'all 200ms cubic-bezier(0.16,1,0.3,1)',
       }}
     >
+      {/* Status dot */}
       <span
         aria-hidden="true"
         style={{
-          width: metric.dot,
-          height: metric.dot,
-          borderRadius: '50%',
+          width: 5,
+          height: 5,
+          borderRadius: 'var(--radius-full)',
           backgroundColor: cfg.dot,
           flexShrink: 0,
-          opacity: 0.85,
         }}
       />
       {label}
       {showNumericScore && (
-        <span style={{
-          fontFamily: 'var(--font-mono)',
-          fontSize: '0.65rem',
-          opacity: 0.8,
-          fontWeight: 500,
-        }}>
-          {Math.round(score * 100)}%
-        </span>
+        <>
+          <span style={{ opacity: 0.4, margin: '0 2px' }}>·</span>
+          <span style={{
+            fontFamily: 'var(--font-mono)',
+            fontSize: '0.9em',
+          }}>
+            {score.toFixed(2)}
+          </span>
+        </>
       )}
     </span>
   );

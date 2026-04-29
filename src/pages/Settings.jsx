@@ -9,8 +9,8 @@ function Toggle({ id, checked, onChange, label, desc }) {
   return (
     <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px', padding: '14px 0' }}>
       <div>
-        <div style={{ fontSize: '0.9rem', fontWeight: 500, color: 'var(--color-neutral-800)' }}>{label}</div>
-        {desc && <div style={{ fontSize: '0.8125rem', color: 'var(--color-neutral-400)', marginTop: '3px', lineHeight: 1.4 }}>{desc}</div>}
+        <div style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: 'var(--color-neutral-800)' }}>{label}</div>
+        {desc && <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-neutral-400)', marginTop: '3px', lineHeight: 'var(--leading-relaxed)' }}>{desc}</div>}
       </div>
       <button
         id={id}
@@ -29,7 +29,7 @@ function Toggle({ id, checked, onChange, label, desc }) {
           position: 'absolute', top: '3px',
           left: checked ? '21px' : '3px',
           width: '18px', height: '18px', borderRadius: '50%',
-          backgroundColor: '#fff',
+          backgroundColor: 'var(--clr-surface)',
           boxShadow: '0 1px 4px rgba(0,0,0,0.2)',
           transition: 'left 200ms',
           display: 'block',
@@ -57,7 +57,7 @@ function Section({ title, icon, children, danger }) {
       }}>
         <div style={{ display: 'flex', alignItems: 'center', color: danger ? 'var(--color-risk-high)' : 'var(--color-neutral-500)', flexShrink: 0 }}>{icon}</div>
         <h2 style={{
-          fontSize: '0.9rem', fontWeight: 600,
+          fontSize: 'var(--text-base)', fontWeight: 'var(--weight-semibold)', letterSpacing: 'var(--tracking-tight)',
           color: danger ? 'var(--color-risk-high)' : 'var(--color-neutral-800)',
           margin: 0,
         }}>{title}</h2>
@@ -74,10 +74,10 @@ function LabelledInput({ id, label, value, onChange, mono, desc, type = 'text' }
   const [foc, setFoc] = useState(false);
   return (
     <div style={{ padding: '14px 0', borderBottom: '1px solid var(--color-neutral-100)' }}>
-      <label htmlFor={id} style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-neutral-700)', display: 'block', marginBottom: '6px' }}>
+      <label htmlFor={id} style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: 'var(--color-neutral-700)', display: 'block', marginBottom: '6px' }}>
         {label}
       </label>
-      {desc && <p style={{ fontSize: '0.8rem', color: 'var(--color-neutral-400)', margin: '0 0 8px', lineHeight: 1.4 }}>{desc}</p>}
+      {desc && <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-neutral-400)', margin: '0 0 8px', lineHeight: 'var(--leading-relaxed)' }}>{desc}</p>}
       <input
         id={id} type={type} value={value} onChange={onChange}
         onFocus={() => setFoc(true)} onBlur={() => setFoc(false)}
@@ -85,7 +85,7 @@ function LabelledInput({ id, label, value, onChange, mono, desc, type = 'text' }
           width: '100%', height: '40px', padding: '0 14px',
           border: `1.5px solid ${foc ? 'var(--color-primary)' : 'var(--color-neutral-200)'}`,
           borderRadius: '10px',
-          backgroundColor: foc ? '#fff' : 'var(--color-bg)',
+          backgroundColor: foc ? 'var(--clr-surface)' : 'var(--color-bg)',
           fontFamily: mono ? 'var(--font-mono)' : 'var(--font-body)',
           fontSize: '0.9rem', color: 'var(--color-neutral-800)', outline: 'none',
           boxShadow: foc ? '0 0 0 3px rgba(124,154,133,0.12)' : 'none',
@@ -197,10 +197,10 @@ export default function Settings() {
           backgroundColor: 'rgba(255,255,255,0.2)',
           border: '2px solid rgba(255,255,255,0.4)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: '1.375rem', fontWeight: 700, color: '#fff',
+          fontSize: '1.375rem', fontWeight: 700, color: 'var(--clr-text-primary)',
         }}>{initials(user?.name)}</div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: '1.125rem', fontWeight: 700, color: '#fff' }}>{user?.name ?? 'Clinician'}</div>
+          <div style={{ fontSize: '1.125rem', fontWeight: 700, color: 'var(--clr-text-primary)' }}>{user?.name ?? 'Clinician'}</div>
           <div style={{ fontSize: '0.875rem', color: 'rgba(255,255,255,0.75)', marginTop: '2px' }}>{user?.role ?? ''}</div>
           <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.55)', marginTop: '2px', fontFamily: 'var(--font-mono)' }}>{user?.email ?? ''}</div>
         </div>
@@ -208,7 +208,7 @@ export default function Settings() {
           <span style={{
             padding: '3px 10px', borderRadius: '999px',
             backgroundColor: 'rgba(255,255,255,0.2)',
-            fontSize: '0.75rem', fontWeight: 600, color: '#fff', whiteSpace: 'nowrap',
+            fontSize: '0.75rem', fontWeight: 600, color: 'var(--clr-text-primary)', whiteSpace: 'nowrap',
             display: 'flex', alignItems: 'center', gap: '5px',
           }}>
             <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#7CDE9A', flexShrink: 0 }} />
@@ -287,9 +287,9 @@ export default function Settings() {
         <button id="save-settings-btn" onClick={handleSave} style={{
           padding: '10px 28px', borderRadius: '10px', border: 'none',
           background: 'linear-gradient(135deg, var(--color-primary), var(--color-primary-dark))',
-          color: '#fff', fontWeight: 600, cursor: 'pointer',
-          fontFamily: 'var(--font-body)', fontSize: '0.9375rem',
-          boxShadow: '0 4px 14px rgba(124,154,133,0.30)',
+          color: 'var(--clr-text-inverse)', fontWeight: 600, cursor: 'pointer',
+          fontFamily: 'var(--font-body)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-semibold)', letterSpacing: 'var(--tracking-normal)',
+          boxShadow: '0 4px 14px rgba(26,122,113,0.30)',
         }}>Save Changes</button>
         {saved && (
           <span style={{
@@ -315,7 +315,7 @@ export default function Settings() {
           <button id="export-data-btn" onClick={handleExportData} style={{
             padding: '7px 16px', borderRadius: '8px',
             border: '1px solid #4A7FA5',
-            backgroundColor: '#fff', color: '#4A7FA5',
+            backgroundColor: 'var(--clr-surface)', color: '#4A7FA5',
             fontSize: '0.8125rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-body)',
             whiteSpace: 'nowrap', flexShrink: 0,
           }}>Export JSON</button>
@@ -329,7 +329,7 @@ export default function Settings() {
           <button id="correct-data-btn" onClick={handleCorrectData} style={{
             padding: '7px 16px', borderRadius: '8px',
             border: '1px solid #B8873A',
-            backgroundColor: '#fff', color: '#B8873A',
+            backgroundColor: 'var(--clr-surface)', color: '#B8873A',
             fontSize: '0.8125rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-body)',
             whiteSpace: 'nowrap', flexShrink: 0,
           }}>Submit Request</button>

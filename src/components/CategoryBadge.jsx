@@ -1,32 +1,35 @@
 /**
  * CategoryBadge.jsx — ASD-friendly category pill badge (Adult / Child / Toddler).
- * Uses muted accent colors with subtle inner borders per master prompt.
+ * Uses distinct but harmonious visual identities with icon glyphs.
  */
 const CATEGORY_STYLES = {
   adult: {
-    bg: 'var(--color-accent-adult-bg)',
-    color: 'var(--color-accent-adult)',
-    border: 'var(--color-accent-adult-border)',
+    bg: 'rgba(56,189,248,0.12)',
+    color: 'var(--clr-info)',
+    border: 'rgba(56,189,248,0.25)',
+    icon: '◈',
     label: 'Adult',
   },
   child: {
-    bg: 'var(--color-accent-child-bg)',
-    color: 'var(--color-accent-child)',
-    border: 'var(--color-accent-child-border)',
+    bg: 'var(--clr-primary-dim)',
+    color: 'var(--clr-primary)',
+    border: 'rgba(14,207,200,0.25)',
+    icon: '◇',
     label: 'Child',
   },
   toddler: {
-    bg: 'var(--color-accent-toddler-bg)',
-    color: 'var(--color-accent-toddler)',
-    border: 'var(--color-accent-toddler-border)',
+    bg: 'var(--clr-secondary-dim)',
+    color: 'var(--clr-secondary)',
+    border: 'rgba(123,97,255,0.25)',
+    icon: '◉',
     label: 'Toddler',
   },
 };
 
 const SIZE_MAP = {
-  sm: { fontSize: '0.6875rem', padding: '3px 10px', dotSize: 5, height: 24 },
-  md: { fontSize: '0.75rem', padding: '4px 12px', dotSize: 6, height: 28 },
-  lg: { fontSize: '0.8125rem', padding: '5px 14px', dotSize: 7, height: 32 },
+  sm: { fontSize: 'var(--text-2xs)', padding: '2px 8px' },
+  md: { fontSize: 'var(--text-xs)', padding: '3px 10px' },
+  lg: { fontSize: 'var(--text-sm)', padding: '4px 14px' },
 };
 
 export default function CategoryBadge({ category, size = 'md' }) {
@@ -40,33 +43,22 @@ export default function CategoryBadge({ category, size = 'md' }) {
       style={{
         display: 'inline-flex',
         alignItems: 'center',
-        gap: '6px',
+        gap: '5px',
         padding: sz.padding,
-        height: sz.height,
         borderRadius: 'var(--radius-full)',
         backgroundColor: s.bg,
         color: s.color,
         border: `1px solid ${s.border}`,
         fontSize: sz.fontSize,
-        fontWeight: 600,
+        fontWeight: 'var(--weight-semibold)',
         fontFamily: 'var(--font-body)',
         lineHeight: 1,
         whiteSpace: 'nowrap',
-        letterSpacing: '0.02em',
+        letterSpacing: 'var(--tracking-wide)',
         transition: 'all 200ms cubic-bezier(0.16,1,0.3,1)',
       }}
     >
-      <span
-        aria-hidden="true"
-        style={{
-          width: sz.dotSize,
-          height: sz.dotSize,
-          borderRadius: '50%',
-          backgroundColor: s.color,
-          flexShrink: 0,
-          opacity: 0.85,
-        }}
-      />
+      <span aria-hidden="true" style={{ fontSize: '0.85em', lineHeight: 1 }}>{s.icon}</span>
       {s.label}
     </span>
   );
