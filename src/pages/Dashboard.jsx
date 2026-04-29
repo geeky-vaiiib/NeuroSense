@@ -1,71 +1,30 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import CategoryBadge from '../components/CategoryBadge';
 import RiskBadge from '../components/RiskBadge';
+import Button from '../components/ui/Button';
+import Card from '../components/ui/Card';
 import { casesApi } from '../services/api';
 
 const FILTERS = ['all', 'adult', 'child', 'toddler'];
 
-const styles = {
-  page: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '24px',
-  },
-  card: {
-    backgroundColor: 'var(--color-bg-card)',
-    border: '1px solid var(--color-neutral-200)',
-    borderRadius: '22px',
-    padding: '24px',
-    boxShadow: 'var(--shadow-xs)',
-  },
-};
-
 function FilterChip({ label, active, onClick }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-pressed={active}
-      style={{
-        minHeight: '36px',
-        padding: '0 14px',
-        borderRadius: '999px',
-        border: `1px solid ${active ? 'var(--color-primary)' : 'var(--color-neutral-200)'}`,
-        backgroundColor: active ? 'var(--color-primary-muted)' : 'var(--clr-surface)',
-        color: active ? 'var(--color-primary-dark)' : 'var(--color-neutral-600)',
-        fontSize: 'var(--text-sm)',
-        fontWeight: active ? 'var(--weight-semibold)' : 'var(--weight-regular)',
-        letterSpacing: 'var(--tracking-normal)',
-        fontFamily: 'var(--font-body)',
-        cursor: 'pointer',
-      }}
-    >
+    <Button variant={active ? 'outline' : 'ghost'} size="sm" onClick={onClick}
+      style={{ borderRadius:'var(--radius-pill)', ...(active ? { background:'var(--clr-primary-dim)', color:'var(--clr-primary)', borderColor:'var(--clr-primary)' } : {}) }}>
       {label}
-    </button>
+    </Button>
   );
 }
 
 function StatCard({ label, value, helper }) {
   return (
-    <div
-      style={{
-        borderRadius: '18px',
-        border: '1px solid var(--color-neutral-200)',
-        padding: '18px',
-        backgroundColor: 'var(--color-bg)',
-      }}
-    >
-      <div style={{ fontSize: 'var(--text-4xl)', fontWeight: 'var(--weight-light)', letterSpacing: 'var(--tracking-tight)', lineHeight: 1, fontFamily: 'var(--font-display)', color: 'var(--color-neutral-900)' }}>
-        {value}
-      </div>
-      <div style={{ marginTop: '6px', fontSize: 'var(--text-2xs)', fontWeight: 'var(--weight-semibold)', letterSpacing: 'var(--tracking-widest)', textTransform: 'uppercase', color: 'var(--color-neutral-400)' }}>
-        {label}
-      </div>
-      <div style={{ marginTop: '4px', fontSize: 'var(--text-xs)', color: 'var(--color-neutral-400)', lineHeight: 'var(--leading-relaxed)' }}>
-        {helper}
-      </div>
-    </div>
+    <Card hover={false} padding="var(--sp-4)">
+      <div style={{ fontSize:'var(--text-3xl)', fontWeight:300, letterSpacing:'-0.04em', lineHeight:1, fontFamily:'var(--font-display)', color:'var(--clr-text-primary)' }}>{value}</div>
+      <div style={{ marginTop:'var(--sp-2)', fontSize:'var(--text-xs)', fontWeight:600, letterSpacing:'0.06em', textTransform:'uppercase', color:'var(--clr-text-muted)' }}>{label}</div>
+      <div style={{ marginTop:'var(--sp-1)', fontSize:'var(--text-xs)', color:'var(--clr-text-muted)', lineHeight:1.5 }}>{helper}</div>
+    </Card>
   );
 }
 
@@ -79,302 +38,118 @@ export default function Dashboard() {
   useEffect(() => {
     let active = true;
     async function loadSummary() {
-      setLoading(true);
-      setError('');
+      setLoading(true); setError('');
       try {
-        const data = await casesApi.dashboard(
-          categoryFilter === 'all' ? {} : { category: categoryFilter }
-        );
-        if (active) {
-          setSummary(data);
-        }
-      } catch (loadError) {
-        if (active) {
-          setError(loadError.message);
-        }
-      } finally {
-        if (active) {
-          setLoading(false);
-        }
-      }
+        const data = await casesApi.dashboard(categoryFilter === 'all' ? {} : { category: categoryFilter });
+        if (active) setSummary(data);
+      } catch (e) { if (active) setError(e.message); }
+      finally { if (active) setLoading(false); }
     }
-
     loadSummary();
-    return () => {
-      active = false;
-    };
+    return () => { active = false; };
   }, [categoryFilter]);
 
-  const totals = summary?.totals ?? {
-    totalCases: 0,
-    adultCases: 0,
-    childCases: 0,
-    highRisk: 0,
-    awaitingReview: 0,
-    mockCases: 0,
-    averageRiskScore: 0,
-    averageAq10Score: 0,
-  };
-
+  const totals = summary?.totals ?? { totalCases:0, adultCases:0, childCases:0, highRisk:0, awaitingReview:0, mockCases:0, averageRiskScore:0, averageAq10Score:0 };
   const statCards = [
-    {
-      label:
-        categoryFilter === 'adult' ? 'Adult cases' :
-        categoryFilter === 'child' ? 'Child cases' :
-        categoryFilter === 'toddler' ? 'Toddler cases' :
-        'All cases',
-      value: totals.totalCases,
-      helper: 'Current dashboard scope',
-    },
-    {
-      label: 'High risk',
-      value: totals.highRisk,
-      helper: 'Cases flagged for elevated attention',
-    },
-    {
-      label: 'Awaiting review',
-      value: totals.awaitingReview,
-      helper: 'Pending clinician follow-up',
-    },
-    {
-      label: 'Avg AQ-10',
-      value: totals.averageAq10Score,
-      helper: 'Average questionnaire score',
-    },
+    { label: categoryFilter === 'adult' ? 'Adult cases' : categoryFilter === 'child' ? 'Child cases' : categoryFilter === 'toddler' ? 'Toddler cases' : 'All cases', value: totals.totalCases, helper: 'Current dashboard scope' },
+    { label: 'High risk', value: totals.highRisk, helper: 'Flagged for elevated attention' },
+    { label: 'Awaiting review', value: totals.awaitingReview, helper: 'Pending clinician follow-up' },
+    { label: 'Avg AQ-10', value: totals.averageAq10Score, helper: 'Average questionnaire score' },
   ];
 
   return (
-    <main id="dashboard-page" style={styles.page}>
-      <section style={styles.card}>
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            gap: '16px',
-            flexWrap: 'wrap',
-            alignItems: 'flex-start',
-            marginBottom: '18px',
-          }}
-        >
+    <motion.main id="dashboard-page" initial={{ opacity:0, y:16 }} animate={{ opacity:1, y:0 }} transition={{ duration:0.45, ease:[0.16,1,0.3,1] }}
+      style={{ display:'flex', flexDirection:'column', gap:'var(--sp-6)', paddingTop:'calc(68px + var(--sp-8))', maxWidth:1280, margin:'0 auto', paddingInline:'clamp(1.25rem, 4vw, 3rem)' }}>
+
+      <Card glow>
+        <div style={{ display:'flex', justifyContent:'space-between', gap:'var(--sp-4)', flexWrap:'wrap', alignItems:'flex-start', marginBottom:'var(--sp-4)' }}>
           <div>
-            <h1 style={{ margin: '0 0 6px', fontSize: 'var(--text-2xl)', fontWeight: 'var(--weight-semibold)', letterSpacing: 'var(--tracking-tight)', lineHeight: 'var(--leading-tight)', color: 'var(--color-neutral-900)', fontFamily: 'var(--font-display)' }}>Overview</h1>
-            <p style={{ margin: 0, fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-regular)', lineHeight: 'var(--leading-relaxed)', color: 'var(--color-neutral-500)' }}>
-              Track adult, child, and toddler screening activity with category-aware counts, explainability readiness, and recent cases.
-            </p>
+            <h1 style={{ margin:'0 0 var(--sp-2)', fontSize:'var(--text-2xl)', fontWeight:700, letterSpacing:'-0.03em', color:'var(--clr-text-primary)', fontFamily:'var(--font-display)' }}>Overview</h1>
+            <p style={{ margin:0, fontSize:'var(--text-sm)', color:'var(--clr-text-secondary)', lineHeight:1.6 }}>Track screening activity with category-aware counts.</p>
           </div>
-          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-            {FILTERS.map((filter) => (
-              <FilterChip
-                key={filter}
-                label={filter === 'all' ? 'All' : filter[0].toUpperCase() + filter.slice(1)}
-                active={categoryFilter === filter}
-                onClick={() => setCategoryFilter(filter)}
-              />
-            ))}
+          <div style={{ display:'flex', gap:'var(--sp-2)', flexWrap:'wrap' }}>
+            {FILTERS.map(f => <FilterChip key={f} label={f === 'all' ? 'All' : f[0].toUpperCase() + f.slice(1)} active={categoryFilter === f} onClick={() => setCategoryFilter(f)} />)}
           </div>
         </div>
-
-        {loading ? (
-          <p style={{ margin: 0, color: 'var(--color-neutral-500)' }}>Loading dashboard…</p>
-        ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '14px' }}>
-            {statCards.map((card) => (
-              <StatCard key={card.label} {...card} />
-            ))}
+        {loading ? <p style={{ margin:0, color:'var(--clr-text-muted)' }}>Loading…</p> : (
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(180px, 1fr))', gap:'var(--sp-4)' }}>
+            {statCards.map(c => <StatCard key={c.label} {...c} />)}
           </div>
         )}
-      </section>
+      </Card>
 
-      {error && (
-        <section
-          style={{
-            ...styles.card,
-            borderColor: 'var(--color-risk-high-border)',
-            backgroundColor: 'var(--color-risk-high-muted)',
-          }}
-        >
-          <p style={{ margin: 0, color: 'var(--color-risk-high)', fontWeight: 600 }}>
-            {error}
-          </p>
-        </section>
-      )}
+      {error && <Card hover={false} style={{ borderColor:'var(--clr-danger)', background:'var(--clr-danger-dim)' }}><p style={{ margin:0, color:'var(--clr-danger)', fontWeight:600 }}>{error}</p></Card>}
 
-      <section
-        style={{
-          display: 'grid',
-          gridTemplateColumns: '1.1fr 1fr',
-          gap: '20px',
-        }}
-      >
-        <div style={styles.card}>
-          <div style={{ marginBottom: '18px' }}>
-            <h2 style={{ margin: '0 0 6px', fontSize: 'var(--text-base)', fontWeight: 'var(--weight-semibold)', letterSpacing: 'var(--tracking-tight)', color: 'var(--color-neutral-800)' }}>
-              Category mix
-            </h2>
-            <p style={{ margin: 0, fontSize: 'var(--text-xs)', color: 'var(--color-neutral-400)', lineHeight: 'var(--leading-relaxed)' }}>
-              Category counts remain visible even while filtering the dashboard.
-            </p>
-          </div>
-          <div style={{ display: 'grid', gap: '12px' }}>
-            {(summary?.categoryBreakdown ?? []).map((item) => (
-              <div
-                key={item.category}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: '12px',
-                  padding: '14px 16px',
-                  borderRadius: '16px',
-                  border: '1px solid var(--color-neutral-200)',
-                  backgroundColor: 'var(--color-bg)',
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+      <section style={{ display:'grid', gridTemplateColumns:'1.1fr 1fr', gap:'var(--sp-6)' }}>
+        <Card>
+          <h2 style={{ margin:'0 0 var(--sp-2)', fontSize:'var(--text-base)', fontWeight:600, color:'var(--clr-text-primary)' }}>Category mix</h2>
+          <p style={{ margin:'0 0 var(--sp-4)', fontSize:'var(--text-xs)', color:'var(--clr-text-muted)' }}>Counts remain visible even while filtering.</p>
+          <div style={{ display:'grid', gap:'var(--sp-3)' }}>
+            {(summary?.categoryBreakdown ?? []).map(item => (
+              <div key={item.category} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:'var(--sp-3)', padding:'var(--sp-3) var(--sp-4)', borderRadius:'var(--radius-md)', border:'1px solid var(--clr-border-subtle)', background:'var(--clr-surface)' }}>
+                <div style={{ display:'flex', alignItems:'center', gap:'var(--sp-3)' }}>
                   <CategoryBadge category={item.category} size="md" />
-                  <span style={{ color: 'var(--color-neutral-700)', fontWeight: 'var(--weight-semibold)', fontSize: 'var(--text-sm)' }}>
-                    {item.label}
-                  </span>
+                  <span style={{ color:'var(--clr-text-primary)', fontWeight:600, fontSize:'var(--text-sm)' }}>{item.label}</span>
                 </div>
-                <strong style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', fontWeight: 'var(--weight-medium)', letterSpacing: 'var(--tracking-wide)', color: 'var(--color-neutral-900)' }}>
-                  {item.count}
-                </strong>
+                <strong style={{ fontFamily:'var(--font-mono)', fontSize:'var(--text-xs)', color:'var(--clr-text-primary)' }}>{item.count}</strong>
               </div>
             ))}
           </div>
-        </div>
+        </Card>
 
-        <div style={styles.card}>
-          <div style={{ marginBottom: '18px' }}>
-            <h2 style={{ margin: '0 0 6px', fontSize: 'var(--text-base)', fontWeight: 'var(--weight-semibold)', letterSpacing: 'var(--tracking-tight)', color: 'var(--color-neutral-800)' }}>
-              Pipeline confidence
-            </h2>
-            <p style={{ margin: 0, fontSize: 'var(--text-xs)', color: 'var(--color-neutral-400)', lineHeight: 'var(--leading-relaxed)' }}>
-              Confidence indicators adapt to the active dashboard category.
-            </p>
-          </div>
-          <div style={{ display: 'grid', gap: '14px' }}>
-            {(summary?.modalityConfidence ?? []).map((item) => (
+        <Card>
+          <h2 style={{ margin:'0 0 var(--sp-2)', fontSize:'var(--text-base)', fontWeight:600, color:'var(--clr-text-primary)' }}>Pipeline confidence</h2>
+          <p style={{ margin:'0 0 var(--sp-4)', fontSize:'var(--text-xs)', color:'var(--clr-text-muted)' }}>Adapts to the active category filter.</p>
+          <div style={{ display:'grid', gap:'var(--sp-4)' }}>
+            {(summary?.modalityConfidence ?? []).map(item => (
               <div key={item.id}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', marginBottom: '6px' }}>
-                  <span style={{ color: 'var(--color-neutral-700)', fontWeight: 'var(--weight-semibold)', fontSize: 'var(--text-sm)' }}>
-                    {item.label}
-                  </span>
-                  <span style={{ color: 'var(--color-primary-dark)', fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', fontWeight: 'var(--weight-medium)', letterSpacing: 'var(--tracking-wide)' }}>
-                    {item.pct}%
-                  </span>
+                <div style={{ display:'flex', justifyContent:'space-between', marginBottom:'var(--sp-2)' }}>
+                  <span style={{ color:'var(--clr-text-primary)', fontWeight:600, fontSize:'var(--text-sm)' }}>{item.label}</span>
+                  <span style={{ color:'var(--clr-primary)', fontFamily:'var(--font-mono)', fontSize:'var(--text-xs)' }}>{item.pct}%</span>
                 </div>
-                <div
-                  style={{
-                    height: '10px',
-                    borderRadius: '999px',
-                    backgroundColor: 'var(--color-neutral-100)',
-                    overflow: 'hidden',
-                  }}
-                >
-                  <div
-                    style={{
-                      width: `${item.pct}%`,
-                      height: '100%',
-                      borderRadius: '999px',
-                      backgroundColor: 'var(--color-primary)',
-                    }}
-                  />
+                <div style={{ height:8, borderRadius:'var(--radius-pill)', background:'var(--clr-surface-3)', overflow:'hidden' }}>
+                  <motion.div initial={{ width:0 }} animate={{ width:`${item.pct}%` }} transition={{ duration:0.8, ease:[0.16,1,0.3,1] }}
+                    style={{ height:'100%', borderRadius:'var(--radius-pill)', background:'var(--grad-cta)' }} />
                 </div>
               </div>
             ))}
           </div>
-        </div>
+        </Card>
       </section>
 
-      <section style={styles.card}>
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            gap: '16px',
-            flexWrap: 'wrap',
-            alignItems: 'center',
-            marginBottom: '18px',
-          }}
-        >
+      <Card glow>
+        <div style={{ display:'flex', justifyContent:'space-between', flexWrap:'wrap', alignItems:'center', marginBottom:'var(--sp-4)' }}>
           <div>
-            <h2 style={{ margin: '0 0 6px', fontSize: 'var(--text-base)', fontWeight: 'var(--weight-semibold)', letterSpacing: 'var(--tracking-tight)', color: 'var(--color-neutral-800)' }}>
-              Recent cases
-            </h2>
-            <p style={{ margin: 0, fontSize: 'var(--text-xs)', color: 'var(--color-neutral-400)', lineHeight: 'var(--leading-relaxed)' }}>
-              Each row retains its category tag for quick routing and review.
-            </p>
+            <h2 style={{ margin:'0 0 var(--sp-2)', fontSize:'var(--text-base)', fontWeight:600, color:'var(--clr-text-primary)' }}>Recent cases</h2>
+            <p style={{ margin:0, fontSize:'var(--text-xs)', color:'var(--clr-text-muted)' }}>Each row retains its category tag for quick routing.</p>
           </div>
-          <Link
-            to="/app/cases"
-            style={{
-              color: 'var(--color-primary-dark)',
-              fontWeight: 700,
-              textDecoration: 'none',
-            }}
-          >
-            View all cases
-          </Link>
+          <Link to="/app/cases" style={{ color:'var(--clr-primary)', fontWeight:700, textDecoration:'none', fontSize:'var(--text-sm)' }}>View all →</Link>
         </div>
-
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr>
-                {['Case', 'Category', 'Age', 'Risk', 'Date', 'Status'].map((header) => (
-                  <th
-                    key={header}
-                    style={{
-                      textAlign: 'left',
-                      padding: '10px 12px',
-                      color: 'var(--color-neutral-400)',
-                      fontSize: 'var(--text-2xs)',
-                      fontWeight: 'var(--weight-semibold)',
-                      textTransform: 'uppercase',
-                      letterSpacing: 'var(--tracking-widest)',
-                      borderBottom: '1px solid var(--color-neutral-100)',
-                    }}
-                  >
-                    {header}
-                  </th>
-                ))}
-              </tr>
-            </thead>
+        <div style={{ overflowX:'auto' }}>
+          <table style={{ width:'100%', borderCollapse:'collapse' }}>
+            <thead><tr>
+              {['Case','Category','Age','Risk','Date','Status'].map(h => (
+                <th key={h} style={{ textAlign:'left', padding:'var(--sp-3)', color:'var(--clr-text-muted)', fontSize:'var(--text-xs)', fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', borderBottom:'1px solid var(--clr-border-subtle)' }}>{h}</th>
+              ))}
+            </tr></thead>
             <tbody>
-              {(summary?.recentCases ?? []).map((record) => (
-                <tr
-                  key={record.id}
-                  onClick={() => navigate(`/app/results/${record.id}`)}
-                  style={{ cursor: 'pointer', borderBottom: '1px solid var(--color-neutral-100)' }}
-                >
-                  <td style={{ padding: '14px 12px' }}>
-                    <strong style={{ color: 'var(--color-neutral-900)' }}>
-                      {record.subjectName || 'Unnamed case'}
-                    </strong>
-                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', fontWeight: 'var(--weight-medium)', letterSpacing: 'var(--tracking-wide)', color: 'var(--color-neutral-500)', marginTop: '4px' }}>
-                      {record.id}
-                    </div>
+              {(summary?.recentCases ?? []).map(r => (
+                <tr key={r.id} onClick={() => navigate(`/app/results/${r.id}`)} style={{ cursor:'pointer', borderBottom:'1px solid var(--clr-border-subtle)' }}>
+                  <td style={{ padding:'var(--sp-4) var(--sp-3)' }}>
+                    <strong style={{ color:'var(--clr-text-primary)' }}>{r.subjectName || 'Unnamed'}</strong>
+                    <div style={{ fontFamily:'var(--font-mono)', fontSize:'var(--text-xs)', color:'var(--clr-text-muted)', marginTop:'var(--sp-1)' }}>{r.id}</div>
                   </td>
-                  <td style={{ padding: '14px 12px' }}>
-                    <CategoryBadge category={record.category} size="sm" />
-                  </td>
-                  <td style={{ padding: '14px 12px', color: 'var(--color-neutral-700)' }}>{record.age}</td>
-                  <td style={{ padding: '14px 12px' }}>
-                    <RiskBadge level={record.riskLevel} size="sm" showScore score={record.riskScore} />
-                  </td>
-                  <td style={{ padding: '14px 12px', color: 'var(--color-neutral-600)' }}>
-                    {record.screeningDate}
-                  </td>
-                  <td style={{ padding: '14px 12px', color: 'var(--color-neutral-600)' }}>
-                    {record.status}
-                  </td>
+                  <td style={{ padding:'var(--sp-4) var(--sp-3)' }}><CategoryBadge category={r.category} size="sm" /></td>
+                  <td style={{ padding:'var(--sp-4) var(--sp-3)', color:'var(--clr-text-secondary)' }}>{r.age}</td>
+                  <td style={{ padding:'var(--sp-4) var(--sp-3)' }}><RiskBadge level={r.riskLevel} size="sm" showScore score={r.riskScore} /></td>
+                  <td style={{ padding:'var(--sp-4) var(--sp-3)', color:'var(--clr-text-muted)' }}>{r.screeningDate}</td>
+                  <td style={{ padding:'var(--sp-4) var(--sp-3)', color:'var(--clr-text-muted)' }}>{r.status}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-      </section>
-    </main>
+      </Card>
+    </motion.main>
   );
 }

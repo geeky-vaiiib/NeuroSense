@@ -1,146 +1,66 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import CategoryBadge from '../components/CategoryBadge';
 import Modal from '../components/Modal';
 import RiskBadge from '../components/RiskBadge';
+import Button from '../components/ui/Button';
+import Card from '../components/ui/Card';
 import { casesApi } from '../services/api';
 
 const CATEGORY_FILTERS = ['all', 'adult', 'child', 'toddler'];
 const RISK_FILTERS = ['all', 'High', 'Moderate', 'Low'];
 
-const styles = {
-  page: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '24px',
-  },
-  card: {
-    backgroundColor: 'var(--color-bg-card)',
-    border: '1px solid var(--color-neutral-200)',
-    borderRadius: '22px',
-    padding: '24px',
-    boxShadow: 'var(--shadow-xs)',
-  },
-};
-
 function FilterChip({ label, active, onClick }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-pressed={active}
-      style={{
-        minHeight: '36px',
-        padding: '0 14px',
-        borderRadius: '999px',
-        border: `1px solid ${active ? 'var(--color-primary)' : 'var(--color-neutral-200)'}`,
-        backgroundColor: active ? 'var(--color-primary-muted)' : 'var(--clr-surface)',
-        color: active ? 'var(--color-primary-dark)' : 'var(--color-neutral-600)',
-        fontSize: 'var(--text-sm)',
-        fontWeight: active ? 'var(--weight-semibold)' : 'var(--weight-regular)',
-        letterSpacing: 'var(--tracking-normal)',
-        fontFamily: 'var(--font-body)',
-        cursor: 'pointer',
-      }}
-    >
+    <Button variant={active ? 'outline' : 'ghost'} size="sm" onClick={onClick}
+      style={{ borderRadius:'var(--radius-pill)', ...(active ? { background:'var(--clr-primary-dim)', color:'var(--clr-primary)', borderColor:'var(--clr-primary)' } : {}) }}>
       {label}
-    </button>
+    </Button>
   );
 }
 
 function CaseCard({ record, onOpen, onViewResults }) {
   return (
-    <article
-      style={{
-        border: '1px solid var(--color-neutral-200)',
-        borderRadius: '20px',
-        padding: '18px',
-        backgroundColor: 'var(--color-bg-card)',
-        display: 'grid',
-        gap: '14px',
-      }}
-    >
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', alignItems: 'center' }}>
-        <div style={{ display: 'grid', gap: '8px' }}>
-          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+    <Card padding="var(--sp-4)">
+      <div style={{ display:'flex', justifyContent:'space-between', gap:'var(--sp-3)', alignItems:'center' }}>
+        <div style={{ display:'grid', gap:'var(--sp-2)' }}>
+          <div style={{ display:'flex', gap:'var(--sp-2)', flexWrap:'wrap' }}>
             <CategoryBadge category={record.category} size="sm" />
             <RiskBadge level={record.riskLevel} size="sm" showScore score={record.riskScore} />
           </div>
           <div>
-            <strong style={{ color: 'var(--color-neutral-900)' }}>
-              {record.subjectName || 'Unnamed case'}
-            </strong>
-            <p style={{ margin: '4px 0 0', fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', fontWeight: 'var(--weight-medium)', letterSpacing: 'var(--tracking-wide)', color: 'var(--color-neutral-500)' }}>
-              {record.id}
-            </p>
+            <strong style={{ color:'var(--clr-text-primary)' }}>{record.subjectName || 'Unnamed case'}</strong>
+            <p style={{ margin:'var(--sp-1) 0 0', fontFamily:'var(--font-mono)', fontSize:'var(--text-xs)', color:'var(--clr-text-muted)' }}>{record.id}</p>
           </div>
         </div>
-        <button type="button" onClick={() => onViewResults(record.id)} style={{ ...styles.linkButton }}>
-          Open result
-        </button>
+        <Button variant="outline" size="sm" onClick={() => onViewResults(record.id)}>Open result</Button>
       </div>
 
-      <p style={{ margin: 0, color: 'var(--color-neutral-600)', lineHeight: 1.6 }}>
-        {record.diagnosis}
-      </p>
+      <p style={{ margin:'var(--sp-3) 0', color:'var(--clr-text-secondary)', lineHeight:1.6 }}>{record.diagnosis}</p>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '12px' }}>
-        {[
-          ['Age', record.age],
-          ['Respondent', record.respondentRelationship || 'Not provided'],
-          ['Tool', record.screeningTool],
-        ].map(([label, value]) => (
-          <div key={label}>
-            <p style={{ margin: '0 0 4px', fontSize: 'var(--text-2xs)', fontWeight: 'var(--weight-semibold)', letterSpacing: 'var(--tracking-widest)', textTransform: 'uppercase', color: 'var(--color-neutral-400)' }}>
-              {label}
-            </p>
-            <strong style={{ color: 'var(--color-neutral-800)', fontSize: '0.9rem' }}>
-              {value}
-            </strong>
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(3, minmax(0, 1fr))', gap:'var(--sp-3)' }}>
+        {[['Age', record.age], ['Respondent', record.respondentRelationship || 'N/A'], ['Tool', record.screeningTool]].map(([l, v]) => (
+          <div key={l}>
+            <p style={{ margin:'0 0 var(--sp-1)', fontSize:'var(--text-xs)', fontWeight:600, letterSpacing:'0.05em', textTransform:'uppercase', color:'var(--clr-text-muted)' }}>{l}</p>
+            <strong style={{ color:'var(--clr-text-primary)', fontSize:'var(--text-sm)' }}>{v}</strong>
           </div>
         ))}
       </div>
 
-      <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-        {record.tags?.map((tag) => (
-          <span
-            key={tag}
-            style={{
-              padding: '4px 10px',
-              borderRadius: '999px',
-              backgroundColor: 'var(--color-neutral-100)',
-              color: 'var(--color-neutral-500)',
-              fontSize: '0.75rem',
-              fontFamily: 'var(--font-mono)',
-            }}
-          >
-            {tag}
-          </span>
+      <div style={{ display:'flex', gap:'var(--sp-2)', flexWrap:'wrap', marginTop:'var(--sp-3)' }}>
+        {record.tags?.map(tag => (
+          <span key={tag} style={{ padding:'3px 10px', borderRadius:'var(--radius-pill)', background:'var(--clr-surface-3)', color:'var(--clr-text-muted)', fontSize:'var(--text-xs)', fontFamily:'var(--font-mono)' }}>{tag}</span>
         ))}
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
-        <span style={{ color: 'var(--color-neutral-500)', fontSize: '0.85rem' }}>
-          {record.dataSource === 'mock' ? 'Mock mode case' : 'Live model case'}
-        </span>
-        <button type="button" onClick={() => onOpen(record)} style={styles.linkButton}>
-          View details
-        </button>
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginTop:'var(--sp-3)' }}>
+        <span style={{ color:'var(--clr-text-muted)', fontSize:'var(--text-sm)' }}>{record.dataSource === 'mock' ? 'Mock mode' : 'Live model'}</span>
+        <Button variant="ghost" size="sm" onClick={() => onOpen(record)}>View details</Button>
       </div>
-    </article>
+    </Card>
   );
 }
-
-styles.linkButton = {
-  minHeight: '36px',
-  padding: '0 14px',
-  borderRadius: '10px',
-  border: '1px solid var(--color-neutral-200)',
-  backgroundColor: 'var(--clr-surface)',
-  color: 'var(--color-neutral-700)',
-  fontWeight: 600,
-  cursor: 'pointer',
-};
 
 export default function Cases() {
   const navigate = useNavigate();
@@ -155,198 +75,87 @@ export default function Cases() {
   useEffect(() => {
     let active = true;
     async function loadCases() {
-      setLoading(true);
-      setError('');
+      setLoading(true); setError('');
       try {
-        const list = await casesApi.list(
-          categoryFilter === 'all' ? {} : { category: categoryFilter }
-        );
-        if (active) {
-          setRecords(list);
-        }
-      } catch (loadError) {
-        if (active) {
-          setError(loadError.message);
-        }
-      } finally {
-        if (active) {
-          setLoading(false);
-        }
-      }
+        const list = await casesApi.list(categoryFilter === 'all' ? {} : { category: categoryFilter });
+        if (active) setRecords(list);
+      } catch (e) { if (active) setError(e.message); }
+      finally { if (active) setLoading(false); }
     }
-
     loadCases();
-    return () => {
-      active = false;
-    };
+    return () => { active = false; };
   }, [categoryFilter]);
 
   const filteredRecords = useMemo(() => {
-    const loweredQuery = query.trim().toLowerCase();
-    return records.filter((record) => {
-      const matchesRisk = riskFilter === 'all' || record.riskLevel === riskFilter;
-      const matchesQuery =
-        !loweredQuery ||
-        record.id.toLowerCase().includes(loweredQuery) ||
-        (record.subjectName || '').toLowerCase().includes(loweredQuery) ||
-        (record.respondentName || '').toLowerCase().includes(loweredQuery) ||
-        (record.diagnosis || '').toLowerCase().includes(loweredQuery);
+    const q = query.trim().toLowerCase();
+    return records.filter(r => {
+      const matchesRisk = riskFilter === 'all' || r.riskLevel === riskFilter;
+      const matchesQuery = !q || r.id.toLowerCase().includes(q) || (r.subjectName || '').toLowerCase().includes(q) || (r.respondentName || '').toLowerCase().includes(q) || (r.diagnosis || '').toLowerCase().includes(q);
       return matchesRisk && matchesQuery;
     });
   }, [query, records, riskFilter]);
 
   return (
-    <main id="cases-page" style={styles.page}>
-      <section style={styles.card}>
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            gap: '16px',
-            flexWrap: 'wrap',
-            alignItems: 'center',
-            marginBottom: '18px',
-          }}
-        >
+    <motion.main id="cases-page" initial={{ opacity:0, y:16 }} animate={{ opacity:1, y:0 }} transition={{ duration:0.45, ease:[0.16,1,0.3,1] }}
+      style={{ display:'flex', flexDirection:'column', gap:'var(--sp-6)', paddingTop:'calc(68px + var(--sp-8))', maxWidth:1280, margin:'0 auto', paddingInline:'clamp(1.25rem, 4vw, 3rem)' }}>
+
+      <Card glow>
+        <div style={{ display:'flex', justifyContent:'space-between', gap:'var(--sp-4)', flexWrap:'wrap', alignItems:'center', marginBottom:'var(--sp-4)' }}>
           <div>
-            <h1 style={{ margin: '0 0 6px', fontSize: 'var(--text-2xl)', fontWeight: 'var(--weight-semibold)', letterSpacing: 'var(--tracking-tight)', lineHeight: 'var(--leading-tight)', color: 'var(--color-neutral-900)', fontFamily: 'var(--font-display)' }}>
-              Case history
-            </h1>
-            <p style={{ margin: 0, fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-regular)', lineHeight: 'var(--leading-relaxed)', color: 'var(--color-neutral-500)' }}>
-              Filter across adult and child case records without losing category context.
-            </p>
+            <h1 style={{ margin:'0 0 var(--sp-2)', fontSize:'var(--text-2xl)', fontWeight:700, letterSpacing:'-0.03em', color:'var(--clr-text-primary)', fontFamily:'var(--font-display)' }}>Case history</h1>
+            <p style={{ margin:0, fontSize:'var(--text-sm)', color:'var(--clr-text-secondary)', lineHeight:1.6 }}>Filter across adult, child, and toddler case records.</p>
           </div>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', fontWeight: 'var(--weight-medium)', letterSpacing: 'var(--tracking-wide)', color: 'var(--color-neutral-500)' }}>
+          <div style={{ fontFamily:'var(--font-mono)', fontSize:'var(--text-xs)', color:'var(--clr-text-muted)' }}>
             {filteredRecords.length} case{filteredRecords.length === 1 ? '' : 's'}
           </div>
         </div>
 
-        <div style={{ display: 'grid', gap: '14px' }}>
-          <input
-            type="search"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search by case ID, subject, respondent, or diagnosis"
-            style={{
-              width: '100%',
-              minHeight: '44px',
-              padding: '0 14px',
-              borderRadius: '12px',
-              border: '1px solid var(--color-neutral-200)',
-              fontSize: '0.95rem',
-            }}
-          />
-
-          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-            {CATEGORY_FILTERS.map((filter) => (
-              <FilterChip
-                key={filter}
-                label={filter === 'all' ? 'All categories' : `${filter[0].toUpperCase()}${filter.slice(1)}`}
-                active={categoryFilter === filter}
-                onClick={() => setCategoryFilter(filter)}
-              />
-            ))}
+        <div style={{ display:'grid', gap:'var(--sp-3)' }}>
+          <input type="search" value={query} onChange={e => setQuery(e.target.value)} placeholder="Search by case ID, subject, respondent, or diagnosis"
+            style={{ width:'100%', minHeight:44, padding:'0 var(--sp-4)', borderRadius:'var(--radius-md)', border:'1px solid var(--clr-border)', background:'var(--clr-surface)', color:'var(--clr-text-primary)', fontSize:'var(--text-sm)', fontFamily:'var(--font-body)', outline:'none' }} />
+          <div style={{ display:'flex', gap:'var(--sp-2)', flexWrap:'wrap' }}>
+            {CATEGORY_FILTERS.map(f => <FilterChip key={f} label={f === 'all' ? 'All categories' : f[0].toUpperCase() + f.slice(1)} active={categoryFilter === f} onClick={() => setCategoryFilter(f)} />)}
           </div>
-
-          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-            {RISK_FILTERS.map((filter) => (
-              <FilterChip
-                key={filter}
-                label={filter === 'all' ? 'All risk levels' : filter}
-                active={riskFilter === filter}
-                onClick={() => setRiskFilter(filter)}
-              />
-            ))}
+          <div style={{ display:'flex', gap:'var(--sp-2)', flexWrap:'wrap' }}>
+            {RISK_FILTERS.map(f => <FilterChip key={f} label={f === 'all' ? 'All risk levels' : f} active={riskFilter === f} onClick={() => setRiskFilter(f)} />)}
           </div>
         </div>
-      </section>
+      </Card>
 
-      {error && (
-        <section
-          style={{
-            ...styles.card,
-            borderColor: 'var(--color-risk-high-border)',
-            backgroundColor: 'var(--color-risk-high-muted)',
-          }}
-        >
-          <p style={{ margin: 0, color: 'var(--color-risk-high)', fontWeight: 600 }}>
-            {error}
-          </p>
-        </section>
-      )}
+      {error && <Card hover={false} style={{ borderColor:'var(--clr-danger)', background:'var(--clr-danger-dim)' }}><p style={{ margin:0, color:'var(--clr-danger)', fontWeight:600 }}>{error}</p></Card>}
 
-      <section style={styles.card}>
-        {loading ? (
-          <p style={{ margin: 0, color: 'var(--color-neutral-500)' }}>Loading case history…</p>
-        ) : filteredRecords.length === 0 ? (
-          <div style={{ textAlign: 'center', color: 'var(--color-neutral-500)', padding: '30px 0' }}>
-            No cases match the current filters.
-          </div>
-        ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(310px, 1fr))', gap: '16px' }}>
-            {filteredRecords.map((record) => (
-              <CaseCard
-                key={record.id}
-                record={record}
-                onOpen={setSelectedCase}
-                onViewResults={(caseId) => navigate(`/app/results/${caseId}`)}
-              />
-            ))}
+      <Card hover={false}>
+        {loading ? <p style={{ margin:0, color:'var(--clr-text-muted)' }}>Loading case history…</p>
+         : filteredRecords.length === 0 ? <div style={{ textAlign:'center', color:'var(--clr-text-muted)', padding:'var(--sp-10) 0' }}>No cases match the current filters.</div>
+         : (
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(320px, 1fr))', gap:'var(--sp-4)' }}>
+            {filteredRecords.map(r => <CaseCard key={r.id} record={r} onOpen={setSelectedCase} onViewResults={id => navigate(`/app/results/${id}`)} />)}
           </div>
         )}
-      </section>
+      </Card>
 
-      <Modal
-        open={Boolean(selectedCase)}
-        onClose={() => setSelectedCase(null)}
-        title={selectedCase?.subjectName || 'Case details'}
-        subtitle={selectedCase ? `${selectedCase.id} · ${selectedCase.diagnosis}` : ''}
-        size="lg"
-      >
+      <Modal open={Boolean(selectedCase)} onClose={() => setSelectedCase(null)} title={selectedCase?.subjectName || 'Case details'} subtitle={selectedCase ? `${selectedCase.id} · ${selectedCase.diagnosis}` : ''} size="lg">
         {selectedCase && (
-          <div style={{ display: 'grid', gap: '18px' }}>
-            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+          <div style={{ display:'grid', gap:'var(--sp-4)' }}>
+            <div style={{ display:'flex', gap:'var(--sp-3)', flexWrap:'wrap' }}>
               <CategoryBadge category={selectedCase.category} size="lg" />
               <RiskBadge level={selectedCase.riskLevel} size="lg" showScore score={selectedCase.riskScore} />
             </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '12px' }}>
-              {[
-                ['Subject', selectedCase.subjectName || 'No name provided'],
-                ['Respondent', selectedCase.respondentName || 'No name provided'],
-                ['Relationship', selectedCase.respondentRelationship || 'Not provided'],
-                ['Screening date', selectedCase.screeningDate],
-                ['Tool', selectedCase.screeningTool],
-                ['Data source', selectedCase.dataSource === 'mock' ? 'Mock mode' : 'Live model'],
-              ].map(([label, value]) => (
-                <div
-                  key={label}
-                  style={{
-                    borderRadius: '16px',
-                    border: '1px solid var(--color-neutral-200)',
-                    backgroundColor: 'var(--color-bg)',
-                    padding: '14px',
-                  }}
-                >
-                  <p style={{ margin: '0 0 6px', fontSize: 'var(--text-2xs)', fontWeight: 'var(--weight-semibold)', letterSpacing: 'var(--tracking-widest)', textTransform: 'uppercase', color: 'var(--color-neutral-400)' }}>
-                    {label}
-                  </p>
-                  <strong style={{ color: 'var(--color-neutral-900)' }}>{value}</strong>
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(2, minmax(0, 1fr))', gap:'var(--sp-3)' }}>
+              {[['Subject', selectedCase.subjectName || 'N/A'], ['Respondent', selectedCase.respondentName || 'N/A'], ['Relationship', selectedCase.respondentRelationship || 'N/A'], ['Date', selectedCase.screeningDate], ['Tool', selectedCase.screeningTool], ['Source', selectedCase.dataSource === 'mock' ? 'Mock' : 'Live']].map(([l, v]) => (
+                <div key={l} style={{ borderRadius:'var(--radius-md)', border:'1px solid var(--clr-border-subtle)', background:'var(--clr-surface)', padding:'var(--sp-3)' }}>
+                  <p style={{ margin:'0 0 var(--sp-1)', fontSize:'var(--text-xs)', fontWeight:600, letterSpacing:'0.05em', textTransform:'uppercase', color:'var(--clr-text-muted)' }}>{l}</p>
+                  <strong style={{ color:'var(--clr-text-primary)' }}>{v}</strong>
                 </div>
               ))}
             </div>
-
             <div>
-              <p style={{ margin: '0 0 8px', fontSize: 'var(--text-base)', fontWeight: 'var(--weight-semibold)', letterSpacing: 'var(--tracking-tight)', color: 'var(--color-neutral-800)' }}>
-                Diagnosis summary
-              </p>
-              <p style={{ margin: 0, color: 'var(--color-neutral-600)', lineHeight: 1.7 }}>
-                {selectedCase.diagnosis}
-              </p>
+              <p style={{ margin:'0 0 var(--sp-2)', fontSize:'var(--text-base)', fontWeight:600, color:'var(--clr-text-primary)' }}>Diagnosis summary</p>
+              <p style={{ margin:0, color:'var(--clr-text-secondary)', lineHeight:1.7 }}>{selectedCase.diagnosis}</p>
             </div>
           </div>
         )}
       </Modal>
-    </main>
+    </motion.main>
   );
 }

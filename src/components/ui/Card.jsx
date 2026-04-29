@@ -1,104 +1,48 @@
 /**
- * Card.jsx — Minimal card primitive.
- * Adapted from shadcn/card for NeuroSense vanilla CSS.
+ * Card.jsx — Premium glassmorphic card for NeuroSense.
+ * Uses only tokens from src/styles/tokens.css.
+ * Props: glow, hover, padding, children, style, id
  */
-import { forwardRef } from 'react';
+import { motion } from 'framer-motion';
 
-export const Card = forwardRef(({ className, style, children, ...props }, ref) => (
-  <div
-    ref={ref}
-    className={className}
-    style={{
-      borderRadius: 'var(--radius-xl, 18px)',
-      border: '1px solid var(--color-neutral-200)',
-      backgroundColor: 'var(--color-bg-card)',
-      boxShadow: 'var(--shadow-sm)',
-      ...style,
-    }}
-    {...props}
-  >
-    {children}
-  </div>
-));
-Card.displayName = 'Card';
-
-export const CardHeader = forwardRef(({ style, children, ...props }, ref) => (
-  <div
-    ref={ref}
-    style={{
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '6px',
-      padding: '24px',
-      ...style,
-    }}
-    {...props}
-  >
-    {children}
-  </div>
-));
-CardHeader.displayName = 'CardHeader';
-
-export const CardTitle = forwardRef(({ style, children, ...props }, ref) => (
-  <h3
-    ref={ref}
-    style={{
-      fontSize: 'var(--text-2xl)',
-      fontWeight: 'var(--weight-semibold)',
-      lineHeight: 1,
-      letterSpacing: 'var(--tracking-tight)',
-      ...style,
-    }}
-    {...props}
-  >
-    {children}
-  </h3>
-));
-CardTitle.displayName = 'CardTitle';
-
-export const CardDescription = forwardRef(({ style, children, ...props }, ref) => (
-  <p
-    ref={ref}
-    style={{
-      fontSize: 'var(--text-sm)',
-      color: 'var(--color-neutral-500)',
-      ...style,
-    }}
-    {...props}
-  >
-    {children}
-  </p>
-));
-CardDescription.displayName = 'CardDescription';
-
-export const CardContent = forwardRef(({ style, children, ...props }, ref) => (
-  <div
-    ref={ref}
-    style={{
-      padding: '24px',
-      paddingTop: 0,
-      ...style,
-    }}
-    {...props}
-  >
-    {children}
-  </div>
-));
-CardContent.displayName = 'CardContent';
-
-export const CardFooter = forwardRef(({ style, children, ...props }, ref) => (
-  <div
-    ref={ref}
-    style={{
-      display: 'flex',
-      alignItems: 'center',
-      padding: '24px',
-      paddingTop: 0,
-      ...style,
-    }}
-    {...props}
-  >
-    {children}
-  </div>
-));
-CardFooter.displayName = 'CardFooter';
+export default function Card({ glow = false, hover = true, padding, children, style, id, ...rest }) {
+  return (
+    <motion.div
+      id={id}
+      whileHover={hover ? {
+        y: -3,
+        boxShadow: glow
+          ? 'var(--shadow-glow), var(--shadow-lg)'
+          : 'var(--shadow-lg)',
+      } : {}}
+      transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+      style={{
+        background: 'var(--grad-card)',
+        border: '1px solid var(--clr-border)',
+        borderRadius: 'var(--radius-lg)',
+        padding: padding || 'var(--sp-6)',
+        boxShadow: 'var(--shadow-md)',
+        position: 'relative',
+        overflow: 'hidden',
+        ...style,
+      }}
+      {...rest}
+    >
+      {/* Top glow edge for glow=true */}
+      {glow && (
+        <span
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: '15%',
+            right: '15%',
+            height: 1,
+            background: 'linear-gradient(90deg, transparent, var(--clr-primary) 50%, transparent)',
+            pointerEvents: 'none',
+          }}
+        />
+      )}
+      {children}
+    </motion.div>
+  );
+}

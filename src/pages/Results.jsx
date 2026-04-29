@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import CategoryBadge from '../components/CategoryBadge';
 import RiskBadge from '../components/RiskBadge';
+import Button from '../components/ui/Button';
+import Card from '../components/ui/Card';
 import { useShap } from '../hooks/useShap';
 import { casesApi } from '../services/api';
 import { getCategoryContent } from '../data/screeningContent';
@@ -11,21 +14,25 @@ const styles = {
   page: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '24px',
+    gap: 'var(--sp-6)',
+    paddingTop: 'calc(68px + var(--sp-8))',
+    maxWidth: 1280,
+    margin: '0 auto',
+    paddingInline: 'clamp(1.25rem, 4vw, 3rem)',
   },
   card: {
-    backgroundColor: 'var(--color-bg-card)',
-    border: '1px solid var(--color-neutral-200)',
-    borderRadius: 'var(--radius-xl)',
-    padding: 'var(--card-padding)',
-    boxShadow: 'var(--shadow-xs)',
+    background: 'var(--grad-card)',
+    border: '1px solid var(--clr-border)',
+    borderRadius: 'var(--radius-lg)',
+    padding: 'var(--sp-6)',
+    boxShadow: 'var(--shadow-md)',
     transition: 'box-shadow 250ms cubic-bezier(0.16,1,0.3,1)',
   },
   metaLabel: {
-    fontSize: 'var(--text-2xs)',
-    fontWeight: 'var(--weight-semibold)',
-    color: 'var(--color-neutral-400)',
-    letterSpacing: 'var(--tracking-widest)',
+    fontSize: 'var(--text-xs)',
+    fontWeight: 600,
+    color: 'var(--clr-text-muted)',
+    letterSpacing: '0.06em',
     textTransform: 'uppercase',
   },
 };
@@ -244,7 +251,7 @@ export default function Results() {
   }, [selectedCase]);
 
   return (
-    <main id="results-page" style={styles.page}>
+    <motion.main id="results-page" initial={{ opacity:0, y:16 }} animate={{ opacity:1, y:0 }} transition={{ duration:0.45, ease:[0.16,1,0.3,1] }} style={styles.page}>
       <section style={styles.card}>
         <div
           style={{
@@ -265,40 +272,17 @@ export default function Results() {
               explanation, and stored case summary.
             </p>
           </div>
-          <button
+          <Button
             id="download-pdf-btn"
+            variant="secondary"
+            size="md"
+            loading={pdfLoading}
+            disabled={!selectedCase || !explanation}
             onClick={handleDownloadPDF}
-            disabled={pdfLoading || !selectedCase || !explanation}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              padding: '9px 18px',
-              borderRadius: '10px',
-              border: '1px solid var(--color-neutral-200)',
-              backgroundColor: pdfLoading ? 'var(--color-neutral-100)' : 'var(--clr-surface)',
-              color: 'var(--color-neutral-700)',
-              fontWeight: 'var(--weight-semibold)',
-              fontSize: 'var(--text-sm)',
-              letterSpacing: 'var(--tracking-normal)',
-              cursor: pdfLoading || !selectedCase ? 'not-allowed' : 'pointer',
-              fontFamily: 'var(--font-body)',
-            }}
+            icon={!pdfLoading ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> : undefined}
           >
-            {pdfLoading ? (
-              <>
-                <span style={{ width: 14, height: 14, borderRadius: '50%', border: '2px solid var(--color-neutral-300)', borderTopColor: 'var(--color-primary)', animation: 'spin 0.7s linear infinite', display: 'inline-block' }} />
-                Generating…
-              </>
-            ) : (
-              <>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
-                </svg>
-                Download PDF
-              </>
-            )}
-          </button>
+            {pdfLoading ? 'Generating…' : 'Download PDF'}
+          </Button>
         </div>
 
         {loadingList ? (
@@ -323,23 +307,9 @@ export default function Results() {
                 Complete an adult, child, or toddler screening to generate your first result and explainability report.
               </p>
             </div>
-            <button
-              onClick={() => navigate('/app/screening')}
-              style={{
-                padding: '9px 20px',
-                borderRadius: '10px',
-                border: 'none',
-                background: 'linear-gradient(135deg, var(--color-primary), var(--color-primary-dark))',
-                color: 'var(--clr-text-inverse)',
-                fontWeight: 'var(--weight-semibold)',
-                fontSize: 'var(--text-sm)',
-                letterSpacing: 'var(--tracking-normal)',
-                cursor: 'pointer',
-                fontFamily: 'var(--font-body)',
-              }}
-            >
+            <Button variant="primary" size="md" onClick={() => navigate('/app/screening')}>
               Start a screening →
-            </button>
+            </Button>
           </div>
         ) : (
           <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', paddingBottom: '4px' }}>
@@ -565,9 +535,9 @@ export default function Results() {
                   <div
                     style={{
                       padding: '14px 16px',
-                      background: '#E8F4EC',
+                      background: 'var(--clr-primary-dim)',
                       borderRadius: '10px',
-                      border: '1px solid rgba(124,154,133,0.35)',
+                      border: '1px solid rgba(14,207,200,0.2)',
                       marginTop: '16px',
                     }}
                   >
@@ -601,9 +571,9 @@ export default function Results() {
                   <div
                     style={{
                       padding: '14px 16px',
-                      background: '#FDF3E7',
+                      background: 'var(--clr-warning-dim)',
                       borderRadius: '10px',
-                      border: '1px solid #C98B2E',
+                      border: '1px solid var(--clr-warning)',
                       marginTop: '12px',
                     }}
                   >
@@ -612,7 +582,7 @@ export default function Results() {
                         fontSize: '0.6875rem',
                         fontWeight: 700,
                         letterSpacing: '0.05em',
-                        color: '#8A5A0A',
+                        color: 'var(--clr-warning)',
                         marginBottom: '6px',
                         textTransform: 'uppercase',
                       }}
@@ -973,7 +943,7 @@ export default function Results() {
                         width: `${Math.min((selectedCase.riskScore || 0) * 100, 100)}%`,
                         height: '100%',
                         borderRadius: '999px',
-                        backgroundColor: '#C98B2E',
+                        backgroundColor: 'var(--clr-warning)',
                         transition: 'width 600ms ease',
                       }}
                     />
@@ -1057,8 +1027,8 @@ export default function Results() {
                         style={{
                           fontSize: '0.75rem',
                           padding: '4px 10px',
-                          background: '#FEF3C7',
-                          color: '#92400E',
+                          background: 'var(--clr-warning-dim)',
+                          color: 'var(--clr-warning)',
                           borderRadius: '20px',
                           fontWeight: 600,
                         }}
@@ -1207,23 +1177,7 @@ export default function Results() {
                     Saved
                   </span>
                 )}
-                <button
-                  id="save-notes-btn"
-                  onClick={handleSaveNotes}
-                  style={{
-                    padding: '8px 18px',
-                    borderRadius: '10px',
-                    border: 'none',
-                    background: 'linear-gradient(135deg, var(--color-primary), var(--color-primary-dark))',
-                    color: 'var(--clr-text-primary)',
-                    fontWeight: 600,
-                    fontSize: '0.875rem',
-                    cursor: 'pointer',
-                    fontFamily: 'var(--font-body)',
-                  }}
-                >
-                  Save Notes
-                </button>
+                <Button id="save-notes-btn" variant="primary" size="sm" onClick={handleSaveNotes}>Save Notes</Button>
               </div>
             </div>
             <textarea
@@ -1252,6 +1206,6 @@ export default function Results() {
           </section>
         </>
       )}
-    </main>
+    </motion.main>
   );
 }

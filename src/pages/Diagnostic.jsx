@@ -5,13 +5,14 @@
 import { useCallback, useState } from 'react';
 import { healthApi, casesApi, screeningApi, explainApi } from '../services/api';
 import { generatePDF } from '../utils/generatePDF';
+import Button from '../components/ui/Button';
 
 /* ── Shared styles ───────────────────────────────────────── */
 const STATUS = {
-  idle:    { border: '#D4A84B', bg: '#FFF8EA', label: 'Pending' },
-  running: { border: '#A0A0A0', bg: '#F5F5F5', label: 'Running…' },
-  pass:    { border: '#5E7A67', bg: '#F0F7F2', label: 'Pass' },
-  fail:    { border: '#C83232', bg: '#FFF0F0', label: 'Fail' },
+  idle:    { border: 'var(--clr-warning)', bg: 'var(--clr-warning-dim)', label: 'Pending' },
+  running: { border: 'var(--clr-text-muted)', bg: 'var(--clr-surface-2)', label: 'Running…' },
+  pass:    { border: 'var(--clr-success)', bg: 'var(--clr-success-dim)', label: 'Pass' },
+  fail:    { border: 'var(--clr-danger)', bg: 'var(--clr-danger-dim)', label: 'Fail' },
 };
 
 function StatusBadge({ status }) {
@@ -223,32 +224,16 @@ export default function Diagnostic() {
             Developer-only — verifies backend health, data layer, screening pipeline, XAI, and PDF generation.
           </p>
         </div>
-        <button
-          id="run-all-tests-btn"
-          onClick={runAll}
-          disabled={runningAll}
-          style={{
-            padding: '10px 24px', borderRadius: '10px', border: 'none',
-            background: runningAll
-              ? 'var(--color-neutral-300)'
-              : 'linear-gradient(135deg, var(--color-primary), var(--color-primary-dark))',
-            color: 'var(--clr-text-inverse)', fontWeight: 700, fontSize: '0.9rem',
-            cursor: runningAll ? 'not-allowed' : 'pointer',
-            fontFamily: 'var(--font-body)',
-            display: 'flex', alignItems: 'center', gap: '8px',
-            boxShadow: '0 4px 14px rgba(124,154,133,0.30)',
-          }}
-        >
-          {runningAll && <Spinner />}
+        <Button id="run-all-tests-btn" variant="primary" size="lg" loading={runningAll} onClick={runAll}>
           {runningAll ? 'Running…' : 'Run All Tests'}
-        </button>
+        </Button>
       </div>
 
       {/* Section 1 — Backend Health */}
       <Card title="1 — Backend Health" status={s1.status}>
-        <button onClick={runHealth} disabled={s1.status === 'running'} style={btnStyle}>
+        <Button variant="ghost" size="sm" onClick={runHealth} disabled={s1.status === 'running'}>
           {s1.status === 'running' ? 'Checking…' : 'Re-check'}
-        </button>
+        </Button>
         {s1.error && (
           <div style={{ marginTop: '8px' }}>
             <Row label="Error" value={s1.error} />
@@ -267,9 +252,9 @@ export default function Diagnostic() {
 
       {/* Section 2 — Mock Data Integrity */}
       <Card title="2 — Mock Data Integrity" status={s2.status}>
-        <button onClick={runMockData} disabled={s2.status === 'running'} style={btnStyle}>
+        <Button variant="ghost" size="sm" onClick={runMockData} disabled={s2.status === 'running'}>
           {s2.status === 'running' ? 'Fetching…' : 'Fetch Cases'}
-        </button>
+        </Button>
         {s2.error && <Row label="Error" value={s2.error} />}
         {s2.data && (
           <div style={{ marginTop: '8px' }}>
@@ -288,9 +273,9 @@ export default function Diagnostic() {
 
       {/* Section 3 — Screening Submission Test */}
       <Card title="3 — Screening Submission Test" status={s3.status}>
-        <button onClick={runScreening} disabled={s3.status === 'running'} style={btnStyle}>
+        <Button variant="ghost" size="sm" onClick={runScreening} disabled={s3.status === 'running'}>
           {s3.status === 'running' ? 'Submitting…' : 'Run Test Submission'}
-        </button>
+        </Button>
         {s3.error && <Row label="Error" value={s3.error} />}
         {s3.data && (
           <div style={{ marginTop: '8px' }}>
@@ -304,9 +289,9 @@ export default function Diagnostic() {
 
       {/* Section 4 — Explainability Test */}
       <Card title="4 — Explainability Test" status={s4.status}>
-        <button onClick={() => runExplain()} disabled={s4.status === 'running'} style={btnStyle}>
+        <Button variant="ghost" size="sm" onClick={() => runExplain()} disabled={s4.status === 'running'}>
           {s4.status === 'running' ? 'Fetching…' : 'Fetch Explanation'}
-        </button>
+        </Button>
         {s4.error && <Row label="Error" value={s4.error} />}
         {s4.data && (
           <div style={{ marginTop: '8px' }}>
@@ -327,9 +312,9 @@ export default function Diagnostic() {
 
       {/* Section 5 — PDF Generation Test */}
       <Card title="5 — PDF Generation Test" status={s5.status}>
-        <button onClick={runPDF} disabled={s5.status === 'running'} style={btnStyle}>
+        <Button variant="ghost" size="sm" onClick={runPDF} disabled={s5.status === 'running'}>
           {s5.status === 'running' ? 'Generating…' : 'Test PDF Generation'}
-        </button>
+        </Button>
         {s5.error && <Row label="Error" value={s5.error} />}
         {s5.data && (
           <div style={{ marginTop: '8px' }}>
@@ -341,20 +326,11 @@ export default function Diagnostic() {
   );
 }
 
-/* ── Shared inline styles ────────────────────────────────── */
-const btnStyle = {
-  padding: '6px 16px', borderRadius: '8px',
-  border: '1px solid var(--color-neutral-200)',
-  backgroundColor: 'var(--clr-surface)', color: 'var(--color-neutral-700)',
-  fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer',
-  fontFamily: 'var(--font-body)',
-};
-
 const mockBadge = {
   display: 'inline-block', marginTop: '6px',
   padding: '3px 10px', borderRadius: '999px',
-  backgroundColor: '#FFF3CD', color: '#826A14',
+  backgroundColor: 'var(--clr-warning-dim)', color: 'var(--clr-warning)',
   fontSize: '0.7rem', fontWeight: 700,
   fontFamily: 'var(--font-mono)',
-  border: '1px solid #C8A03C',
+  border: '1px solid var(--clr-warning)',
 };

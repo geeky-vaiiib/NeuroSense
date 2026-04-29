@@ -3,6 +3,7 @@
  */
 import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import Button from '../components/ui/Button';
 
 /* ── Toggle ──────────────────────────────────────────────── */
 function Toggle({ id, checked, onChange, label, desc }) {
@@ -225,17 +226,8 @@ export default function Settings() {
         <LabelledInput id="api-base-url" label="Backend API URL" value={apiUrl} onChange={(e) => setApiUrl(e.target.value)} mono desc="NeuroSense connects to this endpoint for live inference and data sync." />
         <LabelledInput id="api-timeout" label="Request Timeout (seconds)" value={timeoutVal} onChange={(e) => setTimeoutVal(e.target.value)} type="number" />
         <div style={{ padding: '14px 0', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-          <button id="test-connection-btn" style={{
-            padding: '8px 18px', borderRadius: '8px', border: '1px solid var(--color-primary)',
-            backgroundColor: 'transparent', color: 'var(--color-primary-dark)',
-            fontSize: '0.875rem', fontWeight: 500, cursor: 'pointer', fontFamily: 'var(--font-body)',
-          }}>Test Connection</button>
-          <button id="reset-api-btn" style={{
-            padding: '8px 18px', borderRadius: '8px',
-            border: '1px solid var(--color-neutral-200)',
-            backgroundColor: 'transparent', color: 'var(--color-neutral-500)',
-            fontSize: '0.875rem', cursor: 'pointer', fontFamily: 'var(--font-body)',
-          }}>Reset to Default</button>
+          <Button id="test-connection-btn" variant="outline" size="sm">Test Connection</Button>
+          <Button id="reset-api-btn" variant="ghost" size="sm">Reset to Default</Button>
         </div>
       </Section>
 
@@ -284,13 +276,7 @@ export default function Settings() {
 
       {/* Save button */}
       <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-        <button id="save-settings-btn" onClick={handleSave} style={{
-          padding: '10px 28px', borderRadius: '10px', border: 'none',
-          background: 'linear-gradient(135deg, var(--color-primary), var(--color-primary-dark))',
-          color: 'var(--clr-text-inverse)', fontWeight: 600, cursor: 'pointer',
-          fontFamily: 'var(--font-body)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-semibold)', letterSpacing: 'var(--tracking-normal)',
-          boxShadow: '0 4px 14px rgba(26,122,113,0.30)',
-        }}>Save Changes</button>
+        <Button id="save-settings-btn" variant="primary" size="md" onClick={handleSave}>Save Changes</Button>
         {saved && (
           <span style={{
             fontSize: '0.875rem', color: 'var(--color-primary-dark)', fontWeight: 500,
@@ -312,13 +298,7 @@ export default function Settings() {
             <div style={{ fontWeight: 500, color: 'var(--color-neutral-800)', fontSize: '0.9rem' }}>Download my data</div>
             <div style={{ fontSize: '0.8rem', color: 'var(--color-neutral-400)', marginTop: '2px' }}>Export all locally stored screening records as a JSON file. Required under DPDP Act 2023.</div>
           </div>
-          <button id="export-data-btn" onClick={handleExportData} style={{
-            padding: '7px 16px', borderRadius: '8px',
-            border: '1px solid #4A7FA5',
-            backgroundColor: 'var(--clr-surface)', color: '#4A7FA5',
-            fontSize: '0.8125rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-body)',
-            whiteSpace: 'nowrap', flexShrink: 0,
-          }}>Export JSON</button>
+          <Button id="export-data-btn" variant="secondary" size="sm" onClick={handleExportData}>Export JSON</Button>
         </div>
         {/* DPDP — Correct my data */}
         <div style={{ padding: '14px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', borderBottom: '1px solid var(--color-risk-high-border)' }}>
@@ -326,13 +306,7 @@ export default function Settings() {
             <div style={{ fontWeight: 500, color: 'var(--color-neutral-800)', fontSize: '0.9rem' }}>Correct my data</div>
             <div style={{ fontSize: '0.8rem', color: 'var(--color-neutral-400)', marginTop: '2px' }}>Submit a correction request. A data officer will contact you within 72 hours as required by the DPDP Act 2023.</div>
           </div>
-          <button id="correct-data-btn" onClick={handleCorrectData} style={{
-            padding: '7px 16px', borderRadius: '8px',
-            border: '1px solid #B8873A',
-            backgroundColor: 'var(--clr-surface)', color: '#B8873A',
-            fontSize: '0.8125rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-body)',
-            whiteSpace: 'nowrap', flexShrink: 0,
-          }}>Submit Request</button>
+          <Button id="correct-data-btn" variant="ghost" size="sm" onClick={handleCorrectData}>Submit Request</Button>
         </div>
         {/* Clear all mock data */}
         <div style={{ padding: '14px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', borderBottom: '1px solid var(--color-risk-high-border)' }}>
@@ -340,13 +314,7 @@ export default function Settings() {
             <div style={{ fontWeight: 500, color: 'var(--color-neutral-800)', fontSize: '0.9rem' }}>Clear All Mock Data</div>
             <div style={{ fontSize: '0.8rem', color: 'var(--color-neutral-400)', marginTop: '2px' }}>Remove all demo cases and screening sessions</div>
           </div>
-          <button id="clear-data-btn" onClick={handleClearData} style={{
-            padding: '7px 16px', borderRadius: '8px',
-            border: '1px solid var(--color-risk-high-border)',
-            backgroundColor: 'transparent', color: 'var(--color-risk-high)',
-            fontSize: '0.8125rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-body)',
-            whiteSpace: 'nowrap', flexShrink: 0,
-          }}>Clear Data</button>
+          <Button id="clear-data-btn" variant="danger" size="sm" onClick={handleClearData}>Clear Data</Button>
         </div>
         {/* Sign Out */}
         <div style={{ padding: '14px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px' }}>
@@ -354,13 +322,7 @@ export default function Settings() {
             <div style={{ fontWeight: 500, color: 'var(--color-neutral-800)', fontSize: '0.9rem' }}>Sign Out</div>
             <div style={{ fontSize: '0.8rem', color: 'var(--color-neutral-400)', marginTop: '2px' }}>End your current session and return to login</div>
           </div>
-          <button id="settings-logout-btn" onClick={() => { if (window.confirm('Are you sure you want to sign out?')) { logout(); } }} style={{
-            padding: '7px 16px', borderRadius: '8px',
-            border: '1px solid var(--color-risk-high-border)',
-            backgroundColor: 'var(--color-risk-high-muted)', color: 'var(--color-risk-high)',
-            fontSize: '0.8125rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-body)',
-            whiteSpace: 'nowrap', flexShrink: 0,
-          }}>Sign Out</button>
+          <Button id="settings-logout-btn" variant="danger" size="sm" onClick={() => { if (window.confirm('Are you sure you want to sign out?')) { logout(); } }}>Sign Out</Button>
         </div>
       </Section>
     </main>
