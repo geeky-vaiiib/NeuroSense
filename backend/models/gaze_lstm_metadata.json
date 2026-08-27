@@ -1,0 +1,35 @@
+{
+  "feature_names": [
+    "por_x",
+    "por_y",
+    "dt_ms",
+    "is_fixation",
+    "pupil_diam"
+  ],
+  "normalization": {
+    "mean": [
+      493.8185729980469,
+      323.24456787109375,
+      58.11573028564453,
+      0.6606748104095459,
+      3.624650716781616
+    ],
+    "std": [
+      341.99090576171875,
+      225.7294158935547,
+      11142.05078125,
+      0.47299057245254517,
+      1.155022144317627
+    ]
+  },
+  "max_seq_len": 512,
+  "input_size": 5,
+  "hidden_size": 64,
+  "num_layers": 2,
+  "n_participants": 57,
+  "n_asd": 27,
+  "n_td": 30,
+  "cv_folds": 57,
+  "best_composite_auc_f1": 0.9379,
+  "dataset_citation": "Cilia F. et al. (2022). Eye-Tracking Dataset to Support the Research on Autism Spectrum Disorder. IJCAI-ECAI Workshop SDAIH."
+}

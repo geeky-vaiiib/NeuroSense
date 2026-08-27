@@ -1,47 +1,53 @@
-"""Gaze-coordinate risk scoring for NeuroSense eye-tracking step.
-
-Receives a sequence of {x, y, timestamp, stimulus} dicts captured by the
-frontend GazeSession component and returns a 0–1 risk probability score.
-
-Strategy:
-    • If a trained LSTM checkpoint exists at  backend/models/gaze_lstm.pt ,
-      it is loaded once at module level and used for inference.
-    • Otherwise a rule-based heuristic derived from validated clinical
-      literature (Jones & Klin 2013; Klin et al. 2002) is used, and the
-      response is flagged  isMock=True .
-
-The heuristic will be retired once real training data is available and the
-LSTM is promoted to production.
-"""
+"""Gaze-coordinate risk scoring for NeuroSense."""
+# Receives a sequence of {x, y, timestamp, stimulus} dicts captured by the
+# frontend GazeSession component and returns a 0-1 risk score.
+#
+# Strategy:
+#   - If a trained LSTM checkpoint exists at backend/models/gaze_lstm.pt,
+#     it is loaded at module level and used for inference.
+#     Returns is_trained_model=True and method="lstm_trained".
+#   - Otherwise a rule-based heuristic derived from validated clinical
+#     literature (Jones & Klin 2013; Klin et al. 2002) is used.
+#     Returns is_trained_model=False and method="rule_based_heuristic".
+#     The response is also flagged isMock=True for backward compatibility.
+#
+# IMPORTANT: No labeled gaze+ASD training dataset exists in this repository.
+# The heuristic path MUST NOT be presented as a trained ML model.
+# The heuristic will be retired when real labeled data and a checkpoint
+# become available.
 
 from __future__ import annotations
 
+import json
 import math
 from pathlib import Path
 from typing import Any
 
+import numpy as np
+
 # ── LSTM model discovery ────────────────────────────────────────────────────
 _LSTM_PATH = Path(__file__).resolve().parent.parent / "models" / "gaze_lstm.pt"
+_META_PATH = Path(__file__).resolve().parent.parent / "models" / "gaze_lstm_metadata.json"
 
 
-def _load_lstm() -> Any | None:
-    """Attempt to load a trained LSTM checkpoint.  Returns *None* on any
-    failure so the heuristic fallback activates silently."""
-    if not _LSTM_PATH.exists():
-        return None
+def _load_lstm_and_meta() -> tuple[Any | None, dict | None]:
+    """Attempt to load a trained LSTM checkpoint and its metadata."""
+    if not _LSTM_PATH.exists() or not _META_PATH.exists():
+        return None, None
     try:
-        import torch  # noqa: F401 — optional dependency
-
+        import torch  # noqa: F401
         model = torch.load(_LSTM_PATH, map_location="cpu", weights_only=False)
         model.eval()
+        with open(_META_PATH, "r") as f:
+            meta = json.load(f)
         print(f"[NeuroSense] Gaze LSTM loaded from {_LSTM_PATH}")
-        return model
+        return model, meta
     except Exception as exc:  # pragma: no cover
         print(f"[NeuroSense] Gaze LSTM load failed ({exc}) — falling back to heuristic")
-        return None
+        return None, None
 
 
-_GAZE_MODEL = _load_lstm()
+_GAZE_MODEL, _GAZE_META = _load_lstm_and_meta()
 
 # ── Constants ───────────────────────────────────────────────────────────────
 _MIN_POINTS = 20
@@ -77,6 +83,9 @@ def compute_gaze_score(
         return {
             "score": None,
             "isMock": True,
+            "is_trained_model": False,
+            "method": "rule_based_heuristic",
+            "modality_label": "Gaze Analysis (Research Heuristic — Jones & Klin 2013)",
             "features": {},
             "interpretation": (
                 "Insufficient gaze data — step was skipped or too few "
@@ -98,34 +107,61 @@ def _predict_lstm(gaze_points: list[dict], category: str) -> dict:
     """Run inference through the trained LSTM checkpoint."""
     import torch  # guaranteed available if _GAZE_MODEL loaded
 
-    # Build a padded tensor of shape (1, T, 4) — [x, y, dt, stimulus]
-    rows: list[list[float]] = []
+    if not _GAZE_META:
+        return _predict_heuristic(gaze_points, category)
+
+    stats = _GAZE_META["normalization"]
+    max_len = _GAZE_META["max_seq_len"]
+    mean = np.array(stats["mean"], dtype=np.float32)
+    std = np.array(stats["std"], dtype=np.float32)
+
+    # If payload is missing 'category', dynamically reconstruct it using spatial clustering
+    if not any("category" in pt for pt in gaze_points):
+        _annotate_fixations(gaze_points)
+
+    # Build sequence: [por_x, por_y, dt_ms, is_fix, pupil]
+    rows = []
     prev_ts = gaze_points[0].get("timestamp", 0)
     for pt in gaze_points:
         ts = pt.get("timestamp", 0)
         dt = ts - prev_ts
         prev_ts = ts
+        
+        # Default pupil to 4.0 if missing
+        pupil = pt.get("pupil", 4.0)
+        is_fix = 1.0 if pt.get("category", "") == "Fixation" else 0.0
+
         rows.append([
             float(pt.get("x", 0)),
             float(pt.get("y", 0)),
             float(dt),
-            float(pt.get("stimulus", 0)),
+            is_fix,
+            float(pupil),
         ])
-    tensor = torch.tensor([rows], dtype=torch.float32)
+    
+    seq = np.array(rows, dtype=np.float32)
+    seq = (seq - mean) / std
+
+    # Pad to max_len
+    real_len = min(len(seq), max_len)
+    padded = np.zeros((max_len, 5), dtype=np.float32)
+    padded[:real_len] = seq[:real_len]
+
+    tensor = torch.tensor([padded], dtype=torch.float32)
+    lengths = torch.tensor([real_len], dtype=torch.long)
 
     with torch.no_grad():
-        output = _GAZE_MODEL(tensor)
-        # Expect a single logit or probability per sample
-        if output.dim() > 1:
-            prob = torch.sigmoid(output[0, -1]).item()
-        else:
-            prob = torch.sigmoid(output[0]).item()
+        output = _GAZE_MODEL(tensor, lengths)
+        prob = torch.sigmoid(output[0]).item()
 
     features = _extract_features(gaze_points)
 
     return {
         "score": round(prob, 4),
         "isMock": False,
+        "is_trained_model": True,
+        "method": "lstm_trained",
+        "modality_label": "Gaze Analysis (Trained LSTM — gaze_lstm.pt)",
         "features": features,
         "interpretation": _interpret(prob),
     }
@@ -160,6 +196,9 @@ def _predict_heuristic(gaze_points: list[dict], category: str) -> dict:
     return {
         "score": score,
         "isMock": True,
+        "is_trained_model": False,
+        "method": "rule_based_heuristic",
+        "modality_label": "Gaze Analysis (Research Heuristic — Jones & Klin 2013)",
         "features": features,
         "interpretation": _interpret(score),
     }
@@ -220,6 +259,33 @@ def _extract_features(gaze_points: list[dict]) -> dict:
 
 
 # ── Helpers ─────────────────────────────────────────────────────────────────
+
+def _annotate_fixations(gaze_points: list[dict]) -> None:
+    """Dynamically annotate raw gaze points with a 'category' key 
+    (Fixation vs Saccade) using a 50px spatial cluster threshold.
+    """
+    if not gaze_points:
+        return
+    
+    scale = 1000.0
+    cx = float(gaze_points[0].get("x", 0)) * scale
+    cy = float(gaze_points[0].get("y", 0)) * scale
+    cluster_count = 1
+    
+    for i, pt in enumerate(gaze_points):
+        px = float(pt.get("x", 0)) * scale
+        py = float(pt.get("y", 0)) * scale
+        
+        dist = math.sqrt((px - cx) ** 2 + (py - cy) ** 2)
+        if dist <= _FIXATION_RADIUS:
+            pt["category"] = "Fixation"
+            cluster_count += 1
+            cx += (px - cx) / cluster_count
+            cy += (py - cy) / cluster_count
+        else:
+            pt["category"] = "Saccade"
+            cx, cy = px, py
+            cluster_count = 1
 
 def _compute_fixation_durations(
     xs: list[float],

@@ -33,6 +33,7 @@ import joblib
 
 from sklearn.model_selection import train_test_split, StratifiedKFold, cross_validate
 from sklearn.preprocessing import LabelEncoder
+from sklearn.calibration import CalibratedClassifierCV
 from sklearn.metrics import (
     accuracy_score, roc_auc_score, precision_score, recall_score,
     f1_score, cohen_kappa_score, make_scorer,
@@ -281,6 +282,41 @@ def train_and_evaluate(X_train, y_train, X_test, y_test):
     return best_model, best_name, results
 
 
+def calibrate_model(
+    best_model,
+    best_name: str,
+    X_train: np.ndarray,
+    y_train: np.ndarray,
+    X_test: np.ndarray,
+    y_test: np.ndarray,
+):
+    """Wrap the best model in isotonic calibration and evaluate.
+
+    CalibratedClassifierCV with method='isotonic' applies Platt scaling
+    or isotonic regression to produce well-calibrated probabilities.
+    This is critical for the fusion engine, which treats P(Q) as a
+    genuine probability in its confidence_note and heuristic_signal.
+    """
+    print(f"\n[6/8] Calibrating {best_name} with isotonic regression...")
+    calibrated = CalibratedClassifierCV(
+        estimator=best_model,
+        method="isotonic",
+        cv=5,
+    )
+    calibrated.fit(X_train, y_train)
+
+    y_pred = calibrated.predict(X_test)
+    y_proba = calibrated.predict_proba(X_test)[:, 1]
+
+    acc = accuracy_score(y_test, y_pred)
+    auc = roc_auc_score(y_test, y_proba)
+    print(f"  Calibrated Test Accuracy: {acc:.4f}")
+    print(f"  Calibrated Test AUC-ROC:  {auc:.4f}")
+    print(f"  ✓ Calibrated model ready — P(Q) is now a well-calibrated probability")
+
+    return calibrated
+
+
 def save_artifacts(model, encoders, background, model_path, encoders_path, background_path):
     """Save trained model artifacts to disk."""
     os.makedirs(os.path.dirname(model_path), exist_ok=True)
@@ -322,6 +358,11 @@ def train_category(category: str):
     print(f"       Test:  {X_test.shape[0]} samples")
     X_train_res, y_train_res = apply_smote(X_train, y_train)
     best_model, best_name, results = train_and_evaluate(
+        X_train_res, y_train_res, X_test, y_test,
+    )
+    # Calibrate probabilities for honest fusion
+    best_model = calibrate_model(
+        best_model, best_name,
         X_train_res, y_train_res, X_test, y_test,
     )
     background = X_train_res[: min(len(X_train_res), 256)]
@@ -492,8 +533,14 @@ def train_toddler():
     # ── SMOTE ────────────────────────────────────────────────────
     X_train_res, y_train_res = apply_smote(X_train, y_train)
 
-    # ── Train + evaluate ─────────────────────────────────────────
+    # ── Train + evaluate ────────────────────────────────────────────────
     best_model, best_name, results = train_and_evaluate(
+        X_train_res, y_train_res, X_test, y_test,
+    )
+
+    # ── Calibrate probabilities for honest fusion ────────────────────────────
+    best_model = calibrate_model(
+        best_model, best_name,
         X_train_res, y_train_res, X_test, y_test,
     )
 

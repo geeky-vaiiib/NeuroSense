@@ -41,6 +41,47 @@ class FamilyAsdEnum(str, Enum):
     no = "No"
 
 
+# ── Modality breakdown ─────────────────────────────────────────────
+class ModalityComponentResult(BaseModel):
+    """Per-modality contribution exposed in the screening response."""
+    modality: str = Field(..., description="questionnaire | gaze | speech")
+    score: float = Field(..., ge=0.0, le=1.0)
+    method: str = Field(
+        ...,
+        description="supervised_ml | rule_based_heuristic | lstm_trained | cnn_trained",
+    )
+    is_trained_model: bool = Field(
+        ...,
+        alias="isTrainedModel",
+        description="True only when a trained ML checkpoint produced this score",
+    )
+    modality_label: str = Field(..., alias="modalityLabel")
+    available: bool = Field(
+        True,
+        description="False when the step was skipped or data was insufficient",
+    )
+
+    model_config = ConfigDict(populate_by_name=True)
+
+
+class ModalityBreakdown(BaseModel):
+    """Full per-modality breakdown from the fusion engine."""
+    components: list[ModalityComponentResult] = Field(default_factory=list)
+    modalities_used: int = Field(1, alias="modalitiesUsed")
+    heuristic_signal: Optional[float] = Field(
+        None,
+        alias="heuristicSignal",
+        description="Weighted average of available heuristic scores (supplemental only)",
+    )
+    confidence_note: str = Field(
+        "",
+        alias="confidenceNote",
+        description="Plain-English disclosure of what drove the final probability",
+    )
+
+    model_config = ConfigDict(populate_by_name=True)
+
+
 # ── Request ────────────────────────────────────────────────────────
 class Demographics(BaseModel):
     subject_name: Optional[str] = Field(None, alias="subjectName")
@@ -152,7 +193,29 @@ class ScreeningResponse(BaseModel):
         ge=0.0,
         le=1.0,
         alias="fusionScore",
-        description="Ensemble fusion probability",
+        description="Final ASD probability (P(Q) under Option A; blended if trained aux models present)",
+    )
+    questionnaire_probability: float = Field(
+        ...,
+        ge=0.0,
+        le=1.0,
+        alias="questionnaireProbability",
+        description="Raw probability from the questionnaire ML classifier P(Q)",
+    )
+    heuristic_signal: Optional[float] = Field(
+        None,
+        alias="heuristicSignal",
+        description="Weighted average of gaze/speech heuristic scores (supplemental)",
+    )
+    confidence_note: str = Field(
+        "",
+        alias="confidenceNote",
+        description="Plain-English disclosure of what drove the final probability",
+    )
+    modality_breakdown: Optional[ModalityBreakdown] = Field(
+        None,
+        alias="modalityBreakdown",
+        description="Per-modality score breakdown with method and is_trained_model",
     )
     aq10_score: int = Field(..., alias="aq10Score")
     model_used: str = Field("", alias="modelUsed", description="Model identifier")

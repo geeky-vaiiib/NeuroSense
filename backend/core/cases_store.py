@@ -159,6 +159,36 @@ def normalize_case_record(record: dict[str, Any]) -> dict[str, Any]:
         "familyAsd": family_asd,
     }
 
+    # ── Fusion metadata (new fields — gracefully absent on old records) ────────
+    questionnaire_probability = float(
+        _first(record, "questionnaire_probability", default=risk_score) or risk_score
+    )
+    fusion_score = float(
+        _first(record, "fusion_score", default=questionnaire_probability) or questionnaire_probability
+    )
+    gaze_score = _first(record, "gaze_score", default=None)
+    speech_score = _first(record, "speech_score", default=None)
+    heuristic_signal = _first(record, "heuristic_signal", default=None)
+    confidence_note = str(_first(record, "confidence_note", default="") or "")
+    modality_breakdown = list(_first(record, "modality_breakdown", default=[]) or [])
+    modalities_used = int(_first(record, "modalities_used", default=1) or 1)
+
+    # ── Gaze / speech engine metadata ─────────────────────────────────────────
+    gaze_features = dict(_first(record, "gaze_features", default={}) or {})
+    gaze_mock = bool(_first(record, "gaze_mock", default=True))
+    gaze_method = str(_first(record, "gaze_method", default="rule_based_heuristic"))
+    gaze_is_trained = bool(_first(record, "gaze_is_trained", default=False))
+    gaze_interpretation = str(_first(record, "gaze_interpretation", default="") or "")
+    gaze_skipped = bool(_first(record, "gaze_skipped", default=False))
+
+    speech_features = dict(_first(record, "speech_features", default={}) or {})
+    speech_mock = bool(_first(record, "speech_mock", default=True))
+    speech_method = str(_first(record, "speech_method", default="rule_based_heuristic"))
+    speech_is_trained = bool(_first(record, "speech_is_trained", default=False))
+    speech_interpretation = str(_first(record, "speech_interpretation", default="") or "")
+    speech_flags = list(_first(record, "speech_flags", default=[]) or [])
+    speech_skipped = bool(_first(record, "speech_skipped", default=False))
+
     return {
         "id": str(record.get("id", "")),
         "category": category,
@@ -173,6 +203,14 @@ def normalize_case_record(record: dict[str, Any]) -> dict[str, Any]:
         "family_asd": family_asd,
         "risk_level": risk_level,
         "risk_score": risk_score,
+        "questionnaire_probability": questionnaire_probability,
+        "fusion_score": fusion_score,
+        "gaze_score": gaze_score,
+        "speech_score": speech_score,
+        "heuristic_signal": heuristic_signal,
+        "confidence_note": confidence_note,
+        "modality_breakdown": modality_breakdown,
+        "modalities_used": modalities_used,
         "aq10_score": aq10_score,
         "status": status,
         "diagnosis": diagnosis,
@@ -191,6 +229,19 @@ def normalize_case_record(record: dict[str, Any]) -> dict[str, Any]:
         "interpretation": interpretation,
         "demo": demo,
         "answers": answers,
+        "gaze_features": gaze_features,
+        "gaze_mock": gaze_mock,
+        "gaze_method": gaze_method,
+        "gaze_is_trained": gaze_is_trained,
+        "gaze_interpretation": gaze_interpretation,
+        "gaze_skipped": gaze_skipped,
+        "speech_features": speech_features,
+        "speech_mock": speech_mock,
+        "speech_method": speech_method,
+        "speech_is_trained": speech_is_trained,
+        "speech_interpretation": speech_interpretation,
+        "speech_flags": speech_flags,
+        "speech_skipped": speech_skipped,
     }
 
 

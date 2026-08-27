@@ -63,18 +63,24 @@ async def lifespan(app: FastAPI):
     logger.info("[NeuroSense] Starting up — loading category-aware model registry...")
     app.state.model_registry = load_models()
 
-    # Report modality engine status
+    # Report modality engine status with honest method labels
     logger.info(
-        "Modality engines: Questionnaire ✓ | Gaze (heuristic) ✓ | "
-        "Speech (heuristic) ✓ | Facial ✗"
+        "Modality engines loaded:\n"
+        "  Questionnaire  → TRAINED ML CLASSIFIER (supervised — UCI/Kaggle labeled data) ✓\n"
+        "  Gaze           → RULE-BASED HEURISTIC (Jones & Klin 2013 — no labeled training data) ✓\n"
+        "  Speech         → RULE-BASED HEURISTIC (Bone et al. 2014 — no labeled training data) ✓\n"
+        "  Facial         → NOT IMPLEMENTED ✗\n"
+        "  Fusion         → fusion_engine.fuse() — Option A (P(Q) drives risk level) ✓"
     )
     logger.info(
-        "LSTM gaze model: %s",
-        "LOADED" if _GAZE_LSTM_PATH.exists() else "NOT FOUND — using heuristic",
+        "Gaze LSTM model: %s",
+        "LOADED — is_trained_model=True" if _GAZE_LSTM_PATH.exists()
+        else "NOT FOUND — rule_based_heuristic active (is_trained_model=False)",
     )
     logger.info(
         "Speech CNN model: %s",
-        "LOADED" if _SPEECH_CNN_PATH.exists() else "NOT FOUND — using heuristic",
+        "LOADED — is_trained_model=True" if _SPEECH_CNN_PATH.exists()
+        else "NOT FOUND — rule_based_heuristic active (is_trained_model=False)",
     )
 
     # ── MongoDB Atlas ────────────────────────────────────────────────
@@ -131,11 +137,18 @@ async def health():
         modelsLoaded=models_loaded,
         modalities={
             "questionnaire": True,
+            "questionnaire_method": "supervised_ml",
+            "questionnaire_is_trained": True,
             "gaze": True,
+            "gaze_method": "lstm_trained" if _GAZE_LSTM_PATH.exists() else "rule_based_heuristic",
+            "gaze_is_trained": _GAZE_LSTM_PATH.exists(),
             "speech": True,
+            "speech_method": "cnn_trained" if _SPEECH_CNN_PATH.exists() else "rule_based_heuristic",
+            "speech_is_trained": _SPEECH_CNN_PATH.exists(),
             "facial": False,
-            "gaze_lstm": _GAZE_LSTM_PATH.exists(),
-            "speech_cnn": _SPEECH_CNN_PATH.exists(),
+            "facial_method": None,
+            "fusion_engine": "fusion_engine.fuse()",
+            "fusion_strategy": "Option A — final_probability = P(Q) only",
         },
-        version="3.0.0",
+        version="3.1.0",
     )

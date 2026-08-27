@@ -1,16 +1,19 @@
-"""Speech-based risk scoring for NeuroSense speech analysis step.
-
-Receives base64-encoded audio captured by the frontend SpeechSession
-component, decodes it, extracts acoustic features (MFCC, prosody, energy),
-and returns a 0–1 risk probability score.
-
-Strategy:
-    • If a trained 1D-CNN checkpoint exists at  backend/models/speech_cnn.pt ,
-      it is loaded once at module level and used for inference.
-    • Otherwise a rule-based heuristic derived from validated clinical
-      literature (Bone et al. 2014) is used, and the response is flagged
-      ``isMock=True``.
-"""
+"""Speech-based risk scoring for NeuroSense."""
+# Receives base64-encoded audio captured by the frontend SpeechSession
+# component, decodes it, extracts acoustic features (MFCC, prosody, energy),
+# and returns a 0-1 risk score.
+#
+# Strategy:
+#   - If a trained 1D-CNN checkpoint exists at backend/models/speech_cnn.pt,
+#     it is loaded at module level and used for inference.
+#     Returns is_trained_model=True and method="cnn_trained".
+#   - Otherwise a rule-based heuristic derived from validated clinical
+#     literature (Bone et al. 2014) is used.
+#     Returns is_trained_model=False and method="rule_based_heuristic".
+#     The response is also flagged isMock=True for backward compatibility.
+#
+# IMPORTANT: No labeled speech+ASD training dataset exists in this repository.
+# The heuristic path MUST NOT be presented as a trained ML model.
 
 from __future__ import annotations
 
@@ -157,6 +160,9 @@ def _predict_cnn(y: np.ndarray, sr: int, features: dict) -> dict:
     return {
         "score": score,
         "isMock": False,
+        "is_trained_model": True,
+        "method": "cnn_trained",
+        "modality_label": "Speech Analysis (Trained 1D-CNN — speech_cnn.pt)",
         "features": features,
         "interpretation": _interpret(score),
         "clinical_flags": [],
@@ -221,6 +227,9 @@ def _predict_heuristic(features: dict, category: str) -> dict:
     return {
         "score": score,
         "isMock": True,
+        "is_trained_model": False,
+        "method": "rule_based_heuristic",
+        "modality_label": "Speech Analysis (Research Heuristic — Bone et al. 2014)",
         "features": features,
         "interpretation": _interpret(score),
         "clinical_flags": clinical_flags,
@@ -286,6 +295,9 @@ def _empty_result(interpretation: str) -> dict:
     return {
         "score": None,
         "isMock": True,
+        "is_trained_model": False,
+        "method": "rule_based_heuristic",
+        "modality_label": "Speech Analysis (Research Heuristic — Bone et al. 2014)",
         "features": {},
         "interpretation": interpretation,
         "clinical_flags": [],

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-
+import webgazer from 'webgazer';
 /* ──────────────────────────────────────────────────────────────
    SVG Stimulus Faces — five simple variants
    ────────────────────────────────────────────────────────────── */
@@ -141,13 +141,20 @@ export default function GazeSession({ onComplete, onSkip, category }) {
 
   const reduceMotion = typeof document !== 'undefined' && document.body.classList.contains('reduce-motion');
 
-  /* ── Stop all media tracks ──────────────────────────────── */
+  /* ── Stop all media tracks & WebGazer ────────────────────── */
   const stopStream = useCallback(() => {
     const s = streamRef.current;
     if (s) {
       s.getTracks().forEach((t) => t.stop());
       streamRef.current = null;
       setStream(null);
+    }
+    try {
+      webgazer.pause();
+      webgazer.clearData();
+      webgazer.showVideoPreview(false).showPredictionPoints(false);
+    } catch (e) {
+      // ignore
     }
   }, []);
 
@@ -168,22 +175,35 @@ export default function GazeSession({ onComplete, onSkip, category }) {
     }
   }, [stream, phase]);
 
-  /* ── Request webcam ─────────────────────────────────────── */
+  /* ── Request webcam & Initialize WebGazer ───────────────── */
   const requestCamera = async () => {
     setPhase('permission');
     try {
       const mediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
       streamRef.current = mediaStream;
       setStream(mediaStream);
+      
+      // Initialize WebGazer
+      await webgazer.setRegression('ridge')
+        .setTracker('TFFacemesh')
+        .showVideoPreview(false)
+        .showPredictionPoints(false)
+        .begin();
+        
       setPhase('calibration');
     } catch (err) {
-      setPermissionError(err.message || 'Camera access was denied.');
+      setPermissionError(err.message || 'Camera access was denied or WebGazer failed to load.');
       setPhase('error');
     }
   };
 
   /* ── Calibration click handler ──────────────────────────── */
-  const handleCalibrationClick = (index) => {
+  const handleCalibrationClick = (index, e) => {
+    // Record the actual screen coordinate for the click
+    if (e && e.clientX && e.clientY) {
+      webgazer.recordScreenPosition(e.clientX, e.clientY, 'click');
+    }
+    
     setCalibrationClicks((prev) => {
       if (prev.includes(index)) return prev;
       const next = [...prev, index];
@@ -201,6 +221,16 @@ export default function GazeSession({ onComplete, onSkip, category }) {
     setCountdown(30);
     setCurrentStimulus(0);
     gazeRef.current = [];
+
+    // Optional: Show prediction points during task for visual feedback
+    webgazer.showPredictionPoints(true);
+
+    // Set up WebGazer listener
+    webgazer.setGazeListener((data, clock) => {
+      if (data) {
+        lastMousePos.current = { x: data.x, y: data.y };
+      }
+    });
 
     // Countdown timer — tick every second
     timerRef.current = setInterval(() => {
@@ -226,7 +256,7 @@ export default function GazeSession({ onComplete, onSkip, category }) {
     };
     stimulusTimerRef.current = setTimeout(rotateStimulusStep, 6000);
 
-    // Sample mouse/touch position every 100 ms
+    // Sample webgazer position every 100 ms
     samplerRef.current = setInterval(() => {
       const { x, y } = lastMousePos.current;
       const normX = Math.max(0, Math.min(x / window.innerWidth, 1));
@@ -258,8 +288,10 @@ export default function GazeSession({ onComplete, onSkip, category }) {
     onSkip();
   };
 
-  /* ── Mouse / touch tracking (only during task) ──────────── */
+  /* ── Mouse / touch tracking (Fallback) ──────────────────── */
   const handlePointerMove = (e) => {
+    // If WebGazer is active, it overwrites lastMousePos in the GazeListener.
+    // This just ensures there's a fallback if the user moves the mouse.
     if (e.touches) {
       lastMousePos.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
     } else {
@@ -299,7 +331,7 @@ export default function GazeSession({ onComplete, onSkip, category }) {
           This takes <strong>30 seconds</strong>. Your video is <strong>not recorded or stored</strong>.
         </p>
         <p style={{ color: 'var(--color-neutral-500)', fontSize: '0.88rem', lineHeight: 1.6, marginBottom: '24px' }}>
-          Mouse movement is used as a proxy for gaze tracking — no specialist hardware is required.
+          This uses real-time computer vision to track your eyes. Ensure you are in a well-lit room.
           You can skip this step at any time.
         </p>
         <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
@@ -366,7 +398,7 @@ export default function GazeSession({ onComplete, onSkip, category }) {
               <button
                 key={index}
                 type="button"
-                onClick={() => handleCalibrationClick(index)}
+                onClick={(e) => handleCalibrationClick(index, e)}
                 aria-label={`Calibration point ${index + 1}`}
                 style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
