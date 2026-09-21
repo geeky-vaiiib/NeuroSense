@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import webgazer from 'webgazer';
+
 /* ──────────────────────────────────────────────────────────────
    SVG Stimulus Faces — five simple variants
    ────────────────────────────────────────────────────────────── */
@@ -138,8 +138,25 @@ export default function GazeSession({ onComplete, onSkip, category }) {
   const samplerRef = useRef(null);
   const stimulusTimerRef = useRef(null);
   const lastMousePos = useRef({ x: 0, y: 0 });
+  const webgazerLoaded = useRef(false);
 
   const reduceMotion = typeof document !== 'undefined' && document.body.classList.contains('reduce-motion');
+
+  /* ── Load WebGazer Script ───────────────────────────────── */
+  const loadWebGazer = () => {
+    return new Promise((resolve, reject) => {
+      if (window.webgazer) {
+        resolve(window.webgazer);
+        return;
+      }
+      const script = document.createElement('script');
+      script.src = 'https://webgazer.cs.brown.edu/webgazer.js';
+      script.async = true;
+      script.onload = () => resolve(window.webgazer);
+      script.onerror = () => reject(new Error('Failed to load WebGazer script'));
+      document.body.appendChild(script);
+    });
+  };
 
   /* ── Stop all media tracks & WebGazer ────────────────────── */
   const stopStream = useCallback(() => {
@@ -149,12 +166,14 @@ export default function GazeSession({ onComplete, onSkip, category }) {
       streamRef.current = null;
       setStream(null);
     }
-    try {
-      webgazer.pause();
-      webgazer.clearData();
-      webgazer.showVideoPreview(false).showPredictionPoints(false);
-    } catch (e) {
-      // ignore
+    if (window.webgazer) {
+      try {
+        window.webgazer.pause();
+        window.webgazer.clearData();
+        window.webgazer.showVideoPreview(false).showPredictionPoints(false);
+      } catch (e) {
+        // ignore — webgazer may already be torn down
+      }
     }
   }, []);
 
@@ -178,30 +197,68 @@ export default function GazeSession({ onComplete, onSkip, category }) {
   /* ── Request webcam & Initialize WebGazer ───────────────── */
   const requestCamera = async () => {
     setPhase('permission');
+
+    // 1. Request camera FIRST — before initialising any ML models.
+    //    This ensures a clean permission-denied error without crashes.
+    let mediaStream;
     try {
-      const mediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
-      streamRef.current = mediaStream;
-      setStream(mediaStream);
-      
-      // Initialize WebGazer
-      await webgazer.setRegression('ridge')
+      mediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+    } catch (camErr) {
+      const msg =
+        camErr.name === 'NotAllowedError'
+          ? 'Camera permission was denied. Please allow camera access in your browser settings and try again.'
+          : camErr.name === 'NotFoundError'
+            ? 'No camera was found on this device.'
+            : camErr.message || 'Unable to access the camera.';
+      setPermissionError(msg);
+      setPhase('error');
+      return;
+    }
+
+    streamRef.current = mediaStream;
+    setStream(mediaStream);
+
+    // 2. Load WebGazer script from CDN
+    let wg;
+    try {
+      wg = await loadWebGazer();
+      webgazerLoaded.current = true;
+    } catch (scriptErr) {
+      console.error('WebGazer script load failed:', scriptErr);
+      setPermissionError('Failed to load eye-tracking library. Please check your network connection.');
+      setPhase('error');
+      return;
+    }
+
+    // 3. Initialize WebGazer
+    try {
+      // Force WebGazer to load MediaPipe from the absolute public path,
+      // preventing it from resolving relative to the current router URL.
+      wg.params.faceMeshSolutionPath = '/mediapipe/face_mesh';
+
+      await wg
+        .setRegression('ridge')
         .setTracker('TFFacemesh')
         .showVideoPreview(false)
         .showPredictionPoints(false)
         .begin();
-        
+
       setPhase('calibration');
-    } catch (err) {
-      setPermissionError(err.message || 'Camera access was denied or WebGazer failed to load.');
+    } catch (wgErr) {
+      console.error('WebGazer Init Error:', wgErr);
+      setPermissionError(
+        'Eye-tracking engine failed to initialise. You can still complete the screening without this step.'
+      );
       setPhase('error');
     }
   };
 
+
   /* ── Calibration click handler ──────────────────────────── */
   const handleCalibrationClick = (index, e) => {
     // Record the actual screen coordinate for the click
-    if (e && e.clientX && e.clientY) {
-      webgazer.recordScreenPosition(e.clientX, e.clientY, 'click');
+    if (window.webgazer && e && e.clientX && e.clientY) {
+      window.webgazer.recordScreenPosition(e.clientX, e.clientY, 'click');
     }
     
     setCalibrationClicks((prev) => {
@@ -223,14 +280,16 @@ export default function GazeSession({ onComplete, onSkip, category }) {
     gazeRef.current = [];
 
     // Optional: Show prediction points during task for visual feedback
-    webgazer.showPredictionPoints(true);
+    if (window.webgazer) {
+      window.webgazer.showPredictionPoints(true);
 
-    // Set up WebGazer listener
-    webgazer.setGazeListener((data, clock) => {
-      if (data) {
-        lastMousePos.current = { x: data.x, y: data.y };
-      }
-    });
+      // Set up WebGazer listener
+      window.webgazer.setGazeListener((data, clock) => {
+        if (data) {
+          lastMousePos.current = { x: data.x, y: data.y };
+        }
+      });
+    }
 
     // Countdown timer — tick every second
     timerRef.current = setInterval(() => {
