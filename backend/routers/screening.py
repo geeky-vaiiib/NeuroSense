@@ -19,9 +19,8 @@ try:
     )
     from ..core.cases_store import upsert_case_record
     from ..ml.fusion_engine import fuse, modality_breakdown_as_dicts
-    from ..ml.gaze_engine import compute_gaze_score
-    from ..ml.speech_engine import compute_speech_score
     from ..ml.model import get_bundle, predict
+    from ..ml.preprocessing_pipeline import preprocess_screening_input
     from ..schemas.screening import (
         ModalityBreakdown,
         ModalityComponentResult,
@@ -40,9 +39,8 @@ except ImportError:  # pragma: no cover - fallback for backend cwd execution
     )
     from core.cases_store import upsert_case_record
     from ml.fusion_engine import fuse, modality_breakdown_as_dicts
-    from ml.gaze_engine import compute_gaze_score
-    from ml.speech_engine import compute_speech_score
     from ml.model import get_bundle, predict
+    from ml.preprocessing_pipeline import preprocess_screening_input
     from schemas.screening import (
         ModalityBreakdown,
         ModalityComponentResult,
@@ -80,48 +78,36 @@ async def run_screening(body: ScreeningRequest, request: Request):
     )
     is_mock = result["mock"]
 
-    # ── Gaze analysis ────────────────────────────────────────────────────────
-    gaze_result: dict | None = None
-    if body.gaze_points and len(body.gaze_points) >= 20:
-        gaze_points_raw = [
+    # ── Multimodal preprocessing via unified pipeline ────────────────────────
+    # Dispatches to gaze_engine, speech_engine, and facial_engine without
+    # changing any of their internal logic or return shapes.
+    preprocessed = preprocess_screening_input(
+        category=category,
+        demo=demo_dict,
+        answers=answers_dict,
+        encoders=bundle.get("encoders"),
+        gaze_points=[
             {"x": p.x, "y": p.y, "timestamp": p.timestamp, "stimulus": p.stimulus}
             for p in body.gaze_points
-        ]
-        gaze_result = compute_gaze_score(gaze_points_raw, category=category)
-    elif body.gaze_points is not None and not body.gaze_skipped:
-        # Attempted but insufficient data
-        gaze_result = compute_gaze_score([], category=category)
-
-    # ── Speech analysis ──────────────────────────────────────────────────────
-    speech_result: dict | None = None
-    if body.audio_base64 and not body.speech_skipped:
-        try:
-            speech_result = compute_speech_score(
-                audio_base64=body.audio_base64,
-                mime_type=body.audio_mime_type or "audio/webm",
-                transcript_hint=body.transcript_hint or "",
-                category=category,
-            )
-        except Exception as exc:
-            speech_result = {
-                "score": None,
-                "isMock": True,
-                "is_trained_model": False,
-                "method": "rule_based_heuristic",
-                "modality_label": "Speech Analysis (Research Heuristic — Bone et al. 2014)",
-                "features": {},
-                "interpretation": f"Speech processing error: {str(exc)}",
-                "clinical_flags": [],
-            }
+        ] if body.gaze_points else None,
+        gaze_skipped=body.gaze_skipped or False,
+        audio_base64=body.audio_base64,
+        audio_mime_type=body.audio_mime_type or "audio/webm",
+        transcript_hint=body.transcript_hint or "",
+        speech_skipped=body.speech_skipped or False,
+        facial_image_base64=body.facial_image_base64,
+        facial_skipped=body.facial_skipped or False,
+    )
+    gaze_result = preprocessed.gaze_result
+    speech_result = preprocessed.speech_result
+    facial_result = preprocessed.facial_result
 
     # ── Multimodal fusion via fusion_engine ──────────────────────────────────
-    # Option A: final_probability = P(Q) exclusively (no trained gaze/speech data).
-    # Gaze and speech heuristic scores appear in modality_breakdown as supplemental
-    # evidence with is_trained_model=False — they do NOT affect risk_level.
     fusion = fuse(
         questionnaire_probability=result["probability"],
         gaze_result=gaze_result,
         speech_result=speech_result,
+        facial_result=facial_result,
         category=category,
     )
 
@@ -147,9 +133,10 @@ async def run_screening(body: ScreeningRequest, request: Request):
         confidenceNote=fusion.confidence_note,
     )
 
-    # Raw gaze/speech sub-results for case storage (may be None)
+    # Raw gaze/speech/facial sub-results for case storage (may be None)
     gaze_raw = gaze_result or {}
     speech_raw = speech_result or {}
+    facial_raw = facial_result or {}
 
     upsert_case_record(
         {
@@ -170,6 +157,7 @@ async def run_screening(body: ScreeningRequest, request: Request):
             "questionnaire_probability": fusion.questionnaire_probability,
             "gaze_score": fusion.gaze_score,
             "speech_score": fusion.speech_score,
+            "facial_score": fusion.facial_score,
             "heuristic_signal": fusion.heuristic_signal,
             "confidence_note": fusion.confidence_note,
             "modality_breakdown": modality_breakdown_as_dicts(fusion.modality_breakdown),
@@ -208,6 +196,12 @@ async def run_screening(body: ScreeningRequest, request: Request):
             "speech_interpretation": speech_raw.get("interpretation", "") or "",
             "speech_flags": speech_raw.get("clinical_flags", []),
             "speech_skipped": body.speech_skipped or False,
+            "facial_features": facial_raw.get("features", {}),
+            "facial_mock": facial_raw.get("isMock", True),
+            "facial_method": facial_raw.get("method", "rule_based_heuristic"),
+            "facial_is_trained": facial_raw.get("is_trained_model", False),
+            "facial_interpretation": facial_raw.get("interpretation", "") or "",
+            "facial_skipped": body.facial_skipped or False,
         }
     )
 
@@ -229,6 +223,7 @@ async def run_screening(body: ScreeningRequest, request: Request):
         interpretation=interpretation,
         gazeInterpretation=gaze_raw.get("interpretation") or None,
         speechInterpretation=speech_raw.get("interpretation") or None,
+        facialInterpretation=facial_raw.get("interpretation") or None,
         speechFlags=speech_raw.get("clinical_flags") or None,
         submittedAt=now.isoformat(),
     )

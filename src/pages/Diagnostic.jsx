@@ -76,7 +76,7 @@ function Row({ label, value, mono }) {
   );
 }
 
-/* ── Test payload ────────────────────────────────────────── */
+/* ── Test payloads ───────────────────────────────────────── */
 const TEST_PAYLOAD = {
   category: 'adult',
   demo: { age: 30, gender: 'Male', jaundice: 'No', familyAsd: 'No', subjectName: 'Test Subject' },
@@ -89,6 +89,44 @@ const TEST_PAYLOAD = {
   aq10Score: 4,
 };
 
+// 4-Modality smoke test: includes synthetic gaze, silent audio, and a 1×1 JPEG
+// so the backend exercises all 4 modality branches in one request.
+const _gazePoints = Array.from({ length: 30 }, (_, i) => ({
+  x: 0.5 + (Math.sin(i * 0.3) * 0.1),
+  y: 0.4 + (Math.cos(i * 0.3) * 0.1),
+  timestamp: Date.now() - (30 - i) * 1000,
+  stimulus: i % 4,
+}));
+// Minimal valid base64-encoded WAV (44-byte header, 1 sample of silence)
+const _silenceWav = 'UklGRiYAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=';
+// 1×1 white JPEG encoded as base64
+const _whitePixelJpeg =
+  '/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8U' +
+  'HRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgN' +
+  'DRgyIRwhMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIy' +
+  'MjL/wAARCAABAAEDASIAAhEBAxEB/8QAFgABAQEAAAAAAAAAAAAAAAAABgUE/8QAHxAAAA' +
+  'YDAQAAAAAAAAAAAAAAAQIDBAUREiEx/8QAFAEBAAAAAAAAAAAAAAAAAAAAAP/EABQRAQAA' +
+  'AAAAAAAAAAAAAAAAAAD/2gAMAwEAAhEDEQA/AKmqqqqoAD//2Q==';
+
+const TEST_PAYLOAD_MULTIMODAL = {
+  category: 'adult',
+  demo: { age: 28, gender: 'Female', jaundice: 'No', familyAsd: 'Yes', subjectName: '4-Modality Smoke Test' },
+  answers: {
+    A1: 'Definitely agree', A2: 'Definitely agree', A3: 'Slightly disagree',
+    A4: 'Slightly disagree', A5: 'Slightly disagree', A6: 'Definitely agree',
+    A7: 'Definitely agree', A8: 'Definitely agree', A9: 'Slightly disagree',
+    A10: 'Definitely agree',
+  },
+  aq10Score: 6,
+  gazePoints: _gazePoints,
+  gazeSkipped: false,
+  audioBase64: _silenceWav,
+  audioMimeType: 'audio/wav',
+  speechSkipped: false,
+  facialImageBase64: _whitePixelJpeg,
+  facialSkipped: false,
+};
+
 /* ── Main component ──────────────────────────────────────── */
 export default function Diagnostic() {
   // Section states
@@ -97,6 +135,7 @@ export default function Diagnostic() {
   const [s3, setS3] = useState({ status: 'idle', data: null, error: null });
   const [s4, setS4] = useState({ status: 'idle', data: null, error: null });
   const [s5, setS5] = useState({ status: 'idle', data: null, error: null });
+  const [s6, setS6] = useState({ status: 'idle', data: null, error: null });
 
   /* ── Section 1: Backend Health ──────────────────────────── */
   const runHealth = useCallback(async () => {
@@ -194,6 +233,48 @@ export default function Diagnostic() {
     }
   }, [s3.data, s4.data]);
 
+  /* ── Section 6: 4-Modality Fusion Smoke Test ───────────── */
+  const runMultimodal = useCallback(async () => {
+    setS6({ status: 'running', data: null, error: null });
+    try {
+      const result = await screeningApi.submit(TEST_PAYLOAD_MULTIMODAL);
+      const breakdown = result?.modalityBreakdown?.components || [];
+
+      // Verify 4 components present
+      if (breakdown.length !== 4) {
+        setS6({
+          status: 'fail',
+          data: result,
+          error: `Expected 4 modality components, got ${breakdown.length}. Components: ${breakdown.map(c => c.modality).join(', ')}`,
+        });
+        return null;
+      }
+
+      // Verify expected is_trained_model flags
+      // Questionnaire: always trained. Gaze, Speech: depends on checkpoint.
+      // Facial: always heuristic (no facial_model.pt in repo).
+      const byModality = Object.fromEntries(breakdown.map(c => [c.modality, c]));
+      const checks = [
+        { label: 'questionnaire.isTrainedModel === true', pass: byModality.questionnaire?.isTrainedModel === true },
+        { label: 'gaze present', pass: !!byModality.gaze },
+        { label: 'speech present', pass: !!byModality.speech },
+        { label: 'facial present', pass: !!byModality.facial },
+        { label: 'facial.isTrainedModel === false (no checkpoint)', pass: byModality.facial?.isTrainedModel === false },
+      ];
+      const failed = checks.filter(c => !c.pass);
+
+      setS6({
+        status: failed.length === 0 ? 'pass' : 'fail',
+        data: { result, breakdown, checks },
+        error: failed.length ? `Assertion failures: ${failed.map(c => c.label).join('; ')}` : null,
+      });
+      return result;
+    } catch (err) {
+      setS6({ status: 'fail', data: null, error: err.message || '4-modality test failed' });
+      return null;
+    }
+  }, []);
+
   /* ── Run All ────────────────────────────────────────────── */
   const [runningAll, setRunningAll] = useState(false);
   const runAll = useCallback(async () => {
@@ -204,8 +285,9 @@ export default function Diagnostic() {
     const caseId = screenResult?.caseId || screenResult?.id;
     await runExplain(caseId);
     await runPDF();
+    await runMultimodal();
     setRunningAll(false);
-  }, [runHealth, runMockData, runScreening, runExplain, runPDF]);
+  }, [runHealth, runMockData, runScreening, runExplain, runPDF, runMultimodal]);
 
   return (
     <main id="diagnostic-page" style={{ display: 'flex', flexDirection: 'column', gap: '18px', maxWidth: '780px' }}>
@@ -334,6 +416,37 @@ export default function Diagnostic() {
         {s5.data && (
           <div style={{ marginTop: '8px' }}>
             <Row label="Result" value={s5.data.message} />
+          </div>
+        )}
+      </Card>
+      {/* Section 6 — 4-Modality Fusion Smoke Test */}
+      <Card title="6 — 4-Modality Fusion Smoke Test" status={s6.status}>
+        <p style={{ margin: '0 0 8px', color: 'var(--color-neutral-500)', fontSize: '0.8rem' }}>
+          Submits a full adult screening with synthetic gaze (30 pts), silent audio, and a 1×1 JPEG frame.
+          Verifies the response has 4 modality_breakdown components with correct <code>isTrainedModel</code> flags.
+        </p>
+        <button id="run-multimodal-test-btn" onClick={runMultimodal} disabled={s6.status === 'running'} style={btnStyle}>
+          {s6.status === 'running' ? 'Running…' : 'Run 4-Modality Test'}
+        </button>
+        {s6.error && <Row label="Error" value={s6.error} />}
+        {s6.data && (
+          <div style={{ marginTop: '8px' }}>
+            <Row label="Components" value={(s6.data.breakdown || []).length} mono />
+            {(s6.data.breakdown || []).map((c) => (
+              <Row
+                key={c.modality}
+                label={c.modality}
+                value={`score=${c.score ?? 'n/a'} · trained=${c.isTrainedModel}`}
+                mono
+              />
+            ))}
+            {(s6.data.checks || []).map((c) => (
+              <Row
+                key={c.label}
+                label={c.pass ? '✓' : '✗'}
+                value={c.label}
+              />
+            ))}
           </div>
         )}
       </Card>
