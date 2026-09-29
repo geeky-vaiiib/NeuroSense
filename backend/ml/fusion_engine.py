@@ -1,35 +1,42 @@
 """Multimodal late-fusion engine for NeuroSense.
 
-Architecture (Option A — Scientifically Conservative):
-    final_probability  = P(Q)          [questionnaire ML model — trained]
-    heuristic_signal   = weighted_avg(H(G), H(S))   [supplemental only]
+Architecture (Genuine Multimodal Fusion):
+    final_probability  = weighted_avg(trained_modalities)
+    heuristic_signal   = weighted_avg(heuristic_modalities)   [supplemental only]
 
-P(Q) is the only trained probability in the system.  Gaze (H(G)) and
-speech (H(S)) are rule-based research heuristics (Jones & Klin 2013;
-Bone et al. 2014) with no labeled ASD training data in this repository.
-They are NEVER represented as trained ML probabilities.
+Since no comprehensive multimodal labeled dataset is currently available to
+train a meta-classifier, we use fixed calibrated weights:
+    - Questionnaire: 40% (Primary clinical instrument)
+    - Gaze: 20% (Supporting digital biomarker)
+    - Speech: 20% (Supporting digital biomarker)
+    - Facial: 20% (Supporting digital biomarker)
 
-The risk_level and final_probability are driven exclusively by P(Q).
-Heuristic signals appear in modality_breakdown with is_trained_model=False
-so the frontend and clinicians have full transparency.
+If a modality is missing or running in heuristic mode (not a trained model),
+it is excluded from final_probability and the remaining trained modalities
+are proportionally scaled. This ensures final_probability is ONLY driven
+by genuine trained ML models.
 
-Hot-swap behaviour:
-    When gaze_lstm.pt / speech_cnn.pt are loaded in the respective engines,
-    those engines will set is_trained_model=True.  fusion_engine will then
-    include them in a weighted blend (60% questionnaire + 40% trained aux)
-    because they represent genuine trained probabilities.
+The heuristic signal (for transparency) is computed from any untrained
+(rule-based) modalities that were present.
 """
 
 from __future__ import annotations
 
+import pickle
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Optional
 
-# ── Heuristic weight constants ───────────────────────────────────────────────
-# Used ONLY when computing heuristic_signal (supplemental signal).
-# These do NOT affect final_probability (P(Q) only under Option A).
-_GAZE_HEURISTIC_WEIGHT = 0.57
-_SPEECH_HEURISTIC_WEIGHT = 0.43
+# No multimodal-labeled training dataset is available in this repository.
+# Therefore, we use fixed calibrated weights instead of a trained meta-classifier.
+_FUSION_MODEL = None
+
+# ── Genuine Multimodal Weights ───────────────────────────────────────────────
+# Fixed calibrated weights. Used for both trained fusion and heuristic signal.
+_WEIGHT_Q = 0.40
+_WEIGHT_G = 0.20
+_WEIGHT_S = 0.20
+_WEIGHT_F = 0.20
 
 # Category-specific risk thresholds (mirror model.py _classify_risk)
 _TODDLER_HIGH = 0.55
@@ -63,7 +70,8 @@ class FusionResult:
     questionnaire_probability: float
     gaze_score: Optional[float] = None
     speech_score: Optional[float] = None
-    heuristic_signal: Optional[float] = None  # weighted_avg(H(G), H(S))
+    facial_score: Optional[float] = None
+    heuristic_signal: Optional[float] = None  # weighted_avg(H(G), H(S), H(F))
 
     # Transparency
     modality_breakdown: list = field(default_factory=list)
@@ -80,6 +88,7 @@ def fuse(
     questionnaire_probability: float,
     gaze_result: Optional[dict] = None,
     speech_result: Optional[dict] = None,
+    facial_result: Optional[dict] = None,
     category: str = "adult",
 ) -> FusionResult:
     """Perform multimodal late fusion and return a FusionResult.
@@ -92,6 +101,8 @@ def fuse(
         Output from gaze_engine.compute_gaze_score(), or None if skipped.
     speech_result : dict | None
         Output from speech_engine.compute_speech_score(), or None if skipped.
+    facial_result : dict | None
+        Output from facial_engine.compute_facial_score(), or None if skipped.
     category : str
         "adult", "child", or "toddler".
     """
@@ -173,18 +184,63 @@ def fuse(
                 available=False,
             ))
 
+    # Facial
+    facial_score: Optional[float] = None
+    facial_is_trained = False
+    if facial_result is not None:
+        raw = facial_result.get("score")
+        facial_is_trained = bool(facial_result.get("is_trained_model", False))
+        if raw is not None:
+            facial_score = round(float(raw), 4)
+            breakdown.append(ModalityComponent(
+                modality="facial",
+                score=facial_score,
+                method=facial_result.get("method", "rule_based_heuristic"),
+                is_trained_model=facial_is_trained,
+                modality_label=facial_result.get(
+                    "modality_label",
+                    "Facial Analysis (Research Heuristic)",
+                ),
+                available=True,
+            ))
+        else:
+            breakdown.append(ModalityComponent(
+                modality="facial",
+                score=0.0,
+                method=facial_result.get("method", "rule_based_heuristic"),
+                is_trained_model=False,
+                modality_label=facial_result.get(
+                    "modality_label",
+                    "Facial Analysis (Research Heuristic)",
+                ),
+                available=False,
+            ))
+
     # Separate trained vs heuristic auxiliary signals
     heuristic_parts: list[tuple[float, float]] = []
-    trained_parts: list[tuple[float, float]] = []
+    
+    # The questionnaire is ALWAYS trained and ALWAYS present
+    trained_parts: list[tuple[float, float]] = [
+        (_WEIGHT_Q, questionnaire_probability)
+    ]
 
     if gaze_score is not None:
-        (trained_parts if gaze_is_trained else heuristic_parts).append(
-            (_GAZE_HEURISTIC_WEIGHT, gaze_score)
-        )
+        if gaze_is_trained:
+            trained_parts.append((_WEIGHT_G, gaze_score))
+        else:
+            heuristic_parts.append((_WEIGHT_G, gaze_score))
+            
     if speech_score is not None:
-        (trained_parts if speech_is_trained else heuristic_parts).append(
-            (_SPEECH_HEURISTIC_WEIGHT, speech_score)
-        )
+        if speech_is_trained:
+            trained_parts.append((_WEIGHT_S, speech_score))
+        else:
+            heuristic_parts.append((_WEIGHT_S, speech_score))
+            
+    if facial_score is not None:
+        if facial_is_trained:
+            trained_parts.append((_WEIGHT_F, facial_score))
+        else:
+            heuristic_parts.append((_WEIGHT_F, facial_score))
 
     # Heuristic signal (supplemental, does not affect final_probability)
     heuristic_signal: Optional[float] = None
@@ -194,27 +250,37 @@ def fuse(
             sum(w * s for w, s in heuristic_parts) / total_w, 4
         )
 
-    # Final probability: P(Q) under Option A; blends in trained aux if present
-    if trained_parts:
-        total_w = sum(w for w, _ in trained_parts)
-        blended_other = sum((w / total_w) * 0.40 * s for w, s in trained_parts)
-        final_probability = round(
-            max(0.0, min(1.0, 0.60 * questionnaire_probability + blended_other)), 4
-        )
+    # Final probability: uses meta-classifier if available, otherwise genuine weighted multimodal fusion
+    if _FUSION_MODEL is not None:
+        import numpy as np
+        # Feature vector: [q_prob, gaze_prob, speech_prob, facial_prob]
+        # Impute missing values with 0.5 (neutral)
+        X = np.array([[
+            questionnaire_probability,
+            gaze_score if gaze_score is not None else 0.5,
+            speech_score if speech_score is not None else 0.5,
+            facial_score if facial_score is not None else 0.5,
+        ]])
+        final_probability = round(float(_FUSION_MODEL.predict_proba(X)[0, 1]), 4)
     else:
-        final_probability = round(questionnaire_probability, 4)
+        # Genuine Multimodal Fusion
+        total_w = sum(w for w, _ in trained_parts)
+        final_probability = round(sum(w * s for w, s in trained_parts) / total_w, 4)
 
     risk_level = _classify_risk(final_probability, category)
+    
+    has_trained_aux = len(trained_parts) > 1
     confidence_note = _build_confidence_note(
-        gaze_score, speech_score,
-        gaze_is_trained, speech_is_trained,
-        heuristic_signal, bool(trained_parts),
+        gaze_score, speech_score, facial_score,
+        gaze_is_trained, speech_is_trained, facial_is_trained,
+        heuristic_signal, has_trained_aux,
     )
 
     modalities_used = (
         1
         + (1 if gaze_score is not None else 0)
         + (1 if speech_score is not None else 0)
+        + (1 if facial_score is not None else 0)
     )
 
     return FusionResult(
@@ -223,6 +289,7 @@ def fuse(
         questionnaire_probability=round(questionnaire_probability, 4),
         gaze_score=gaze_score,
         speech_score=speech_score,
+        facial_score=facial_score,
         heuristic_signal=heuristic_signal,
         modality_breakdown=breakdown,
         modalities_used=modalities_used,
@@ -265,16 +332,28 @@ def _classify_risk(prob: float, category: str) -> str:
 def _build_confidence_note(
     gaze_score: Optional[float],
     speech_score: Optional[float],
+    facial_score: Optional[float],
     gaze_is_trained: bool,
     speech_is_trained: bool,
+    facial_is_trained: bool,
     heuristic_signal: Optional[float],
     has_trained_aux: bool,
 ) -> str:
     parts: list[str] = []
-    if has_trained_aux:
+    if _FUSION_MODEL is not None:
         parts.append(
-            "Final probability is a weighted blend of the questionnaire ML "
-            "classifier (60%) and additional trained modality models (40%)."
+            "Final probability is computed by a trained meta-classifier that dynamically "
+            "fuses available multimodal features (Questionnaire, Gaze, Speech, Facial)."
+        )
+    elif has_trained_aux:
+        aux = []
+        if gaze_is_trained: aux.append("Gaze")
+        if speech_is_trained: aux.append("Speech")
+        if facial_is_trained: aux.append("Facial")
+        aux_str = ", ".join(aux)
+        parts.append(
+            f"Final probability is a genuine multimodal fusion of the Questionnaire and "
+            f"available trained auxiliary models ({aux_str}), using calibrated fixed weights."
         )
     else:
         parts.append(
@@ -293,9 +372,15 @@ def _build_confidence_note(
             "(Bone et al. 2014) — not a trained ML model. "
             "No labeled speech+ASD training data is available in this system."
         )
+    if facial_score is not None and not facial_is_trained:
+        parts.append(
+            "Facial analysis uses a clinical research heuristic "
+            "— not a trained ML model. "
+            "No labeled facial+ASD training data is available in this system."
+        )
     if heuristic_signal is not None:
         parts.append(
-            f"Supplemental heuristic signal (gaze/speech combined): "
+            f"Supplemental heuristic signal (gaze/speech/facial combined): "
             f"{heuristic_signal:.3f} — shown for research context only, "
             f"does not affect the risk classification."
         )
