@@ -15,7 +15,7 @@ import os
 
 # ── AQ-10 scoring (adult / child) ─────────────────────────────────
 # ASD-trait questions — agree variants score 1
-ASD_TRAIT_IDS = {"A1", "A7", "A8", "A10"}
+ASD_TRAIT_IDS = {"A1", "A5", "A7", "A10"}
 
 ANSWER_MAP = {
     "Definitely agree": 1,

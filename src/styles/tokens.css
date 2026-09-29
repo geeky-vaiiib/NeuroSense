@@ -11,13 +11,13 @@
      Dark-mode-first approach with teal (#0ECFC8) and violet (#7B61FF).
      ────────────────────────────────────────────────────────────────────── */
 
-  /* Base surfaces — Dark mode first */
-  --ns-surface:       #0A0A0B;   /* page bg (dark) */
-  --ns-surface-2:     #121214;   /* inset zones, table rows, step bg */
-  --ns-panel:         #18181B;   /* content panels, form fields */
-  --ns-ink:           #FFFFFF;   /* primary text (light) */
-  --ns-panel-dark:    #18181B;
-  --ns-surface-dark:  #0A0A0B;
+  /* Base surfaces — Light mode first */
+  --ns-surface:       #FAFAFA;   /* page bg (light) */
+  --ns-surface-2:     #F4F4F5;   /* inset zones, table rows, step bg */
+  --ns-panel:         #FFFFFF;   /* content panels, form fields */
+  --ns-ink:           #18181B;   /* primary text (dark) */
+  --ns-panel-dark:    #FFFFFF;
+  --ns-surface-dark:  #FAFAFA;
 
   /* Primary action — Violet (#7B61FF) */
   --ns-instrument:      #7B61FF;
@@ -47,17 +47,17 @@
   --ns-risk-low-text:     #0ECFC8;
 
   /* ── Neutral Scale ───────────────────────────────────────────────────── */
-  --ns-n900:  #FFFFFF;
-  --ns-n800:  #F4F4F5;
-  --ns-n700:  #E4E4E7;
-  --ns-n600:  #A1A1AA;
+  --ns-n900:  #18181B;
+  --ns-n800:  #27272A;
+  --ns-n700:  #3F3F46;
+  --ns-n600:  #52525B;
   --ns-n500:  #71717A;
-  --ns-n400:  #52525B;
-  --ns-n300:  #3F3F46;
-  --ns-n200:  #27272A;
-  --ns-n150:  #1C1C1E;
-  --ns-n100:  #18181B;
-  --ns-n50:   #121214;
+  --ns-n400:  #A1A1AA;
+  --ns-n300:  #E4E4E7;
+  --ns-n200:  #F4F4F5;
+  --ns-n150:  #FAFAFA;
+  --ns-n100:  #FFFFFF;
+  --ns-n50:   #FFFFFF;
 
   /* ── Typography ────────────────────────────────────────────────────────
      Syne for headings, DM Sans for prose, IBM Plex Mono for numeric data.

@@ -393,7 +393,7 @@ function getRiskLevel(score) {
   return 'Low';
 }
 
-function getRiskScore('child', aq10Score) {
+function getRiskScore(category, aq10Score) {
   let multiplier;
   if (category === 'toddler') {
     multiplier = 1.4;
@@ -504,7 +504,7 @@ function answerContribution(question, answer) {
 }
 
 function buildExplanation(record) {
-  const questions = QUESTION_BANK[record.category];
+  const questions = QUESTION_BANK[record.category] || QUESTION_BANK['child'];
   const answerInsights = questions
     .map((question) => answerContribution(question, record.answers?.[question.id]))
     .sort((left, right) => Math.abs(right.shapValue) - Math.abs(left.shapValue));

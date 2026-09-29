@@ -91,16 +91,16 @@ export const CATEGORY_CONTENT = {
 
 export const QUESTION_BANK = {
   child: [
-    { id: 'A1', prompt: 'The child notices small sounds that others do not.', featureLabel: 'Child notices small sounds' },
-    { id: 'A2', prompt: 'The child usually sees the whole picture rather than getting stuck on small details.', featureLabel: 'Child sees the whole picture' },
-    { id: 'A3', prompt: 'The child can manage more than one thing at a time without much difficulty.', featureLabel: 'Child manages multitasking' },
-    { id: 'A4', prompt: 'After an interruption, the child can return to the previous activity quickly.', featureLabel: 'Child returns after interruption' },
-    { id: 'A5', prompt: 'The child can read between the lines in everyday conversation.', featureLabel: 'Child reads implied meaning' },
-    { id: 'A6', prompt: 'The child notices when someone is losing interest in what they are saying.', featureLabel: 'Child notices disengagement' },
-    { id: 'A7', prompt: 'The child understands what story characters might be thinking or feeling.', featureLabel: 'Child interprets characters’ intentions' },
-    { id: 'A8', prompt: 'The child likes collecting detailed information about categories of things.', featureLabel: 'Child collects detailed categories' },
-    { id: 'A9', prompt: 'The child works out what someone is thinking by looking at their face.', featureLabel: 'Child reads facial cues' },
-    { id: 'A10', prompt: 'The child understands what someone means even when it is not said directly.', featureLabel: 'Child understands indirect meaning' },
+    { id: 'A1', prompt: 'S/he often notices small sounds when others do not.', featureLabel: 'Child notices small sounds' },
+    { id: 'A2', prompt: 'S/he usually concentrates more on the whole picture, rather than the small details.', featureLabel: 'Child focuses on whole picture' },
+    { id: 'A3', prompt: 'In a social group, s/he can easily keep track of several different people\'s conversations.', featureLabel: 'Child tracks multiple conversations' },
+    { id: 'A4', prompt: 'S/he finds it easy to go back and forth between different activities.', featureLabel: 'Child switches activities easily' },
+    { id: 'A5', prompt: 'S/he doesn\'t know how to keep a conversation going with his/her peers.', featureLabel: 'Child struggles keeping conversation' },
+    { id: 'A6', prompt: 'S/he is good at social chit-chat.', featureLabel: 'Child good at social chit-chat' },
+    { id: 'A7', prompt: 'When s/he is read a story, s/he finds it difficult to work out the character\'s intentions or feelings.', featureLabel: 'Child struggles interpreting characters' },
+    { id: 'A8', prompt: 'When s/he was in preschool, s/he used to enjoy playing games involving pretending with other children.', featureLabel: 'Child enjoyed pretend play' },
+    { id: 'A9', prompt: 'S/he finds it easy to work out what someone is thinking or feeling just by looking at their face.', featureLabel: 'Child reads facial cues' },
+    { id: 'A10', prompt: 'S/he finds it hard to make new friends.', featureLabel: 'Child struggles making friends' },
   ]
 };
 
@@ -111,7 +111,7 @@ const AGREE_MAP = {
   'Slightly disagree': 0,
 };
 
-const ASD_TRAIT_IDS = new Set(['A1', 'A7', 'A8', 'A10']);
+const ASD_TRAIT_IDS = new Set(['A1', 'A5', 'A7', 'A10']);
 
 // Q-CHAT-10 (toddler): only A10 is ASD-trait direction
 const QCHAT_TRAIT_IDS = new Set(['A10']);

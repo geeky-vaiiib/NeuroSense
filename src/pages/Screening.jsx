@@ -329,10 +329,6 @@ export default function Screening() {
       {/* Main Content Area */}
       <div style={{ flex: 1, maxWidth: '640px', display: 'flex', flexDirection: 'column', gap: 'var(--sp-6)' }}>
         
-        
-            </div>
-          </section>
-        )}
 
         {content && (
           <div className="wizard-step-enter" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-6)' }}>
