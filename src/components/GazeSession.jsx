@@ -1,14 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { gazeApi } from '../services/api';
 
 /* ──────────────────────────────────────────────────────────────
    SVG Stimulus Faces — five simple variants
    ────────────────────────────────────────────────────────────── */
 const STIMULI = [
-  { id: 0, label: 'Happy face', mouth: 'smile', eyeDir: 'center', bg: '#FFD97D' },
-  { id: 1, label: 'Neutral face', mouth: 'flat', eyeDir: 'center', bg: '#A8D8EA' },
-  { id: 2, label: 'Looking-away face', mouth: 'flat', eyeDir: 'right', bg: '#C3B1E1' },
-  { id: 3, label: 'No-eye-contact face', mouth: 'flat', eyeDir: 'down', bg: '#F8B4B4' },
-  { id: 4, label: 'Crowd scene (abstract)', mouth: 'crowd', eyeDir: 'center', bg: '#B5EAD7' },
+  { id: 0, key: 'happy_face', label: 'Happy face', mouth: 'smile', eyeDir: 'center', bg: '#FFD97D' },
+  { id: 1, key: 'neutral_face', label: 'Neutral face', mouth: 'flat', eyeDir: 'center', bg: '#A8D8EA' },
+  { id: 2, key: 'looking_away_face', label: 'Looking-away face', mouth: 'flat', eyeDir: 'right', bg: '#C3B1E1' },
+  { id: 3, key: 'no_eye_contact_face', label: 'No-eye-contact face', mouth: 'flat', eyeDir: 'down', bg: '#F8B4B4' },
+  { id: 4, key: 'crowd_scene', label: 'Crowd scene (abstract)', mouth: 'crowd', eyeDir: 'center', bg: '#B5EAD7' },
 ];
 
 function StimulusSVG({ stimulus }) {
@@ -122,33 +123,89 @@ const skipLink = {
 /* ──────────────────────────────────────────────────────────────
    GazeSession Component
    ────────────────────────────────────────────────────────────── */
+/* ──────────────────────────────────────────────────────────────
+   Gaze capture parameters (mirrored by backend/ml/gaze/config.py)
+   ────────────────────────────────────────────────────────────── */
+const CLICKS_PER_POINT = 3;
+const TASK_SECONDS = 30;
+const STIMULUS_MS = 6000;
+const MIN_SAMPLE_INTERVAL_MS = 20;     // cap at 50 Hz
+const VALIDATION_TARGETS = [           // viewport fractions
+  [0.5, 0.5], [0.15, 0.15], [0.85, 0.15], [0.15, 0.85], [0.85, 0.85],
+];
+const VALIDATION_DWELL_MS = 2000;      // first half settles, second half is measured
+const VALIDATION_MIN_PREDICTIONS = 5;
+const MAX_CALIBRATION_ERROR_DIAG = 0.2; // quality_score hits 0 at this error / screen diagonal
+const MIN_CALIBRATION_SCORE = 0.4;      // mirrors backend MIN_CALIBRATION_SCORE
+
+const median = (a) => {
+  const s = [...a].sort((p, q) => p - q);
+  return s.length ? s[Math.floor(s.length / 2)] : NaN;
+};
+
+const REASON_TEXT = {
+  calibration_incomplete: 'Calibration was not completed.',
+  poor_calibration: 'Eye-tracking calibration was not accurate enough.',
+  insufficient_samples: 'Too few gaze samples were recorded.',
+  insufficient_valid_samples: 'Too many gaze samples were unusable (off-screen or lost).',
+  insufficient_usable_duration: 'Not enough continuous gaze data was recorded.',
+  face_not_detected: 'Your face was not detected for much of the session.',
+  inconsistent_timestamps: 'The recording timing was inconsistent.',
+  session_too_long: 'The session ran longer than expected.',
+  category_not_supported: 'The gaze model is only available for the child screening track.',
+  no_compatible_checkpoint: 'The gaze model is not installed on the server.',
+  requires_unavailable_feature: 'The installed gaze model needs data a browser cannot provide.',
+  preprocess_config_mismatch: 'The installed gaze model does not match the current pipeline.',
+  inference_failed: 'The gaze model failed while analysing this session.',
+};
+const reasonText = (r) => REASON_TEXT[r] || (r ? `Reason: ${r}` : 'Unknown reason.');
+
+const FAULT_TITLES = {
+  camera_denied: 'Camera access denied',
+  camera_unavailable: 'Camera unavailable',
+  engine_load_failed: 'Eye-tracking library unavailable',
+  engine_init_failed: 'Eye-tracking failed to start',
+  calibration_failed: 'Calibration failed',
+  calibration_poor: 'Calibration not accurate enough',
+  backend_unavailable: 'Analysis server unreachable',
+  backend_timeout: 'Analysis timed out',
+  invalid_payload: 'Session data rejected',
+  invalid_response: 'Unexpected server response',
+  server_error: 'Analysis server error',
+};
+
+/* ──────────────────────────────────────────────────────────────
+   GazeSession Component
+   onComplete(gazeSession, analysis) — analysis is the backend /gaze/analyze result
+   ────────────────────────────────────────────────────────────── */
 export default function GazeSession({ onComplete, onSkip, category }) {
   const [phase, setPhase] = useState('intro');
   const [stream, setStream] = useState(null);
-  const [gazePoints, setGazePoints] = useState([]);
-  const [countdown, setCountdown] = useState(30);
-  const [permissionError, setPermissionError] = useState(null);
-  const [calibrationClicks, setCalibrationClicks] = useState([]);
+  const [countdown, setCountdown] = useState(TASK_SECONDS);
+  const [fault, setFault] = useState(null); // { kind, message, retry: 'camera' | 'calibration' | 'analysis' }
+  const [calibrationClicks, setCalibrationClicks] = useState({});
   const [currentStimulus, setCurrentStimulus] = useState(0);
-
+  const [validationIdx, setValidationIdx] = useState(0);
+  const [analysis, setAnalysis] = useState(null);
+  const [sampleCount, setSampleCount] = useState(0);
   const videoRef = useRef(null);
   const streamRef = useRef(null);
-  const gazeRef = useRef([]);
+  const samplesRef = useRef([]);
+  const stimRef = useRef(0);
+  const lastSampleT = useRef(0);
+  const listenerMode = useRef('idle'); // 'idle' | 'validation' | 'task'
+  const validationBuf = useRef([]);
+  const calibrationRef = useRef(null);
+  const sessionRef = useRef(null);
   const timerRef = useRef(null);
-  const samplerRef = useRef(null);
   const stimulusTimerRef = useRef(null);
-  const lastMousePos = useRef({ x: 0, y: 0 });
-  const webgazerLoaded = useRef(false);
-
+  const validationTimerRef = useRef(null);
   const reduceMotion = typeof document !== 'undefined' && document.body.classList.contains('reduce-motion');
 
-  /* ── Load WebGazer Script ───────────────────────────────── */
-  const loadWebGazer = () => {
-    return new Promise((resolve, reject) => {
-      if (window.webgazer) {
-        resolve(window.webgazer);
-        return;
-      }
+  /* ── Load WebGazer script ───────────────────────────────── */
+  const loadWebGazer = () =>
+    new Promise((resolve, reject) => {
+      if (window.webgazer) { resolve(window.webgazer); return; }
       const script = document.createElement('script');
       script.src = 'https://webgazer.cs.brown.edu/webgazer.js';
       script.async = true;
@@ -156,10 +213,16 @@ export default function GazeSession({ onComplete, onSkip, category }) {
       script.onerror = () => reject(new Error('Failed to load WebGazer script'));
       document.body.appendChild(script);
     });
-  };
 
-  /* ── Stop all media tracks & WebGazer ────────────────────── */
+  const clearTimers = useCallback(() => {
+    clearInterval(timerRef.current);
+    clearTimeout(stimulusTimerRef.current);
+    clearTimeout(validationTimerRef.current);
+  }, []);
+
+  /* ── Stop camera & WebGazer ─────────────────────────────── */
   const stopStream = useCallback(() => {
+    listenerMode.current = 'idle';
     const s = streamRef.current;
     if (s) {
       s.getTracks().forEach((t) => t.stop());
@@ -171,132 +234,175 @@ export default function GazeSession({ onComplete, onSkip, category }) {
         window.webgazer.pause();
         window.webgazer.clearData();
         window.webgazer.showVideoPreview(false).showPredictionPoints(false);
-      } catch (e) {
-        // ignore — webgazer may already be torn down
+      } catch {
+        // webgazer may already be torn down
       }
     }
   }, []);
 
-  /* ── Cleanup on unmount ─────────────────────────────────── */
-  useEffect(() => {
-    return () => {
-      stopStream();
-      clearInterval(timerRef.current);
-      clearInterval(samplerRef.current);
-      clearTimeout(stimulusTimerRef.current);
-    };
-  }, [stopStream]);
+  useEffect(() => () => { stopStream(); clearTimers(); }, [stopStream, clearTimers]);
 
-  /* ── Attach stream to <video> when stream changes ───────── */
   useEffect(() => {
-    if (videoRef.current && stream) {
-      videoRef.current.srcObject = stream;
-    }
+    if (videoRef.current && stream) videoRef.current.srcObject = stream;
   }, [stream, phase]);
 
-  /* ── Request webcam & Initialize WebGazer ───────────────── */
-  const requestCamera = async () => {
-    setPhase('permission');
+  const fail = (kind, message, retry) => {
+    clearTimers();
+    listenerMode.current = 'idle';
+    setFault({ kind, message, retry });
+    setPhase('error');
+  };
 
-    // 1. Request camera FIRST — before initialising any ML models.
-    //    This ensures a clean permission-denied error without crashes.
+  /* ── Single WebGazer listener; behaviour depends on listenerMode ── */
+  function handleGaze(data) {
+    const now = performance.now();
+    if (listenerMode.current === 'validation') {
+      if (data) validationBuf.current.push({ x: data.x, y: data.y });
+    } else if (listenerMode.current === 'task') {
+      if (now - lastSampleT.current < MIN_SAMPLE_INTERVAL_MS) return;
+      lastSampleT.current = now;
+      samplesRef.current.push({
+        timestamp: Math.round(now * 100) / 100,
+        x: data ? data.x : null,
+        y: data ? data.y : null,
+        stimulus_id: STIMULI[stimRef.current].key,
+        face_detected: Boolean(data),
+      });
+    }
+  }
+
+  /* ── Camera → WebGazer ──────────────────────────────────── */
+  const requestCamera = async () => {
+    setFault(null);
+    setPhase('permission');
     let mediaStream;
     try {
       mediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
     } catch (camErr) {
-      const msg =
-        camErr.name === 'NotAllowedError'
-          ? 'Camera permission was denied. Please allow camera access in your browser settings and try again.'
-          : camErr.name === 'NotFoundError'
-            ? 'No camera was found on this device.'
-            : camErr.message || 'Unable to access the camera.';
-      setPermissionError(msg);
-      setPhase('error');
+      if (camErr.name === 'NotAllowedError') {
+        fail('camera_denied', 'Camera permission was denied. Allow camera access in your browser settings, then try again.', 'camera');
+      } else {
+        fail('camera_unavailable', 'No usable camera was found (it may be in use by another app).', 'camera');
+      }
       return;
     }
-
     streamRef.current = mediaStream;
     setStream(mediaStream);
 
-    // 2. Load WebGazer script from CDN
     let wg;
     try {
       wg = await loadWebGazer();
-      webgazerLoaded.current = true;
-    } catch (scriptErr) {
-      console.error('WebGazer script load failed:', scriptErr);
-      setPermissionError('Failed to load eye-tracking library. Please check your network connection.');
-      setPhase('error');
+    } catch {
+      fail('engine_load_failed', 'The eye-tracking library could not be loaded. Check your network connection.', 'camera');
       return;
     }
-
-    // 3. Initialize WebGazer
     try {
-      // Force WebGazer to load MediaPipe from the absolute public path,
-      // preventing it from resolving relative to the current router URL.
       wg.params.faceMeshSolutionPath = '/mediapipe/face_mesh';
-
+      wg.setGazeListener(handleGaze);
       await wg
         .setRegression('ridge')
         .setTracker('TFFacemesh')
         .showVideoPreview(false)
         .showPredictionPoints(false)
         .begin();
-
-      setPhase('calibration');
+      startCalibration();
     } catch (wgErr) {
       console.error('WebGazer Init Error:', wgErr);
-      setPermissionError(
-        'Eye-tracking engine failed to initialise. You can still complete the screening without this step.'
-      );
-      setPhase('error');
+      fail('engine_init_failed', 'The eye-tracking engine failed to start.', 'camera');
     }
   };
 
+  /* ── Calibration (9 points × CLICKS_PER_POINT clicks) ────── */
+  const startCalibration = () => {
+    setFault(null);
+    setCalibrationClicks({});
+    calibrationRef.current = null;
+    try { window.webgazer.clearData(); } catch { /* fresh engine */ }
+    setPhase('calibration');
+  };
 
-  /* ── Calibration click handler ──────────────────────────── */
   const handleCalibrationClick = (index, e) => {
-    // Record the actual screen coordinate for the click
-    if (window.webgazer && e && e.clientX && e.clientY) {
+    if (window.webgazer && e) {
       window.webgazer.recordScreenPosition(e.clientX, e.clientY, 'click');
     }
-    
     setCalibrationClicks((prev) => {
-      if (prev.includes(index)) return prev;
-      const next = [...prev, index];
-      if (next.length === 9) {
-        // All calibrated — start task after a short beat
-        setTimeout(() => startTask(), 300);
-      }
+      const count = (prev[index] || 0) + 1;
+      if (count > CLICKS_PER_POINT) return prev;
+      const next = { ...prev, [index]: count };
+      const done = Object.values(next).filter((c) => c >= CLICKS_PER_POINT).length;
+      if (done === 9) setTimeout(startValidation, 300);
       return next;
     });
   };
 
-  /* ── Start the 30-second task ───────────────────────────── */
+  /* ── Calibration validation: 5 fixed targets, measure pixel error ── */
+  const startValidation = () => {
+    setPhase('validation');
+    const errors = [];
+    let idx = 0;
+    const runTarget = () => {
+      validationBuf.current = [];
+      listenerMode.current = 'idle';
+      setValidationIdx(idx);
+      validationTimerRef.current = setTimeout(() => {   // settle
+        listenerMode.current = 'validation';
+        validationTimerRef.current = setTimeout(() => { // measure
+          listenerMode.current = 'idle';
+          const [fx, fy] = VALIDATION_TARGETS[idx];
+          const buf = validationBuf.current;
+          if (buf.length < VALIDATION_MIN_PREDICTIONS) {
+            errors.push({ err: NaN, n: buf.length });
+          } else {
+            const mx = median(buf.map((p) => p.x));
+            const my = median(buf.map((p) => p.y));
+            errors.push({ err: Math.hypot(mx - fx * window.innerWidth, my - fy * window.innerHeight), n: buf.length });
+          }
+          idx += 1;
+          if (idx < VALIDATION_TARGETS.length) runTarget();
+          else finishValidation(errors);
+        }, VALIDATION_DWELL_MS / 2);
+      }, VALIDATION_DWELL_MS / 2);
+    };
+    runTarget();
+  };
+
+  const finishValidation = (errors) => {
+    const good = errors.filter((e) => Number.isFinite(e.err));
+    if (good.length < 3) {
+      fail('calibration_failed', 'Your eyes could not be tracked reliably during calibration. Make sure your face is well lit and centred, then recalibrate.', 'calibration');
+      return;
+    }
+    const meanErr = good.reduce((a, e) => a + e.err, 0) / good.length;
+    const diag = Math.hypot(window.innerWidth, window.innerHeight);
+    const score = Math.max(0, Math.min(1, 1 - meanErr / diag / MAX_CALIBRATION_ERROR_DIAG));
+    calibrationRef.current = {
+      completed: true,
+      quality_score: Math.round(score * 1000) / 1000,
+      sample_count: good.reduce((a, e) => a + e.n, 0),
+      mean_error_px: Math.round(meanErr * 10) / 10,
+      method: 'webgazer_ridge_9pt_click_5pt_validation',
+    };
+    if (score < MIN_CALIBRATION_SCORE) {
+      fail('calibration_poor', `Calibration accuracy was too low (quality ${score.toFixed(2)}, needs ${MIN_CALIBRATION_SCORE}). Sit about an arm's length from the screen, keep your head still, and recalibrate.`, 'calibration');
+      return;
+    }
+    startTask();
+  };
+
+  /* ── 30-second task ─────────────────────────────────────── */
   const startTask = () => {
     setPhase('task');
-    setCountdown(30);
+    setCountdown(TASK_SECONDS);
     setCurrentStimulus(0);
-    gazeRef.current = [];
+    stimRef.current = 0;
+    samplesRef.current = [];
+    lastSampleT.current = 0;
+    listenerMode.current = 'task';
 
-    // Optional: Show prediction points during task for visual feedback
-    if (window.webgazer) {
-      window.webgazer.showPredictionPoints(true);
-
-      // Set up WebGazer listener
-      window.webgazer.setGazeListener((data, clock) => {
-        if (data) {
-          lastMousePos.current = { x: data.x, y: data.y };
-        }
-      });
-    }
-
-    // Countdown timer — tick every second
     timerRef.current = setInterval(() => {
       setCountdown((prev) => {
         if (prev <= 1) {
           clearInterval(timerRef.current);
-          clearInterval(samplerRef.current);
           finishTask();
           return 0;
         }
@@ -304,81 +410,66 @@ export default function GazeSession({ onComplete, onSkip, category }) {
       });
     }, 1000);
 
-    // Stimulus rotation: change every 6 s
-    let stimIdx = 0;
-    const rotateStimulusStep = () => {
-      stimIdx += 1;
-      if (stimIdx < 5) {
-        setCurrentStimulus(stimIdx);
-        stimulusTimerRef.current = setTimeout(rotateStimulusStep, 6000);
+    const rotate = () => {
+      if (stimRef.current < STIMULI.length - 1) {
+        stimRef.current += 1;
+        setCurrentStimulus(stimRef.current);
+        stimulusTimerRef.current = setTimeout(rotate, STIMULUS_MS);
       }
     };
-    stimulusTimerRef.current = setTimeout(rotateStimulusStep, 6000);
-
-    // Sample webgazer position every 100 ms
-    samplerRef.current = setInterval(() => {
-      const { x, y } = lastMousePos.current;
-      const normX = Math.max(0, Math.min(x / window.innerWidth, 1));
-      const normY = Math.max(0, Math.min(y / window.innerHeight, 1));
-      gazeRef.current.push({ x: normX, y: normY, timestamp: Date.now(), stimulus: stimIdx });
-    }, 100);
+    stimulusTimerRef.current = setTimeout(rotate, STIMULUS_MS);
   };
 
-  /* ── Finish task → processing ───────────────────────────── */
   const finishTask = () => {
-    clearInterval(timerRef.current);
-    clearInterval(samplerRef.current);
-    clearTimeout(stimulusTimerRef.current);
-    const data = [...gazeRef.current];
-    setGazePoints(data);
-    setPhase('processing');
-    setTimeout(() => {
-      stopStream();
-      onComplete(data);
-    }, 1500);
-  };
-
-  /* ── Skip helper ────────────────────────────────────────── */
-  const handleSkip = () => {
+    clearTimers();
+    listenerMode.current = 'idle';
+    const samples = [...samplesRef.current];
+    setSampleCount(samples.length);
     stopStream();
-    clearInterval(timerRef.current);
-    clearInterval(samplerRef.current);
-    clearTimeout(stimulusTimerRef.current);
-    onSkip();
+    sessionRef.current = {
+      session_id: crypto.randomUUID(),
+      category,
+      screen_width: window.innerWidth,
+      screen_height: window.innerHeight,
+      calibration: calibrationRef.current,
+      samples,
+    };
+    runAnalysis();
   };
 
-  /* ── Mouse / touch tracking (Fallback) ──────────────────── */
-  const handlePointerMove = (e) => {
-    // If WebGazer is active, it overwrites lastMousePos in the GazeListener.
-    // This just ensures there's a fallback if the user moves the mouse.
-    if (e.touches) {
-      lastMousePos.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-    } else {
-      lastMousePos.current = { x: e.clientX, y: e.clientY };
+  /* ── Backend analysis (quality gate + model) ────────────── */
+  const runAnalysis = async () => {
+    setFault(null);
+    setPhase('analyzing');
+    try {
+      const result = await gazeApi.analyze(sessionRef.current);
+      setAnalysis(result);
+      setPhase('result');
+    } catch (err) {
+      fail(err.kind || 'backend_unavailable', err.message, 'analysis');
     }
   };
 
-  /* ── Keyboard: Space to advance stimulus ────────────────── */
-  useEffect(() => {
-    if (phase !== 'task') return;
-    const handler = (e) => {
-      if (e.code === 'Space') {
-        e.preventDefault();
-        setCurrentStimulus((prev) => {
-          if (prev < 4) return prev + 1;
-          return prev;
-        });
-      }
-    };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [phase]);
+  const handleSkip = () => {
+    stopStream();
+    clearTimers();
+    onSkip();
+  };
+
+  const handleContinue = () => onComplete(sessionRef.current, analysis);
 
   /* ════════════════════════════════════════════════════════════
-     RENDER — each phase
+     RENDER
      ════════════════════════════════════════════════════════════ */
+  const preview = (opacity) => (
+    <div style={{ position: 'absolute', bottom: '16px', right: '16px', width: '160px', height: '120px', borderRadius: '12px', overflow: 'hidden', border: `2px solid rgba(255,255,255,${opacity})` }}>
+      <video ref={videoRef} autoPlay playsInline muted style={{ width: '100%', height: '100%', objectFit: 'cover', transform: 'scaleX(-1)' }} />
+    </div>
+  );
+  const spinner = (size) => (
+    <div style={{ display: 'inline-block', width: size, height: size, border: '3px solid var(--color-primary)', borderTopColor: 'transparent', borderRadius: '50%', animation: reduceMotion ? 'none' : 'spin 0.8s linear infinite' }} />
+  );
 
-  /* ── INTRO ──────────────────────────────────────────────── */
   if (phase === 'intro') {
     return (
       <section style={{ ...card, position: 'relative' }}>
@@ -386,12 +477,12 @@ export default function GazeSession({ onComplete, onSkip, category }) {
           Gaze Session {category === 'child' ? '(Child)' : '(Adult)'}
         </h2>
         <p style={{ color: 'var(--color-neutral-600)', lineHeight: 1.7, maxWidth: '640px', marginBottom: '6px' }}>
-          We will briefly activate your webcam to observe eye movement patterns during a short visual task.
-          This takes <strong>30 seconds</strong>. Your video is <strong>not recorded or stored</strong>.
+          We will use the webcam to estimate where on the screen the child looks during a short picture task.
+          You will first click nine calibration dots, then look at five targets to check accuracy, then view the pictures for
+          <strong> 30 seconds</strong>. Video is <strong>not recorded or stored</strong>; only gaze coordinates are sent.
         </p>
         <p style={{ color: 'var(--color-neutral-500)', fontSize: '0.88rem', lineHeight: 1.6, marginBottom: '24px' }}>
-          This uses real-time computer vision to track your eyes. Ensure you are in a well-lit room.
-          You can skip this step at any time.
+          Sit about an arm&apos;s length from the screen in a well-lit room and keep your head still. This step is optional.
         </p>
         <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
           <button type="button" onClick={requestCamera} style={primaryBtn}>Continue</button>
@@ -401,145 +492,140 @@ export default function GazeSession({ onComplete, onSkip, category }) {
     );
   }
 
-  /* ── PERMISSION (brief loading state) ───────────────────── */
   if (phase === 'permission') {
     return (
       <section style={{ ...card, position: 'relative', textAlign: 'center', padding: '48px 28px' }}>
         <button type="button" onClick={handleSkip} style={skipLink}>Skip this step →</button>
-        <div style={{ display: 'inline-block', width: 32, height: 32, border: '3px solid var(--color-primary)', borderTopColor: 'transparent', borderRadius: '50%', animation: reduceMotion ? 'none' : 'spin 0.8s linear infinite' }} />
-        <p style={{ color: 'var(--color-neutral-600)', marginTop: '16px', fontWeight: 600 }}>
-          Requesting camera access…
-        </p>
+        {spinner(32)}
+        <p style={{ color: 'var(--color-neutral-600)', marginTop: '16px', fontWeight: 600 }}>Starting camera and eye-tracking…</p>
       </section>
     );
   }
 
-  /* ── ERROR ───────────────────────────────────────────────── */
-  if (phase === 'error') {
+  if (phase === 'error' && fault) {
+    const retryLabel = { camera: 'Try again', calibration: 'Recalibrate', analysis: 'Retry analysis' }[fault.retry];
+    const onRetry = fault.retry === 'analysis' ? runAnalysis
+      : fault.retry === 'calibration' ? startCalibration : requestCamera;
     return (
       <section style={{ ...card, position: 'relative', borderColor: 'var(--color-risk-high-border)', backgroundColor: 'var(--color-risk-high-bg)' }}>
-        <h3 style={{ marginTop: 0, color: 'var(--color-risk-high)', marginBottom: '10px' }}>
-          Camera access denied
-        </h3>
-        <p style={{ color: 'var(--color-neutral-700)', lineHeight: 1.7, marginBottom: '20px' }}>
-          {permissionError || 'We were unable to access the webcam.'} You can still complete the screening without this step.
+        <h3 style={{ marginTop: 0, color: 'var(--color-risk-high)', marginBottom: '10px' }}>{FAULT_TITLES[fault.kind] || 'Gaze step problem'}</h3>
+        <p role="alert" style={{ color: 'var(--color-neutral-700)', lineHeight: 1.7, marginBottom: '20px' }}>
+          {fault.message} You can retry, or continue the screening without the gaze step (gaze will be reported as not available).
         </p>
-        <button type="button" onClick={handleSkip} style={{ ...ghostBtn, borderColor: 'var(--color-risk-high-border)', color: 'var(--color-risk-high)' }}>
-          Skip instead →
-        </button>
+        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+          <button type="button" onClick={onRetry} style={primaryBtn}>{retryLabel}</button>
+          <button type="button" onClick={handleSkip} style={{ ...ghostBtn, borderColor: 'var(--color-risk-high-border)', color: 'var(--color-risk-high)' }}>
+            Continue without gaze →
+          </button>
+        </div>
       </section>
     );
   }
 
-  /* ── CALIBRATION ────────────────────────────────────────── */
   if (phase === 'calibration') {
-    const dotPositions = [];
-    for (let r = 0; r < 3; r++) {
-      for (let c = 0; c < 3; c++) {
-        dotPositions.push({ row: r, col: c, index: r * 3 + c });
-      }
-    }
+    const donePoints = Object.values(calibrationClicks).filter((c) => c >= CLICKS_PER_POINT).length;
     return (
       <section style={{ ...card, position: 'relative', background: 'var(--color-neutral-900)', minHeight: '420px', padding: '32px' }}>
         <button type="button" onClick={handleSkip} style={{ ...skipLink, color: 'var(--color-neutral-400)' }}>Skip this step →</button>
-
-        <p style={{ color: '#fff', fontWeight: 700, fontSize: '1rem', marginBottom: '8px', textAlign: 'center' }}>
-          Calibration
-        </p>
+        <p style={{ color: '#fff', fontWeight: 700, fontSize: '1rem', marginBottom: '8px', textAlign: 'center' }}>Calibration</p>
         <p style={{ color: 'var(--color-neutral-400)', fontSize: '0.88rem', textAlign: 'center', marginBottom: '28px' }}>
-          Click each green dot to calibrate. <strong style={{ color: '#7C9A85' }}>{calibrationClicks.length} / 9</strong> points collected.
+          Look at each green dot and click it {CLICKS_PER_POINT} times. <strong style={{ color: '#7C9A85' }}>{donePoints} / 9</strong> points done.
         </p>
-
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gridTemplateRows: 'repeat(3, 1fr)', gap: '16px', width: '100%', maxWidth: '420px', aspectRatio: '1', margin: '0 auto' }}>
-          {dotPositions.map(({ index }) => {
-            const clicked = calibrationClicks.includes(index);
+          {Array.from({ length: 9 }, (_, index) => {
+            const clicks = calibrationClicks[index] || 0;
+            const done = clicks >= CLICKS_PER_POINT;
             return (
               <button
                 key={index}
                 type="button"
+                disabled={done}
                 onClick={(e) => handleCalibrationClick(index, e)}
-                aria-label={`Calibration point ${index + 1}`}
-                style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  background: 'transparent', border: 'none', cursor: clicked ? 'default' : 'pointer',
-                }}
+                aria-label={`Calibration point ${index + 1}, ${clicks} of ${CLICKS_PER_POINT} clicks`}
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', border: 'none', cursor: done ? 'default' : 'pointer' }}
               >
                 <span style={{
-                  width: clicked ? '18px' : '22px',
-                  height: clicked ? '18px' : '22px',
+                  width: done ? '18px' : `${22 - clicks * 2}px`,
+                  height: done ? '18px' : `${22 - clicks * 2}px`,
                   borderRadius: '50%',
-                  backgroundColor: clicked ? 'var(--color-primary-dark)' : '#4ADE80',
-                  boxShadow: clicked ? 'none' : '0 0 12px rgba(74,222,128,0.5)',
-                  transition: reduceMotion ? 'none' : 'all 200ms ease',
-                  opacity: clicked ? 0.5 : 1,
+                  backgroundColor: done ? 'var(--color-primary-dark)' : '#4ADE80',
+                  boxShadow: done ? 'none' : '0 0 12px rgba(74,222,128,0.5)',
+                  opacity: done ? 0.5 : 1 - clicks * 0.15,
                 }} />
               </button>
             );
           })}
         </div>
-
-        {/* Webcam preview — bottom-right */}
-        <div style={{ position: 'absolute', bottom: '16px', right: '16px', width: '160px', height: '120px', borderRadius: '12px', overflow: 'hidden', border: '2px solid rgba(255,255,255,0.2)' }}>
-          <video ref={videoRef} autoPlay playsInline muted style={{ width: '100%', height: '100%', objectFit: 'cover', transform: 'scaleX(-1)' }} />
-        </div>
+        {preview(0.2)}
       </section>
     );
   }
 
-  /* ── TASK ────────────────────────────────────────────────── */
+  if (phase === 'validation') {
+    const [fx, fy] = VALIDATION_TARGETS[validationIdx];
+    return (
+      <div role="dialog" aria-label="Calibration check" style={{ position: 'fixed', inset: 0, background: 'var(--color-neutral-900)', zIndex: 1000 }}>
+        <p style={{ position: 'absolute', top: 24, width: '100%', textAlign: 'center', color: '#fff', fontWeight: 700 }}>
+          Checking accuracy — look at the dot ({validationIdx + 1} / {VALIDATION_TARGETS.length})
+        </p>
+        <span style={{ position: 'absolute', left: `${fx * 100}%`, top: `${fy * 100}%`, width: 22, height: 22, marginLeft: -11, marginTop: -11, borderRadius: '50%', backgroundColor: '#4ADE80', boxShadow: '0 0 14px rgba(74,222,128,0.6)' }} />
+      </div>
+    );
+  }
+
   if (phase === 'task') {
     const stim = STIMULI[currentStimulus] || STIMULI[0];
     return (
-      <section
-        onMouseMove={handlePointerMove}
-        onTouchMove={handlePointerMove}
-        style={{
-          position: 'relative', background: '#1A1A18', borderRadius: '20px',
-          minHeight: '480px', display: 'flex', flexDirection: 'column',
-          alignItems: 'center', justifyContent: 'center', padding: '32px',
-          userSelect: 'none',
-        }}
-      >
+      <section style={{ position: 'relative', background: '#1A1A18', borderRadius: '20px', minHeight: '480px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '32px', userSelect: 'none' }}>
         <button type="button" onClick={handleSkip} style={{ ...skipLink, color: 'var(--color-neutral-400)' }}>Skip this step →</button>
-
-        {/* Countdown */}
-        <div style={{ position: 'absolute', top: '16px', right: '80px', color: '#fff', fontFamily: 'var(--font-mono)', fontSize: '1.6rem', fontWeight: 700, opacity: 0.85 }}>
-          {countdown}s
-        </div>
-
-        {/* Stimulus counter */}
-        <p style={{ color: 'var(--color-neutral-400)', fontSize: '0.85rem', marginBottom: '24px', fontWeight: 600 }}>
-          Stimulus {currentStimulus + 1} / 5
-        </p>
-
-        {/* SVG Face */}
-        <div style={{ transition: reduceMotion ? 'none' : 'opacity 400ms ease', marginBottom: '20px' }}>
-          <StimulusSVG stimulus={stim} />
-        </div>
-
-        <p style={{ color: 'var(--color-neutral-500)', fontSize: '0.82rem', marginTop: '16px' }}>
-          Move your cursor to follow what draws your attention. Press <kbd style={{ padding: '2px 6px', borderRadius: '4px', border: '1px solid var(--color-neutral-600)', fontFamily: 'var(--font-mono)', fontSize: '0.78rem' }}>Space</kbd> to advance.
-        </p>
-
-        {/* Webcam preview — bottom-right */}
-        <div style={{ position: 'absolute', bottom: '16px', right: '16px', width: '160px', height: '120px', borderRadius: '12px', overflow: 'hidden', border: '2px solid rgba(255,255,255,0.15)' }}>
-          <video ref={videoRef} autoPlay playsInline muted style={{ width: '100%', height: '100%', objectFit: 'cover', transform: 'scaleX(-1)' }} />
-        </div>
+        <div style={{ position: 'absolute', top: '16px', right: '80px', color: '#fff', fontFamily: 'var(--font-mono)', fontSize: '1.6rem', fontWeight: 700, opacity: 0.85 }}>{countdown}s</div>
+        <p style={{ color: 'var(--color-neutral-400)', fontSize: '0.85rem', marginBottom: '24px', fontWeight: 600 }}>Picture {currentStimulus + 1} / {STIMULI.length}</p>
+        <div style={{ marginBottom: '20px' }}><StimulusSVG stimulus={stim} /></div>
+        <p style={{ color: 'var(--color-neutral-500)', fontSize: '0.82rem', marginTop: '16px' }}>Just look at the pictures naturally.</p>
+        {preview(0.15)}
       </section>
     );
   }
 
-  /* ── PROCESSING ─────────────────────────────────────────── */
-  if (phase === 'processing') {
+  if (phase === 'analyzing') {
     return (
       <section style={{ ...card, textAlign: 'center', padding: '56px 28px' }}>
-        <div style={{ display: 'inline-block', width: 36, height: 36, border: '3px solid var(--color-primary)', borderTopColor: 'transparent', borderRadius: '50%', animation: reduceMotion ? 'none' : 'spin 0.8s linear infinite', marginBottom: '18px' }} />
-        <p style={{ color: 'var(--color-neutral-700)', fontWeight: 600, fontSize: '1.05rem' }}>
-          Analysing gaze patterns…
+        <div style={{ marginBottom: '18px' }}>{spinner(36)}</div>
+        <p style={{ color: 'var(--color-neutral-700)', fontWeight: 600, fontSize: '1.05rem' }}>Checking gaze data quality…</p>
+        <p style={{ color: 'var(--color-neutral-500)', fontSize: '0.85rem', marginTop: '8px' }}>{sampleCount} gaze samples captured</p>
+      </section>
+    );
+  }
+
+  if (phase === 'result' && analysis) {
+    const q = analysis.quality;
+    if (analysis.status !== 'success') {
+      const poor = analysis.status === 'insufficient_quality';
+      return (
+        <section style={{ ...card, borderColor: 'var(--color-risk-high-border)', backgroundColor: 'var(--color-risk-high-bg)' }}>
+          <h3 style={{ marginTop: 0, color: 'var(--color-risk-high)' }}>
+            {poor ? 'Gaze data quality too low' : 'Gaze analysis not available'}
+          </h3>
+          <p role="alert" style={{ color: 'var(--color-neutral-700)', lineHeight: 1.7 }}>
+            {reasonText(analysis.reason)} ({q.valid_sample_count} of {q.sample_count} samples usable, {q.duration_s}s.)
+            {' '}Gaze will be reported as <strong>not available</strong>; it will not count as a low or high result.
+          </p>
+          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginTop: '16px' }}>
+            {poor && <button type="button" onClick={requestCamera} style={primaryBtn}>Repeat gaze step</button>}
+            {!poor && <button type="button" onClick={runAnalysis} style={primaryBtn}>Retry analysis</button>}
+            <button type="button" onClick={handleContinue} style={ghostBtn}>Continue without gaze result</button>
+          </div>
+        </section>
+      );
+    }
+    return (
+      <section style={card}>
+        <h3 style={{ marginTop: 0, color: 'var(--color-neutral-900)' }}>Gaze session recorded</h3>
+        <p style={{ color: 'var(--color-neutral-600)', lineHeight: 1.7 }}>
+          {q.valid_sample_count} of {q.sample_count} samples were usable over {q.duration_s}s
+          (calibration quality {q.calibration_score?.toFixed(2)}). The gaze model output will appear with your final results.
         </p>
-        <p style={{ color: 'var(--color-neutral-500)', fontSize: '0.85rem', marginTop: '8px' }}>
-          {gazePoints.length} data points collected
-        </p>
+        <button type="button" onClick={handleContinue} style={primaryBtn}>Continue</button>
       </section>
     );
   }

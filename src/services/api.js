@@ -118,6 +118,53 @@ export const casesApi = {
   },
 };
 
+const GAZE_TIMEOUT_MS = 20_000;
+
+export const gazeApi = {
+  /**
+   * POST /gaze/analyze. Never falls back to mock data. Rejects with an Error whose
+   * `.kind` is 'backend_unavailable' | 'backend_timeout' | 'invalid_payload' |
+   * 'server_error' | 'invalid_response'.
+   */
+  async analyze(session) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), GAZE_TIMEOUT_MS);
+    const fail = (kind, message) => Object.assign(new Error(message), { kind });
+    let res;
+    try {
+      res = await fetch(`${api.defaults.baseURL}/gaze/analyze`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+          ...(getAuthToken() ? { Authorization: `Bearer ${getAuthToken()}` } : {}),
+        },
+        body: JSON.stringify(session),
+        signal: controller.signal,
+      });
+    } catch (err) {
+      throw err?.name === 'AbortError'
+        ? fail('backend_timeout', 'The analysis server took too long to respond.')
+        : fail('backend_unavailable', 'Could not reach the analysis server.');
+    } finally {
+      clearTimeout(timer);
+    }
+    if (res.status === 422) throw fail('invalid_payload', 'The gaze session data was rejected as malformed.');
+    if (!res.ok) throw fail('server_error', `The analysis server returned an error (${res.status}).`);
+    let body;
+    try {
+      body = await res.json();
+    } catch {
+      throw fail('invalid_response', 'The analysis server returned an unreadable response.');
+    }
+    const okStatus = ['success', 'insufficient_quality', 'unavailable'].includes(body?.status);
+    if (body?.modality !== 'gaze' || !okStatus || typeof body?.quality?.valid !== 'boolean') {
+      throw fail('invalid_response', 'The analysis server returned an unexpected response.');
+    }
+    return body;
+  },
+};
+
 export const screeningApi = {
   async submit(formData) {
     // Build multimodal payload — exclude large fields if null/empty
@@ -126,7 +173,7 @@ export const screeningApi = {
       demo: formData.demo,
       answers: formData.answers,
       aq10Score: formData.aq10Score,
-      gazePoints: formData.gazePoints || [],
+      gazeSession: formData.gazeSession || null,
       gazeSkipped: formData.gazeSkipped || false,
       audioBase64: formData.audioBase64 || null,
       audioMimeType: formData.audioMimeType || null,

@@ -180,6 +180,13 @@ def normalize_case_record(record: dict[str, Any]) -> dict[str, Any]:
     gaze_is_trained = bool(_first(record, "gaze_is_trained", default=False))
     gaze_interpretation = str(_first(record, "gaze_interpretation", default="") or "")
     gaze_skipped = bool(_first(record, "gaze_skipped", default=False))
+    # Optional gaze-analysis metadata; absent on cases created before the browser gaze model.
+    gaze_status = _first(record, "gaze_status", default=None)
+    gaze_reason = _first(record, "gaze_reason", default=None)
+    gaze_model_version = _first(record, "gaze_model_version", default=None)
+    gaze_quality = _first(record, "gaze_quality", default=None)
+    gaze_session_id = _first(record, "gaze_session_id", default=None)
+    gaze_analyzed_at = _first(record, "gaze_analyzed_at", default=None)
 
     speech_features = dict(_first(record, "speech_features", default={}) or {})
     speech_mock = bool(_first(record, "speech_mock", default=True))
@@ -235,6 +242,12 @@ def normalize_case_record(record: dict[str, Any]) -> dict[str, Any]:
         "gaze_is_trained": gaze_is_trained,
         "gaze_interpretation": gaze_interpretation,
         "gaze_skipped": gaze_skipped,
+        "gaze_status": gaze_status,
+        "gaze_reason": gaze_reason,
+        "gaze_model_version": gaze_model_version,
+        "gaze_quality": gaze_quality,
+        "gaze_session_id": gaze_session_id,
+        "gaze_analyzed_at": gaze_analyzed_at,
         "speech_features": speech_features,
         "speech_mock": speech_mock,
         "speech_method": speech_method,
@@ -327,6 +340,12 @@ def case_detail(record: dict[str, Any]) -> dict[str, Any]:
             "interpretation": normalized["interpretation"],
             "demo": normalized["demo"],
             "answers": normalized["answers"],
+            # Gaze analysis fields (None on cases created before the gaze model)
+            **{k: normalized.get(k) for k in (
+                "gaze_score", "gaze_status", "gaze_reason", "gaze_model_version",
+                "gaze_quality", "gaze_features", "gaze_interpretation",
+                "gaze_analyzed_at", "gaze_skipped", "gaze_mock",
+            )},
         }
     )
     return detail

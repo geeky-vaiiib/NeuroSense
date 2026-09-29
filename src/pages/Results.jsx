@@ -202,7 +202,24 @@ export default function Results() {
   const gazeInterpretation = selectedCase?.gaze_interpretation || selectedCase?.gazeInterpretation || '';
   const gazeMock = selectedCase?.gaze_mock ?? selectedCase?.gazeMock ?? true;
   const gazeSkipped = selectedCase?.gaze_skipped ?? selectedCase?.gazeSkipped ?? false;
-  const hasGazeData = gazeFeatures && typeof gazeFeatures === 'object' && Object.keys(gazeFeatures).length > 0;
+  // Backend gaze result (cases created before the browser gaze model have no gaze_status).
+  const gazeStatus = selectedCase?.gaze_status ?? null;
+  const gazeScore = selectedCase?.gaze_score ?? null;
+  const gazeQuality = selectedCase?.gaze_quality ?? null;
+  const gazeModelVersion = selectedCase?.gaze_model_version ?? null;
+  const gazeReason = selectedCase?.gaze_reason ?? null;
+  const legacyGazeFeatures = gazeFeatures && typeof gazeFeatures === 'object' && Object.keys(gazeFeatures).length > 0;
+  const hasGazeData = gazeStatus ? gazeStatus === 'success' : legacyGazeFeatures;
+  const gazeUnavailableText = (() => {
+    if (gazeSkipped || gazeStatus === 'skipped') return 'Gaze session was skipped by the respondent.';
+    if (gazeStatus === 'insufficient_quality') {
+      return `Gaze data quality was too low to score (${gazeReason || 'unknown reason'}). Gaze is reported as not available and did not affect the result.`;
+    }
+    if (gazeStatus === 'unavailable') {
+      return `The gaze model could not score this session (${gazeReason || 'unknown reason'}). Gaze did not affect the result.`;
+    }
+    return 'Gaze session was not completed for this case.';
+  })();
   const isToddler = false;
 
   // Speech data from case record
@@ -663,7 +680,7 @@ export default function Results() {
                     fontWeight: 600,
                   }}
                 >
-                  {gazeMock ? 'Heuristic model' : 'Live session'}
+                  {gazeStatus ? 'Gaze model output' : (gazeMock ? 'Heuristic model' : 'Live session')}
                 </span>
               ) : (
                 <span
@@ -694,7 +711,7 @@ export default function Results() {
                     }}
                   >
                     <span style={{ color: 'var(--ns-n600)', fontSize: '0.85rem' }}>
-                      Gaze risk score
+                      Gaze model output (screening signal)
                     </span>
                     <strong
                       style={{
@@ -702,9 +719,7 @@ export default function Results() {
                         color: 'var(--ns-n900)',
                       }}
                     >
-                      {selectedCase.riskScore != null
-                        ? ((selectedCase.riskScore) * 100).toFixed(0) + '%'
-                        : 'N/A'}
+                      {gazeScore != null ? (gazeScore * 100).toFixed(0) + '%' : 'N/A'}
                     </strong>
                   </div>
                   <div
@@ -717,7 +732,7 @@ export default function Results() {
                   >
                     <div
                       style={{
-                        width: `${Math.min((selectedCase.riskScore || 0) * 100, 100)}%`,
+                        width: `${Math.min((gazeScore || 0) * 100, 100)}%`,
                         height: '100%',
                         borderRadius: '999px',
                         backgroundColor: 'var(--ns-instrument)',
@@ -795,6 +810,15 @@ export default function Results() {
                   ))}
                 </div>
 
+                {gazeStatus && (
+                  <p style={{ marginTop: '12px', color: 'var(--ns-n500)', fontSize: '0.8rem', fontFamily: 'var(--font-data)' }}>
+                    Model {gazeModelVersion || 'n/a'}
+                    {gazeQuality
+                      ? ` · ${gazeQuality.valid_sample_count}/${gazeQuality.sample_count} usable samples · calibration ${gazeQuality.calibration_score?.toFixed(2)}`
+                      : ''}
+                  </p>
+                )}
+
                 {/* Interpretation */}
                 {gazeInterpretation && (
                   <p
@@ -822,9 +846,7 @@ export default function Results() {
               >
                 {isToddler
                   ? 'Gaze session is not available for the toddler track.'
-                  : gazeSkipped
-                    ? 'Gaze session was skipped by the respondent.'
-                    : 'Gaze session was skipped or not available for this track.'}
+                  : gazeUnavailableText}
               </div>
             )}
           </section>
@@ -1085,9 +1107,7 @@ export default function Results() {
                 {' + '}
                 <span style={{ color: '#FFD97D' }}>0.20</span>{' × '}
                 <span style={{ color: hasGazeData ? '#B5EAD7' : 'var(--ns-n500)' }}>
-                  {hasGazeData && selectedCase.riskScore != null
-                    ? selectedCase.riskScore.toFixed(4)
-                    : 'N/A'}
+                  {hasGazeData && gazeScore != null ? gazeScore.toFixed(4) : 'N/A'}
                 </span>
                 {' + '}
                 <span style={{ color: '#FFD97D' }}>0.15</span>{' × '}

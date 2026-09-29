@@ -181,7 +181,8 @@ export default function Screening() {
   const [consents, setConsents] = useState(BASE_CONSENTS);
   const [demo, setDemo] = useState(BASE_DEMO);
   const [answers, setAnswers] = useState({});
-  const [gazeData, setGazeData] = useState(null);
+  const [gazeSession, setGazeSession] = useState(null);
+  const [gazeAnalysis, setGazeAnalysis] = useState(null);
   const [gazeSkipped, setGazeSkipped] = useState(false);
   const [audioBlob, setAudioBlob] = useState(null);
   const [transcriptHint, setTranscriptHint] = useState('');
@@ -225,7 +226,10 @@ export default function Screening() {
   const gazeStatusLabel = (() => {
     if (isToddler) return 'N/A — Toddler track';
     if (gazeSkipped) return 'Skipped';
-    if (gazeData) return `${gazeData.length} fixation points captured`;
+    if (gazeSession && gazeAnalysis?.status === 'success') {
+      return `Session recorded (${gazeAnalysis.quality.valid_sample_count} usable samples)`;
+    }
+    if (gazeSession) return 'Recorded, not usable — reported as not available';
     return 'Not started';
   })();
 
@@ -292,7 +296,9 @@ export default function Screening() {
           demo: { ...demo, age: Number(demo.age) },
           answers,
           aq10Score,
-          gazePoints: gazeData || [],
+          // The server re-analyses the raw session; the client never supplies a probability.
+          // A recorded-but-unusable session is still sent so its quality reason is stored.
+          gazeSession,
           gazeSkipped,
           audioBase64: audioBase64,
           audioMimeType: audioBlob?.type || null,
@@ -446,8 +452,8 @@ export default function Screening() {
             {hasGaze && step === GAZE_STEP && (
               <GazeSession
                 category={category}
-                onComplete={(data) => { setGazeData(data); setGazeSkipped(false); setStep(SPEECH_STEP); }}
-                onSkip={() => { setGazeData(null); setGazeSkipped(true); setStep(SPEECH_STEP); }}
+                onComplete={(session, analysis) => { setGazeSession(session); setGazeAnalysis(analysis); setGazeSkipped(false); setStep(SPEECH_STEP); }}
+                onSkip={() => { setGazeSession(null); setGazeAnalysis(null); setGazeSkipped(true); setStep(SPEECH_STEP); }}
               />
             )}
 
@@ -476,7 +482,7 @@ export default function Screening() {
                   {summaryRows.map(([label, value]) => {
                     const isMultimodal = ['Eye Gaze', 'Speech Sample', 'Facial Expression'].includes(label);
                     const hasCapturedData = isMultimodal && (
-                      (label === 'Eye Gaze' && gazeData && !gazeSkipped) ||
+                      (label === 'Eye Gaze' && gazeAnalysis?.status === 'success' && !gazeSkipped) ||
                       (label === 'Speech Sample' && audioBlob && !speechSkipped) ||
                       (label === 'Facial Expression' && facialImage && !facialSkipped)
                     );

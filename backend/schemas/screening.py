@@ -7,8 +7,10 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 try:
     from ..core.categories import validate_age_for_category
+    from .gaze import GazeAnalyzeRequest
 except ImportError:  # pragma: no cover - fallback for backend cwd execution
     from core.categories import validate_age_for_category
+    from schemas.gaze import GazeAnalyzeRequest
 
 
 # ── Enums ──────────────────────────────────────────────────────────
@@ -143,7 +145,12 @@ class ScreeningRequest(BaseModel):
     gaze_points: Optional[list[GazePoint]] = Field(
         default=[],
         alias="gazePoints",
-        description="Gaze coordinate sequence from the eye-tracking step",
+        description="DEPRECATED legacy normalised points; ignored. Use gazeSession.",
+    )
+    gaze_session: Optional[GazeAnalyzeRequest] = Field(
+        default=None,
+        alias="gazeSession",
+        description="Canonical gaze session; scored server-side by the gaze model service",
     )
     gaze_skipped: Optional[bool] = Field(
         default=False,
@@ -232,6 +239,11 @@ class ScreeningResponse(BaseModel):
     is_mock: bool = Field(False, alias="isMock")
     data_source: str = Field(..., alias="dataSource")
     interpretation: str
+    gaze_result: Optional[dict] = Field(
+        None,
+        alias="gazeResult",
+        description="Backend gaze analysis: status, probability, model_version, quality (null if skipped)",
+    )
     gaze_interpretation: Optional[str] = Field(
         None,
         alias="gazeInterpretation",
@@ -289,6 +301,17 @@ class CaseDetailResponse(CaseSummaryResponse):
     interpretation: str
     demo: Demographics
     answers: AQ10Answers
+    # Gaze analysis (snake_case keys; all optional so pre-gaze-model cases still load)
+    gaze_score: Optional[float] = None
+    gaze_status: Optional[str] = None
+    gaze_reason: Optional[str] = None
+    gaze_model_version: Optional[str] = None
+    gaze_quality: Optional[dict] = None
+    gaze_features: Optional[dict] = None
+    gaze_interpretation: Optional[str] = None
+    gaze_analyzed_at: Optional[str] = None
+    gaze_skipped: Optional[bool] = None
+    gaze_mock: Optional[bool] = None
 
     model_config = ConfigDict(populate_by_name=True)
 

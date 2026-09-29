@@ -86,10 +86,7 @@ async def run_screening(body: ScreeningRequest, request: Request):
         demo=demo_dict,
         answers=answers_dict,
         encoders=bundle.get("encoders"),
-        gaze_points=[
-            {"x": p.x, "y": p.y, "timestamp": p.timestamp, "stimulus": p.stimulus}
-            for p in body.gaze_points
-        ] if body.gaze_points else None,
+        gaze_session=body.gaze_session.model_dump() if body.gaze_session else None,
         gaze_skipped=body.gaze_skipped or False,
         audio_base64=body.audio_base64,
         audio_mime_type=body.audio_mime_type or "audio/webm",
@@ -184,8 +181,14 @@ async def run_screening(body: ScreeningRequest, request: Request):
             "demo": demo_dict,
             "answers": answers_dict,
             "gaze_features": gaze_raw.get("features", {}),
+            "gaze_status": gaze_raw.get("status", "skipped" if body.gaze_skipped else "not_submitted"),
+            "gaze_reason": gaze_raw.get("reason"),
+            "gaze_model_version": gaze_raw.get("model_version"),
+            "gaze_quality": gaze_raw.get("quality"),
+            "gaze_session_id": gaze_raw.get("session_id"),
+            "gaze_analyzed_at": gaze_raw.get("analyzed_at"),
             "gaze_mock": gaze_raw.get("isMock", True),
-            "gaze_method": gaze_raw.get("method", "rule_based_heuristic"),
+            "gaze_method": gaze_raw.get("method", "lstm_trained") if gaze_raw else None,
             "gaze_is_trained": gaze_raw.get("is_trained_model", False),
             "gaze_interpretation": gaze_raw.get("interpretation", "") or "",
             "gaze_skipped": body.gaze_skipped or False,
@@ -221,6 +224,12 @@ async def run_screening(body: ScreeningRequest, request: Request):
         isMock=is_mock,
         dataSource="mock" if is_mock else "model",
         interpretation=interpretation,
+        gazeResult=(
+            {k: gaze_raw.get(k) for k in (
+                "status", "probability", "model_status", "model_version",
+                "reason", "quality", "analyzed_at",
+            )} if gaze_raw else None
+        ),
         gazeInterpretation=gaze_raw.get("interpretation") or None,
         speechInterpretation=speech_raw.get("interpretation") or None,
         facialInterpretation=facial_raw.get("interpretation") or None,

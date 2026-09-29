@@ -50,7 +50,7 @@ FastAPI backend with MongoDB Atlas persistence.
 | Modality | Method | is_trained_model | Training data | Fusion weight |
 |---|---|---|---|---|
 | **Questionnaire** | Supervised ML (AdaBoost/XGBoost/RF) | `True` | UCI / Kaggle ASD screening datasets | 40% |
-| **Gaze** | LSTM (if `gaze_lstm.pt` present) / Haar-fixation heuristic (Jones & Klin 2013) | `True` / `False` | Eye-tracking dataset (synthetic proxy, no clinical ASD labels) | 20% |
+| **Gaze** | BiLSTM on browser-derivable features `[x, y, speed, is_fixation]` (`gaze_lstm_browser.pt`, trained by `backend/data/train_gaze_browser.py`); no heuristic fallback — unavailable sessions are excluded from fusion | `True` / unavailable | Cilia et al. (2022) hardware eye-tracking data (57 children). Not validated on webcam gaze. | 20% |
 | **Speech** | 1D-CNN (if `speech_cnn.pt` present) / prosody heuristic (Bone et al. 2014) | `True`¹ / `False` | Synthetic MFCC proxy (no real ASD-labelled speech data in this repo) | 20% |
 | **Facial** | 2D-CNN (if `facial_model.pt` present) / pixel-stat heuristic | `False` (no checkpoint yet) | FER-2013 proxy (general-purpose expression dataset — NOT ASD-specific)² | 20% |
 
