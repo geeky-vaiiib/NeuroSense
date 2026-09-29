@@ -33,9 +33,9 @@ try:
     from ..ml.facial_engine import compute_facial_score
     from ..ml.preprocessor import preprocess_for_inference
 except ImportError:
-    from ml.gaze_engine import compute_gaze_score
-    from ml.speech_engine import compute_speech_score
-    from ml.facial_engine import compute_facial_score
+    from .gaze_engine import compute_gaze_score
+    from .speech_engine import compute_speech_score
+    from .facial_engine import compute_facial_score
     from ml.preprocessor import preprocess_for_inference
 
 

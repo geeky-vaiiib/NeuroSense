@@ -14,16 +14,16 @@ const styles = {
     gap: '24px',
   },
   card: {
-    backgroundColor: 'var(--color-bg-card)',
-    border: '1px solid var(--color-neutral-200)',
+    backgroundColor: 'var(--ns-panel)',
+    border: '1px solid var(--border-color)',
     borderRadius: '22px',
     padding: '24px',
-    boxShadow: 'var(--shadow-xs)',
+    boxShadow: 'none',
   },
   metaLabel: {
     fontSize: '0.75rem',
     fontWeight: 700,
-    color: 'var(--color-neutral-400)',
+    color: 'var(--ns-n400)',
     letterSpacing: '0.05em',
     textTransform: 'uppercase',
   },
@@ -38,8 +38,8 @@ function FeatureBars({ features }) {
         const pct = Math.abs(item.shapValue) / maxValue;
         const color =
           item.direction === 'positive'
-            ? 'var(--color-risk-high)'
-            : 'var(--color-risk-low)';
+            ? 'var(--ns-risk-high)'
+            : 'var(--ns-signal)';
 
         return (
           <div key={`${item.feature}-${item.shapValue}`} style={{ display: 'grid', gap: '6px' }}>
@@ -51,8 +51,8 @@ function FeatureBars({ features }) {
                 alignItems: 'baseline',
               }}
             >
-              <strong style={{ color: 'var(--color-neutral-800)' }}>{item.feature}</strong>
-              <span style={{ color, fontFamily: 'var(--font-mono)', fontSize: '0.85rem' }}>
+              <strong style={{ color: 'var(--ns-n800)' }}>{item.feature}</strong>
+              <span style={{ color, fontFamily: 'var(--font-data)', fontSize: '0.85rem' }}>
                 {item.shapValue > 0 ? '+' : ''}
                 {item.shapValue.toFixed(2)}
               </span>
@@ -61,7 +61,7 @@ function FeatureBars({ features }) {
               style={{
                 height: '10px',
                 borderRadius: '999px',
-                backgroundColor: 'var(--color-neutral-100)',
+                backgroundColor: 'var(--ns-surface-2)',
                 overflow: 'hidden',
               }}
             >
@@ -226,7 +226,7 @@ export default function Results() {
 
   return (
     <main id="results-page" style={styles.page}>
-      <section style={styles.card}>
+      <section className="panel">
         <div
           style={{
             display: 'flex',
@@ -238,36 +238,18 @@ export default function Results() {
           }}
         >
           <div>
-            <h1 style={{ margin: '0 0 6px', color: 'var(--color-neutral-900)' }}>
+            <h1 style={{ margin: '0 0 6px', color: 'var(--ns-n900)' }}>
               Category-aware results and explainability
             </h1>
-            <p style={{ margin: 0, color: 'var(--color-neutral-600)', lineHeight: 1.7 }}>
+            <p style={{ margin: 0, color: 'var(--ns-n600)', lineHeight: 1.7 }}>
               Every case keeps its adult or child track visible through the result, model,
               explanation, and stored case summary.
             </p>
           </div>
-          <button
-            id="download-pdf-btn"
-            onClick={handleDownloadPDF}
-            disabled={pdfLoading || !selectedCase || !explanation}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              padding: '9px 18px',
-              borderRadius: '10px',
-              border: '1px solid var(--color-neutral-200)',
-              backgroundColor: pdfLoading ? 'var(--color-neutral-100)' : '#fff',
-              color: 'var(--color-neutral-700)',
-              fontWeight: 600,
-              fontSize: '0.875rem',
-              cursor: pdfLoading || !selectedCase ? 'not-allowed' : 'pointer',
-              fontFamily: 'var(--font-body)',
-            }}
-          >
+          <button id="download-pdf-btn" onClick={handleDownloadPDF} disabled={pdfLoading || !selectedCase || !explanation} className="btn btn-secondary">
             {pdfLoading ? (
               <>
-                <span style={{ width: 14, height: 14, borderRadius: '50%', border: '2px solid var(--color-neutral-300)', borderTopColor: 'var(--color-primary)', animation: 'spin 0.7s linear infinite', display: 'inline-block' }} />
+                <span style={{ width: 14, height: 14, borderRadius: '50%', border: '2px solid var(--ns-n300)', borderTopColor: 'var(--ns-instrument)', animation: 'spin 0.7s linear infinite', display: 'inline-block' }} />
                 Generating…
               </>
             ) : (
@@ -282,7 +264,7 @@ export default function Results() {
         </div>
 
         {loadingList ? (
-          <p style={{ margin: 0, color: 'var(--color-neutral-500)' }}>Loading cases…</p>
+          <p style={{ margin: 0, color: 'var(--ns-n500)' }}>Loading cases…</p>
         ) : cases.length === 0 ? (
           <div style={{
             display: 'flex',
@@ -292,31 +274,18 @@ export default function Results() {
             padding: '40px 20px',
             textAlign: 'center',
           }}>
-            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--color-neutral-300)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--ns-n300)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/>
               <rect x="9" y="3" width="6" height="4" rx="1"/>
               <line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/>
             </svg>
             <div>
-              <p style={{ margin: '0 0 6px', fontWeight: 600, color: 'var(--color-neutral-700)' }}>No screening results yet</p>
-              <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--color-neutral-400)', lineHeight: 1.6 }}>
+              <p style={{ margin: '0 0 6px', fontWeight: 600, color: 'var(--ns-n700)' }}>No screening results yet</p>
+              <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--ns-n400)', lineHeight: 1.6 }}>
                 Complete an adult, child, or toddler screening to generate your first result and explainability report.
               </p>
             </div>
-            <button
-              onClick={() => navigate('/app/screening')}
-              style={{
-                padding: '9px 20px',
-                borderRadius: '10px',
-                border: 'none',
-                background: 'linear-gradient(135deg, var(--color-primary), var(--color-primary-dark))',
-                color: '#fff',
-                fontWeight: 600,
-                fontSize: '0.875rem',
-                cursor: 'pointer',
-                fontFamily: 'var(--font-body)',
-              }}
-            >
+            <button onClick={() => navigate('/app/screening')} className="btn btn-primary">
               Start a screening →
             </button>
           </div>
@@ -332,12 +301,12 @@ export default function Results() {
                   padding: '12px 14px',
                   borderRadius: '16px',
                   border: `1px solid ${
-                    item.id === selectedCaseId ? 'var(--color-primary)' : 'var(--color-neutral-200)'
+                    item.id === selectedCaseId ? 'var(--ns-instrument)' : 'var(--border-color)'
                   }`,
                   backgroundColor:
                     item.id === selectedCaseId
-                      ? 'var(--color-primary-muted)'
-                      : 'var(--color-bg-card)',
+                      ? 'var(--ns-instrument-dim)'
+                      : 'var(--ns-panel)',
                   textAlign: 'left',
                   cursor: 'pointer',
                 }}
@@ -350,12 +319,12 @@ export default function Results() {
                   style={{
                     display: 'block',
                     marginTop: '10px',
-                    color: 'var(--color-neutral-900)',
+                    color: 'var(--ns-n900)',
                   }}
                 >
                   {item.subjectName || 'Unnamed case'}
                 </strong>
-                <span style={{ fontSize: '0.8rem', color: 'var(--color-neutral-500)' }}>
+                <span style={{ fontSize: '0.8rem', color: 'var(--ns-n500)' }}>
                   {item.id}
                 </span>
               </button>
@@ -368,11 +337,11 @@ export default function Results() {
         <section
           style={{
             ...styles.card,
-            borderColor: 'var(--color-risk-high-border)',
-            backgroundColor: 'var(--color-risk-high-muted)',
+            borderColor: 'var(--ns-risk-high-border)',
+            backgroundColor: 'var(--ns-risk-high-bg)',
           }}
         >
-          <p style={{ margin: 0, color: 'var(--color-risk-high)', fontWeight: 600 }}>
+          <p style={{ margin: 0, color: 'var(--ns-risk-high)', fontWeight: 600 }}>
             {pageError || errors[selectedCaseId]}
           </p>
         </section>
@@ -380,7 +349,7 @@ export default function Results() {
 
       {selectedCase && content && (
         <>
-          <section style={styles.card}>
+          <section className="panel">
             <div
               style={{
                 display: 'grid',
@@ -393,10 +362,10 @@ export default function Results() {
                   <CategoryBadge category={selectedCase.category} size="lg" />
                   <RiskBadge level={selectedCase.riskLevel} size="lg" showScore score={selectedCase.riskScore} />
                 </div>
-                <h2 style={{ margin: '14px 0 8px', color: 'var(--color-neutral-900)' }}>
+                <h2 style={{ margin: '14px 0 8px', color: 'var(--ns-n900)' }}>
                   {content.resultsTitle}
                 </h2>
-                <p style={{ margin: 0, color: 'var(--color-neutral-600)', lineHeight: 1.7 }}>
+                <p style={{ margin: 0, color: 'var(--ns-n600)', lineHeight: 1.7 }}>
                   {selectedCase.interpretation}
                 </p>
                 <div
@@ -406,7 +375,7 @@ export default function Results() {
                     borderRadius: '16px',
                     border: `1px solid ${content.accentBorder}`,
                     backgroundColor: content.accentSoft,
-                    color: 'var(--color-neutral-700)',
+                    color: 'var(--ns-n700)',
                     lineHeight: 1.7,
                   }}
                 >
@@ -416,20 +385,20 @@ export default function Results() {
 
               <div
                 style={{
-                  border: '1px solid var(--color-neutral-200)',
+                  border: '1px solid var(--border-color)',
                   borderRadius: '18px',
                   padding: '18px',
-                  backgroundColor: 'var(--color-bg)',
+                  backgroundColor: 'var(--ns-surface-2)',
                 }}
               >
                 <p style={{ margin: '0 0 10px', ...styles.metaLabel }}>Attached metadata</p>
                 <div style={{ display: 'grid', gap: '12px' }}>
                   {topMetadata.map(([label, value]) => (
                     <div key={label} style={{ display: 'flex', justifyContent: 'space-between', gap: '12px' }}>
-                      <span style={{ color: 'var(--color-neutral-500)', fontSize: '0.85rem' }}>
+                      <span style={{ color: 'var(--ns-n500)', fontSize: '0.85rem' }}>
                         {label}
                       </span>
-                      <strong style={{ color: 'var(--color-neutral-900)', textAlign: 'right' }}>
+                      <strong style={{ color: 'var(--ns-n900)', textAlign: 'right' }}>
                         {value}
                       </strong>
                     </div>
@@ -446,7 +415,7 @@ export default function Results() {
               gap: '20px',
             }}
           >
-            <div style={styles.card}>
+            <div className="panel">
               <div
                 style={{
                   display: 'flex',
@@ -457,10 +426,10 @@ export default function Results() {
                 }}
               >
                 <div>
-                  <h3 style={{ margin: 0, color: 'var(--color-neutral-900)' }}>
+                  <h3 style={{ margin: 0, color: 'var(--ns-n900)' }}>
                     SHAP feature contributions
                   </h3>
-                  <p style={{ margin: '6px 0 0', color: 'var(--color-neutral-500)' }}>
+                  <p style={{ margin: '6px 0 0', color: 'var(--ns-n500)' }}>
                     Top factors driving the {selectedCase.category} model output.
                   </p>
                 </div>
@@ -469,9 +438,9 @@ export default function Results() {
                     style={{
                       padding: '4px 10px',
                       borderRadius: '999px',
-                      backgroundColor: 'var(--color-neutral-100)',
-                      color: 'var(--color-neutral-500)',
-                      fontFamily: 'var(--font-mono)',
+                      backgroundColor: 'var(--ns-surface-2)',
+                      color: 'var(--ns-n500)',
+                      fontFamily: 'var(--font-data)',
                       fontSize: '0.75rem',
                     }}
                   >
@@ -480,7 +449,7 @@ export default function Results() {
                 )}
               </div>
               {loadingDetail || explanationLoading[selectedCaseId] ? (
-                <p style={{ margin: 0, color: 'var(--color-neutral-500)' }}>
+                <p style={{ margin: 0, color: 'var(--ns-n500)' }}>
                   Loading explainability…
                 </p>
               ) : (
@@ -489,8 +458,8 @@ export default function Results() {
             </div>
 
             <div style={{ display: 'grid', gap: '20px' }}>
-              <section style={styles.card}>
-                <h3 style={{ marginTop: 0, color: 'var(--color-neutral-900)' }}>
+              <section className="panel">
+                <h3 style={{ marginTop: 0, color: 'var(--ns-n900)' }}>
                   Respondent context
                 </h3>
                 <div style={{ display: 'grid', gap: '12px' }}>
@@ -503,8 +472,8 @@ export default function Results() {
                     ['Clinician', selectedCase.clinician || 'Awaiting clinician assignment'],
                   ].map(([label, value]) => (
                     <div key={label} style={{ display: 'flex', justifyContent: 'space-between', gap: '12px' }}>
-                      <span style={{ color: 'var(--color-neutral-500)' }}>{label}</span>
-                      <strong style={{ color: 'var(--color-neutral-900)', textAlign: 'right' }}>
+                      <span style={{ color: 'var(--ns-n500)' }}>{label}</span>
+                      <strong style={{ color: 'var(--ns-n900)', textAlign: 'right' }}>
                         {value}
                       </strong>
                     </div>
@@ -512,8 +481,8 @@ export default function Results() {
                 </div>
               </section>
 
-              <section style={styles.card}>
-                <h3 style={{ marginTop: 0, color: 'var(--color-neutral-900)' }}>
+              <section className="panel">
+                <h3 style={{ marginTop: 0, color: 'var(--ns-n900)' }}>
                   LIME narrative
                 </h3>
                 <div style={{ display: 'grid', gap: '12px' }}>
@@ -522,17 +491,17 @@ export default function Results() {
                       key={`${item.feature}-${item.weight}`}
                       style={{
                         paddingBottom: '12px',
-                        borderBottom: '1px solid var(--color-neutral-100)',
+                        borderBottom: '1px solid var(--ns-surface-2)',
                       }}
                     >
                       <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px' }}>
-                        <strong style={{ color: 'var(--color-neutral-800)' }}>{item.feature}</strong>
-                        <span style={{ color: 'var(--color-neutral-500)', fontFamily: 'var(--font-mono)' }}>
+                        <strong style={{ color: 'var(--ns-n800)' }}>{item.feature}</strong>
+                        <span style={{ color: 'var(--ns-n500)', fontFamily: 'var(--font-data)' }}>
                           {item.weight > 0 ? '+' : ''}
                           {item.weight.toFixed(2)}
                         </span>
                       </div>
-                      <p style={{ margin: '6px 0 0', color: 'var(--color-neutral-600)', lineHeight: 1.6 }}>
+                      <p style={{ margin: '6px 0 0', color: 'var(--ns-n600)', lineHeight: 1.6 }}>
                         {item.plainEnglish}
                       </p>
                     </div>
@@ -555,7 +524,7 @@ export default function Results() {
                         fontSize: '0.6875rem',
                         fontWeight: 700,
                         letterSpacing: '0.05em',
-                        color: 'var(--color-primary-dark)',
+                        color: 'var(--ns-instrument)',
                         marginBottom: '6px',
                         textTransform: 'uppercase',
                       }}
@@ -565,7 +534,7 @@ export default function Results() {
                     <p
                       style={{
                         fontSize: '0.8125rem',
-                        color: 'var(--color-neutral-700)',
+                        color: 'var(--ns-n700)',
                         lineHeight: 1.6,
                         margin: 0,
                       }}
@@ -601,7 +570,7 @@ export default function Results() {
                     <p
                       style={{
                         fontSize: '0.8125rem',
-                        color: 'var(--color-neutral-700)',
+                        color: 'var(--ns-n700)',
                         lineHeight: 1.6,
                         margin: 0,
                       }}
@@ -633,8 +602,8 @@ export default function Results() {
             </div>
           </section>
 
-          <section style={styles.card}>
-            <h3 style={{ marginTop: 0, color: 'var(--color-neutral-900)' }}>
+          <section className="panel">
+            <h3 style={{ marginTop: 0, color: 'var(--ns-n900)' }}>
               Questionnaire snapshot
             </h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px' }}>
@@ -644,14 +613,14 @@ export default function Results() {
                   style={{
                     padding: '14px',
                     borderRadius: '16px',
-                    border: '1px solid var(--color-neutral-200)',
-                    backgroundColor: 'var(--color-bg)',
+                    border: '1px solid var(--border-color)',
+                    backgroundColor: 'var(--ns-surface-2)',
                   }}
                 >
-                  <p style={{ margin: '0 0 6px', fontWeight: 700, color: 'var(--color-neutral-800)' }}>
+                  <p style={{ margin: '0 0 6px', fontWeight: 700, color: 'var(--ns-n800)' }}>
                     {key}
                   </p>
-                  <p style={{ margin: 0, color: 'var(--color-neutral-600)', lineHeight: 1.6 }}>
+                  <p style={{ margin: 0, color: 'var(--ns-n600)', lineHeight: 1.6 }}>
                     {value}
                   </p>
                 </div>
@@ -660,7 +629,7 @@ export default function Results() {
           </section>
 
           {/* ── Gaze Analysis Section ────────────────────────────── */}
-          <section style={styles.card}>
+          <section className="panel">
             <div
               style={{
                 display: 'flex',
@@ -671,10 +640,10 @@ export default function Results() {
               }}
             >
               <div>
-                <h3 style={{ margin: 0, color: 'var(--color-neutral-900)' }}>
+                <h3 style={{ margin: 0, color: 'var(--ns-n900)' }}>
                   Gaze Analysis
                 </h3>
-                <p style={{ margin: '6px 0 0', color: 'var(--color-neutral-500)' }}>
+                <p style={{ margin: '6px 0 0', color: 'var(--ns-n500)' }}>
                   Eye movement features from the 30-second visual task.
                 </p>
               </div>
@@ -684,12 +653,12 @@ export default function Results() {
                     padding: '4px 10px',
                     borderRadius: '999px',
                     backgroundColor: gazeMock
-                      ? 'var(--color-risk-moderate-bg)'
-                      : 'var(--color-risk-low-bg)',
+                      ? 'var(--ns-risk-mod-bg)'
+                      : 'var(--ns-signal-dim)',
                     color: gazeMock
-                      ? 'var(--color-risk-moderate)'
-                      : 'var(--color-primary-dark)',
-                    fontFamily: 'var(--font-mono)',
+                      ? 'var(--ns-risk-mod)'
+                      : 'var(--ns-instrument)',
+                    fontFamily: 'var(--font-data)',
                     fontSize: '0.75rem',
                     fontWeight: 600,
                   }}
@@ -701,9 +670,9 @@ export default function Results() {
                   style={{
                     padding: '4px 10px',
                     borderRadius: '999px',
-                    backgroundColor: 'var(--color-neutral-100)',
-                    color: 'var(--color-neutral-500)',
-                    fontFamily: 'var(--font-mono)',
+                    backgroundColor: 'var(--ns-surface-2)',
+                    color: 'var(--ns-n500)',
+                    fontFamily: 'var(--font-data)',
                     fontSize: '0.75rem',
                     fontWeight: 600,
                   }}
@@ -724,13 +693,13 @@ export default function Results() {
                       marginBottom: '6px',
                     }}
                   >
-                    <span style={{ color: 'var(--color-neutral-600)', fontSize: '0.85rem' }}>
+                    <span style={{ color: 'var(--ns-n600)', fontSize: '0.85rem' }}>
                       Gaze risk score
                     </span>
                     <strong
                       style={{
-                        fontFamily: 'var(--font-mono)',
-                        color: 'var(--color-neutral-900)',
+                        fontFamily: 'var(--font-data)',
+                        color: 'var(--ns-n900)',
                       }}
                     >
                       {selectedCase.riskScore != null
@@ -742,7 +711,7 @@ export default function Results() {
                     style={{
                       height: '10px',
                       borderRadius: '999px',
-                      backgroundColor: 'var(--color-neutral-100)',
+                      backgroundColor: 'var(--ns-surface-2)',
                       overflow: 'hidden',
                     }}
                   >
@@ -751,7 +720,7 @@ export default function Results() {
                         width: `${Math.min((selectedCase.riskScore || 0) * 100, 100)}%`,
                         height: '100%',
                         borderRadius: '999px',
-                        backgroundColor: 'var(--color-primary)',
+                        backgroundColor: 'var(--ns-instrument)',
                         transition: 'width 600ms ease',
                       }}
                     />
@@ -765,8 +734,8 @@ export default function Results() {
                     gap: '10px',
                     padding: '16px',
                     borderRadius: '16px',
-                    border: '1px solid var(--color-neutral-200)',
-                    backgroundColor: 'var(--color-bg)',
+                    border: '1px solid var(--border-color)',
+                    backgroundColor: 'var(--ns-surface-2)',
                   }}
                 >
                   {[
@@ -809,13 +778,13 @@ export default function Results() {
                         gap: '12px',
                       }}
                     >
-                      <span style={{ color: 'var(--color-neutral-500)', fontSize: '0.85rem' }}>
+                      <span style={{ color: 'var(--ns-n500)', fontSize: '0.85rem' }}>
                         {label}
                       </span>
                       <strong
                         style={{
-                          color: 'var(--color-neutral-900)',
-                          fontFamily: 'var(--font-mono)',
+                          color: 'var(--ns-n900)',
+                          fontFamily: 'var(--font-data)',
                           fontSize: '0.85rem',
                           textAlign: 'right',
                         }}
@@ -831,7 +800,7 @@ export default function Results() {
                   <p
                     style={{
                       marginTop: '14px',
-                      color: 'var(--color-neutral-600)',
+                      color: 'var(--ns-n600)',
                       lineHeight: 1.7,
                       fontSize: '0.9rem',
                     }}
@@ -846,9 +815,9 @@ export default function Results() {
                   padding: '28px 20px',
                   textAlign: 'center',
                   borderRadius: '16px',
-                  border: '1px solid var(--color-neutral-200)',
-                  backgroundColor: 'var(--color-bg)',
-                  color: 'var(--color-neutral-400)',
+                  border: '1px solid var(--border-color)',
+                  backgroundColor: 'var(--ns-surface-2)',
+                  color: 'var(--ns-n400)',
                 }}
               >
                 {isToddler
@@ -861,7 +830,7 @@ export default function Results() {
           </section>
 
           {/* ── Speech Analysis Section ───────────────────────────── */}
-          <section style={styles.card}>
+          <section className="panel">
             <div
               style={{
                 display: 'flex',
@@ -872,10 +841,10 @@ export default function Results() {
               }}
             >
               <div>
-                <h3 style={{ margin: 0, color: 'var(--color-neutral-900)' }}>
+                <h3 style={{ margin: 0, color: 'var(--ns-n900)' }}>
                   Speech Analysis
                 </h3>
-                <p style={{ margin: '6px 0 0', color: 'var(--color-neutral-500)' }}>
+                <p style={{ margin: '6px 0 0', color: 'var(--ns-n500)' }}>
                   Acoustic features from the 20-second speech sample.
                 </p>
               </div>
@@ -885,12 +854,12 @@ export default function Results() {
                     padding: '4px 10px',
                     borderRadius: '999px',
                     backgroundColor: speechMock
-                      ? 'var(--color-risk-moderate-bg)'
-                      : 'var(--color-risk-low-bg)',
+                      ? 'var(--ns-risk-mod-bg)'
+                      : 'var(--ns-signal-dim)',
                     color: speechMock
-                      ? 'var(--color-risk-moderate)'
-                      : 'var(--color-primary-dark)',
-                    fontFamily: 'var(--font-mono)',
+                      ? 'var(--ns-risk-mod)'
+                      : 'var(--ns-instrument)',
+                    fontFamily: 'var(--font-data)',
                     fontSize: '0.75rem',
                     fontWeight: 600,
                   }}
@@ -902,9 +871,9 @@ export default function Results() {
                   style={{
                     padding: '4px 10px',
                     borderRadius: '999px',
-                    backgroundColor: 'var(--color-neutral-100)',
-                    color: 'var(--color-neutral-500)',
-                    fontFamily: 'var(--font-mono)',
+                    backgroundColor: 'var(--ns-surface-2)',
+                    color: 'var(--ns-n500)',
+                    fontFamily: 'var(--font-data)',
                     fontSize: '0.75rem',
                     fontWeight: 600,
                   }}
@@ -925,13 +894,13 @@ export default function Results() {
                       marginBottom: '6px',
                     }}
                   >
-                    <span style={{ color: 'var(--color-neutral-600)', fontSize: '0.85rem' }}>
+                    <span style={{ color: 'var(--ns-n600)', fontSize: '0.85rem' }}>
                       Speech risk score
                     </span>
                     <strong
                       style={{
-                        fontFamily: 'var(--font-mono)',
-                        color: 'var(--color-neutral-900)',
+                        fontFamily: 'var(--font-data)',
+                        color: 'var(--ns-n900)',
                       }}
                     >
                       {selectedCase.riskScore != null
@@ -943,7 +912,7 @@ export default function Results() {
                     style={{
                       height: '10px',
                       borderRadius: '999px',
-                      backgroundColor: 'var(--color-neutral-100)',
+                      backgroundColor: 'var(--ns-surface-2)',
                       overflow: 'hidden',
                     }}
                   >
@@ -966,8 +935,8 @@ export default function Results() {
                     gap: '10px',
                     padding: '16px',
                     borderRadius: '16px',
-                    border: '1px solid var(--color-neutral-200)',
-                    backgroundColor: 'var(--color-bg)',
+                    border: '1px solid var(--border-color)',
+                    backgroundColor: 'var(--ns-surface-2)',
                   }}
                 >
                   {[
@@ -1010,13 +979,13 @@ export default function Results() {
                         gap: '12px',
                       }}
                     >
-                      <span style={{ color: 'var(--color-neutral-500)', fontSize: '0.85rem' }}>
+                      <span style={{ color: 'var(--ns-n500)', fontSize: '0.85rem' }}>
                         {label}
                       </span>
                       <strong
                         style={{
-                          color: 'var(--color-neutral-900)',
-                          fontFamily: 'var(--font-mono)',
+                          color: 'var(--ns-n900)',
+                          fontFamily: 'var(--font-data)',
                           fontSize: '0.85rem',
                           textAlign: 'right',
                         }}
@@ -1053,7 +1022,7 @@ export default function Results() {
                   <p
                     style={{
                       marginTop: '14px',
-                      color: 'var(--color-neutral-600)',
+                      color: 'var(--ns-n600)',
                       lineHeight: 1.7,
                       fontSize: '0.9rem',
                     }}
@@ -1068,9 +1037,9 @@ export default function Results() {
                   padding: '28px 20px',
                   textAlign: 'center',
                   borderRadius: '16px',
-                  border: '1px solid var(--color-neutral-200)',
-                  backgroundColor: 'var(--color-bg)',
-                  color: 'var(--color-neutral-400)',
+                  border: '1px solid var(--border-color)',
+                  backgroundColor: 'var(--ns-surface-2)',
+                  color: 'var(--ns-n400)',
                 }}
               >
                 {isToddler
@@ -1083,28 +1052,28 @@ export default function Results() {
           </section>
 
           {/* ── Late Fusion Formula ──────────────────────────────── */}
-          <section style={styles.card}>
-            <h3 style={{ marginTop: 0, color: 'var(--color-neutral-900)' }}>
+          <section className="panel">
+            <h3 style={{ marginTop: 0, color: 'var(--ns-n900)' }}>
               Late fusion formula
             </h3>
-            <p style={{ margin: '6px 0 14px', color: 'var(--color-neutral-500)', fontSize: '0.85rem' }}>
+            <p style={{ margin: '6px 0 14px', color: 'var(--ns-n500)', fontSize: '0.85rem' }}>
               Multimodal risk is computed as a weighted average of available modality scores.
             </p>
             <div
               style={{
                 padding: '16px',
                 borderRadius: '12px',
-                backgroundColor: 'var(--color-neutral-900)',
-                color: 'var(--color-neutral-200)',
-                fontFamily: 'var(--font-mono)',
+                backgroundColor: 'var(--ns-n900)',
+                color: 'var(--border-color)',
+                fontFamily: 'var(--font-data)',
                 fontSize: '0.82rem',
                 lineHeight: 1.8,
                 overflowX: 'auto',
               }}
             >
               <div>
-                <span style={{ color: 'var(--color-neutral-400)' }}>P</span>
-                <sub style={{ color: 'var(--color-neutral-500)' }}>final</sub>
+                <span style={{ color: 'var(--ns-n400)' }}>P</span>
+                <sub style={{ color: 'var(--ns-n500)' }}>final</sub>
                 {' = '}
                 <span style={{ color: '#FFD97D' }}>0.40</span>{' × '}
                 <span style={{ color: '#A8D8EA' }}>
@@ -1112,17 +1081,17 @@ export default function Results() {
                 </span>
                 {' + '}
                 <span style={{ color: '#FFD97D' }}>0.25</span>{' × '}
-                <span style={{ color: 'var(--color-neutral-500)' }}>N/A</span>
+                <span style={{ color: 'var(--ns-n500)' }}>N/A</span>
                 {' + '}
                 <span style={{ color: '#FFD97D' }}>0.20</span>{' × '}
-                <span style={{ color: hasGazeData ? '#B5EAD7' : 'var(--color-neutral-500)' }}>
+                <span style={{ color: hasGazeData ? '#B5EAD7' : 'var(--ns-n500)' }}>
                   {hasGazeData && selectedCase.riskScore != null
                     ? selectedCase.riskScore.toFixed(4)
                     : 'N/A'}
                 </span>
                 {' + '}
                 <span style={{ color: '#FFD97D' }}>0.15</span>{' × '}
-                <span style={{ color: hasSpeechData ? '#FBBF24' : 'var(--color-neutral-500)' }}>
+                <span style={{ color: hasSpeechData ? '#FBBF24' : 'var(--ns-n500)' }}>
                   {hasSpeechData && selectedCase.riskScore != null
                     ? selectedCase.riskScore.toFixed(4)
                     : 'N/A'}
@@ -1142,7 +1111,7 @@ export default function Results() {
                 style={{
                   marginTop: '10px',
                   fontSize: '0.8rem',
-                  color: 'var(--color-risk-moderate)',
+                  color: 'var(--ns-risk-mod)',
                   fontStyle: 'italic',
                 }}
               >
@@ -1154,7 +1123,7 @@ export default function Results() {
                 style={{
                   marginTop: '10px',
                   fontSize: '0.8rem',
-                  color: 'var(--color-risk-moderate)',
+                  color: 'var(--ns-risk-mod)',
                   fontStyle: 'italic',
                 }}
               >
@@ -1163,50 +1132,31 @@ export default function Results() {
             )}
           </section>
 
-          <section style={{
-            backgroundColor: 'var(--color-bg-card)',
-            border: '1px solid var(--color-neutral-200)',
-            borderRadius: '22px',
-            padding: '24px',
-            boxShadow: 'var(--shadow-xs)',
-          }}>
+          <section className="panel">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
               <div>
-                <h3 style={{ margin: '0 0 4px', color: 'var(--color-neutral-900)' }}>Clinician Notes</h3>
-                <p style={{ margin: 0, color: 'var(--color-neutral-500)', fontSize: '0.85rem' }}>
+                <h3 style={{ margin: '0 0 4px', color: 'var(--ns-n900)' }}>Clinician Notes</h3>
+                <p style={{ margin: 0, color: 'var(--ns-n500)', fontSize: '0.85rem' }}>
                   Notes are stored locally and attached to this case ID. They are not transmitted to the backend.
                 </p>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 {notesSaved && (
-                  <span style={{ fontSize: '0.8rem', color: 'var(--color-primary-dark)', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                  <span style={{ fontSize: '0.8rem', color: 'var(--ns-instrument)', display: 'flex', alignItems: 'center', gap: '5px' }}>
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                       <polyline points="20 6 9 17 4 12"/>
                     </svg>
                     Saved
                   </span>
                 )}
-                <button
-                  id="save-notes-btn"
-                  onClick={handleSaveNotes}
-                  style={{
-                    padding: '8px 18px',
-                    borderRadius: '10px',
-                    border: 'none',
-                    background: 'linear-gradient(135deg, var(--color-primary), var(--color-primary-dark))',
-                    color: '#fff',
-                    fontWeight: 600,
-                    fontSize: '0.875rem',
-                    cursor: 'pointer',
-                    fontFamily: 'var(--font-body)',
-                  }}
-                >
+                <button id="save-notes-btn" onClick={handleSaveNotes} className="btn btn-primary">
                   Save Notes
                 </button>
               </div>
             </div>
             <textarea
               id="clinician-notes-input"
+              className="field-input"
               value={clinicianNotes}
               onChange={(e) => { setClinicianNotes(e.target.value); setNotesSaved(false); }}
               placeholder="Add clinical observations, referral notes, or follow-up plans here…"
@@ -1215,18 +1165,18 @@ export default function Results() {
                 width: '100%',
                 padding: '12px 14px',
                 borderRadius: '12px',
-                border: '1.5px solid var(--color-neutral-200)',
-                backgroundColor: 'var(--color-bg)',
-                color: 'var(--color-neutral-800)',
+                border: '1.5px solid var(--border-color)',
+                backgroundColor: 'var(--ns-surface-2)',
+                color: 'var(--ns-n800)',
                 fontSize: '0.9375rem',
-                fontFamily: 'var(--font-body)',
+                fontFamily: 'inherit',
                 lineHeight: 1.6,
                 resize: 'vertical',
                 outline: 'none',
                 transition: 'border-color 150ms',
               }}
-              onFocus={(e) => e.target.style.borderColor = 'var(--color-primary)'}
-              onBlur={(e) => e.target.style.borderColor = 'var(--color-neutral-200)'}
+              onFocus={(e) => e.target.style.borderColor = 'var(--ns-instrument)'}
+              onBlur={(e) => e.target.style.borderColor = 'var(--border-color)'}
             />
           </section>
         </>

@@ -35,7 +35,7 @@ import numpy as np
 
 # ── OpenCV preprocessing (face detection + normalisation) ───────────────────
 # Import lazily — cv_preprocessing degrades gracefully if OpenCV is absent.
-from ml import cv_preprocessing as _cv
+from . import cv_preprocessing as _cv
 
 # ── Model architecture (must be importable for torch.load) ──────────────────
 # Kept here so torch.load can resolve the class when deserialising a checkpoint.

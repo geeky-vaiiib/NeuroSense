@@ -2,24 +2,10 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import CategoryBadge from '../components/CategoryBadge';
 import RiskBadge from '../components/RiskBadge';
+import StatCard from '../components/StatCard';
 import { casesApi } from '../services/api';
 
 const FILTERS = ['all', 'adult', 'child', 'toddler'];
-
-const styles = {
-  page: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '24px',
-  },
-  card: {
-    backgroundColor: 'var(--color-bg-card)',
-    border: '1px solid var(--color-neutral-200)',
-    borderRadius: '22px',
-    padding: '24px',
-    boxShadow: 'var(--shadow-xs)',
-  },
-};
 
 function FilterChip({ label, active, onClick }) {
   return (
@@ -28,41 +14,32 @@ function FilterChip({ label, active, onClick }) {
       onClick={onClick}
       aria-pressed={active}
       style={{
-        minHeight: '36px',
-        padding: '0 14px',
-        borderRadius: '999px',
-        border: `1px solid ${active ? 'var(--color-primary)' : 'var(--color-neutral-200)'}`,
-        backgroundColor: active ? 'var(--color-primary-muted)' : '#fff',
-        color: active ? 'var(--color-primary-dark)' : 'var(--color-neutral-600)',
-        fontWeight: active ? 700 : 500,
+        minHeight: '32px',
+        padding: '0 var(--sp-4)',
+        borderRadius: 'var(--r-pill)',
+        border: `1px solid ${active ? 'var(--ns-instrument)' : 'var(--ns-n200)'}`,
+        backgroundColor: active ? 'var(--ns-instrument-dim)' : 'transparent',
+        color: active ? 'var(--ns-instrument)' : 'var(--ns-n600)',
+        fontSize: 'var(--ts-small)',
+        fontWeight: active ? 'var(--fw-semibold)' : 'var(--fw-medium)',
         cursor: 'pointer',
+        transition: 'all var(--ease-fast)',
+      }}
+      onMouseOver={(e) => {
+        if (!active) {
+          e.currentTarget.style.backgroundColor = 'var(--ns-n100)';
+          e.currentTarget.style.color = 'var(--ns-n900)';
+        }
+      }}
+      onMouseOut={(e) => {
+        if (!active) {
+          e.currentTarget.style.backgroundColor = 'transparent';
+          e.currentTarget.style.color = 'var(--ns-n600)';
+        }
       }}
     >
       {label}
     </button>
-  );
-}
-
-function StatCard({ label, value, helper }) {
-  return (
-    <div
-      style={{
-        borderRadius: '18px',
-        border: '1px solid var(--color-neutral-200)',
-        padding: '18px',
-        backgroundColor: 'var(--color-bg)',
-      }}
-    >
-      <div style={{ fontFamily: 'var(--font-mono)', fontSize: '2rem', color: 'var(--color-neutral-900)' }}>
-        {value}
-      </div>
-      <div style={{ marginTop: '6px', color: 'var(--color-neutral-600)', fontWeight: 600 }}>
-        {label}
-      </div>
-      <div style={{ marginTop: '4px', color: 'var(--color-neutral-400)', fontSize: '0.82rem' }}>
-        {helper}
-      </div>
-    </div>
   );
 }
 
@@ -115,50 +92,62 @@ export default function Dashboard() {
 
   const statCards = [
     {
+      id: 'stat-total',
       label:
         categoryFilter === 'all'
           ? 'Total cases'
           : `${categoryFilter[0].toUpperCase() + categoryFilter.slice(1)} cases`,
       value: totals.totalCases,
-      helper: 'Current dashboard scope',
+      trendLabel: 'Current dashboard scope',
+      trendValue: null,
     },
     {
+      id: 'stat-high',
       label: 'High risk',
       value: totals.highRisk,
-      helper: 'Cases flagged for elevated attention',
+      trendLabel: 'Cases flagged for attention',
+      trend: 'up',
+      trendValue: totals.highRisk > 0 ? '+1' : null,
     },
     {
+      id: 'stat-review',
       label: 'Awaiting review',
       value: totals.awaitingReview,
-      helper: 'Pending clinician follow-up',
+      trendLabel: 'Pending clinician follow-up',
+      trend: 'neutral',
+      trendValue: null,
     },
     {
+      id: 'stat-avg',
       label: 'Avg AQ-10',
       value: totals.averageAq10Score,
-      helper: 'Average questionnaire score',
+      trendLabel: 'Average questionnaire score',
+      trend: 'neutral',
+      trendValue: null,
     },
   ];
 
   return (
-    <main id="dashboard-page" style={styles.page}>
-      <section style={styles.card}>
+    <main id="dashboard-page" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-6)' }}>
+      {/* ── Overview Panel ── */}
+      <section className="panel">
         <div
           style={{
             display: 'flex',
             justifyContent: 'space-between',
-            gap: '16px',
+            gap: 'var(--sp-4)',
             flexWrap: 'wrap',
             alignItems: 'flex-start',
-            marginBottom: '18px',
+            marginBottom: 'var(--sp-5)',
           }}
         >
           <div>
-            <h1 style={{ margin: '0 0 6px', color: 'var(--color-neutral-900)' }}>Overview</h1>
-            <p style={{ margin: 0, color: 'var(--color-neutral-600)', lineHeight: 1.7 }}>
-              Track mixed adult and child screening activity with category-aware counts, explainability readiness, and recent cases.
+            <h2 style={{ fontSize: 'var(--ts-h2)', marginBottom: 'var(--sp-1)', color: 'var(--ns-n900)' }}>Overview</h2>
+            <p style={{ margin: 0, color: 'var(--ns-n600)', maxWidth: '60ch' }}>
+              Track mixed adult and child screening activity with category-aware counts.
             </p>
           </div>
-          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: 'var(--sp-2)', flexWrap: 'wrap' }}>
             {FILTERS.map((filter) => (
               <FilterChip
                 key={filter}
@@ -171,11 +160,11 @@ export default function Dashboard() {
         </div>
 
         {loading ? (
-          <p style={{ margin: 0, color: 'var(--color-neutral-500)' }}>Loading dashboard…</p>
+          <p style={{ margin: 0, color: 'var(--ns-n500)' }}>Loading dashboard…</p>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '14px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 'var(--sp-4)' }}>
             {statCards.map((card) => (
-              <StatCard key={card.label} {...card} />
+              <StatCard key={card.id} {...card} />
             ))}
           </div>
         )}
@@ -183,35 +172,36 @@ export default function Dashboard() {
 
       {error && (
         <section
+          className="panel"
           style={{
-            ...styles.card,
-            borderColor: 'var(--color-risk-high-border)',
-            backgroundColor: 'var(--color-risk-high-muted)',
+            borderColor: 'var(--ns-risk-high-border)',
+            backgroundColor: 'var(--ns-risk-high-bg)',
           }}
         >
-          <p style={{ margin: 0, color: 'var(--color-risk-high)', fontWeight: 600 }}>
+          <p style={{ margin: 0, color: 'var(--ns-risk-high)', fontWeight: 'var(--fw-semibold)' }}>
             {error}
           </p>
         </section>
       )}
 
+      {/* ── Two-column grid ── */}
       <section
         style={{
           display: 'grid',
-          gridTemplateColumns: '1.1fr 1fr',
-          gap: '20px',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))',
+          gap: 'var(--sp-5)',
         }}
       >
-        <div style={styles.card}>
-          <div style={{ marginBottom: '18px' }}>
-            <h2 style={{ margin: '0 0 6px', color: 'var(--color-neutral-900)' }}>
+        <div className="panel">
+          <div style={{ marginBottom: 'var(--sp-5)' }}>
+            <h2 style={{ fontSize: 'var(--ts-h3)', marginBottom: 'var(--sp-1)', color: 'var(--ns-n900)' }}>
               Category mix
             </h2>
-            <p style={{ margin: 0, color: 'var(--color-neutral-500)' }}>
-              Adult and child counts remain visible even while filtering the dashboard.
+            <p style={{ margin: 0, color: 'var(--ns-n500)', fontSize: 'var(--ts-small)' }}>
+              Adult and child counts remain visible across filtering.
             </p>
           </div>
-          <div style={{ display: 'grid', gap: '12px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-3)' }}>
             {(summary?.categoryBreakdown ?? []).map((item) => (
               <div
                 key={item.category}
@@ -219,20 +209,17 @@ export default function Dashboard() {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
-                  gap: '12px',
-                  padding: '14px 16px',
-                  borderRadius: '16px',
-                  border: '1px solid var(--color-neutral-200)',
-                  backgroundColor: 'var(--color-bg)',
+                  gap: 'var(--sp-3)',
+                  padding: 'var(--sp-3) var(--sp-4)',
+                  borderRadius: 'var(--r-md)',
+                  border: 'var(--border)',
+                  backgroundColor: 'var(--ns-surface-2)',
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-3)' }}>
                   <CategoryBadge category={item.category} size="md" />
-                  <span style={{ color: 'var(--color-neutral-700)', fontWeight: 600 }}>
-                    {item.label}
-                  </span>
                 </div>
-                <strong style={{ fontFamily: 'var(--font-mono)', color: 'var(--color-neutral-900)' }}>
+                <strong style={{ fontFamily: 'var(--font-data)', color: 'var(--ns-n900)', fontSize: 'var(--ts-body)' }}>
                   {item.count}
                 </strong>
               </div>
@@ -240,31 +227,31 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div style={styles.card}>
-          <div style={{ marginBottom: '18px' }}>
-            <h2 style={{ margin: '0 0 6px', color: 'var(--color-neutral-900)' }}>
+        <div className="panel">
+          <div style={{ marginBottom: 'var(--sp-5)' }}>
+            <h2 style={{ fontSize: 'var(--ts-h3)', marginBottom: 'var(--sp-1)', color: 'var(--ns-n900)' }}>
               Pipeline confidence
             </h2>
-            <p style={{ margin: 0, color: 'var(--color-neutral-500)' }}>
-              Confidence indicators adapt to the active dashboard category.
+            <p style={{ margin: 0, color: 'var(--ns-n500)', fontSize: 'var(--ts-small)' }}>
+              Average fusion confidence across the active scope.
             </p>
           </div>
-          <div style={{ display: 'grid', gap: '14px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-4)' }}>
             {(summary?.modalityConfidence ?? []).map((item) => (
               <div key={item.id}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', marginBottom: '6px' }}>
-                  <span style={{ color: 'var(--color-neutral-700)', fontWeight: 600 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 'var(--sp-3)', marginBottom: 'var(--sp-2)' }}>
+                  <span style={{ color: 'var(--ns-n700)', fontSize: 'var(--ts-small)', fontWeight: 'var(--fw-medium)' }}>
                     {item.label}
                   </span>
-                  <span style={{ color: 'var(--color-primary-dark)', fontFamily: 'var(--font-mono)' }}>
+                  <span style={{ color: 'var(--ns-n900)', fontFamily: 'var(--font-data)', fontSize: 'var(--ts-small)' }}>
                     {item.pct}%
                   </span>
                 </div>
                 <div
                   style={{
-                    height: '10px',
-                    borderRadius: '999px',
-                    backgroundColor: 'var(--color-neutral-100)',
+                    height: '6px',
+                    borderRadius: 'var(--r-pill)',
+                    backgroundColor: 'var(--ns-n150)',
                     overflow: 'hidden',
                   }}
                 >
@@ -272,8 +259,8 @@ export default function Dashboard() {
                     style={{
                       width: `${item.pct}%`,
                       height: '100%',
-                      borderRadius: '999px',
-                      backgroundColor: 'var(--color-primary)',
+                      borderRadius: 'var(--r-pill)',
+                      backgroundColor: 'var(--ns-instrument)',
                     }}
                   />
                 </div>
@@ -283,52 +270,47 @@ export default function Dashboard() {
         </div>
       </section>
 
-      <section style={styles.card}>
+      {/* ── Recent Cases ── */}
+      <section className="panel">
         <div
           style={{
             display: 'flex',
             justifyContent: 'space-between',
-            gap: '16px',
+            gap: 'var(--sp-4)',
             flexWrap: 'wrap',
             alignItems: 'center',
-            marginBottom: '18px',
+            marginBottom: 'var(--sp-5)',
           }}
         >
           <div>
-            <h2 style={{ margin: '0 0 6px', color: 'var(--color-neutral-900)' }}>
+            <h2 style={{ fontSize: 'var(--ts-h3)', marginBottom: 'var(--sp-1)', color: 'var(--ns-n900)' }}>
               Recent cases
             </h2>
-            <p style={{ margin: 0, color: 'var(--color-neutral-500)' }}>
-              Each row retains its adult or child tag for quick routing and review.
+            <p style={{ margin: 0, color: 'var(--ns-n500)', fontSize: 'var(--ts-small)' }}>
+              Latest completed screenings in this scope.
             </p>
           </div>
-          <Link
-            to="/app/cases"
-            style={{
-              color: 'var(--color-primary-dark)',
-              fontWeight: 700,
-              textDecoration: 'none',
-            }}
-          >
+          <Link to="/app/cases" className="btn btn-ghost btn-sm">
             View all cases
           </Link>
         </div>
 
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <div style={{ overflowX: 'auto', margin: '0 calc(-1 * var(--panel-pad))' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
             <thead>
-              <tr>
-                {['Case', 'Category', 'Age', 'Risk', 'Date', 'Status'].map((header) => (
+              <tr style={{ borderBottom: 'var(--border)' }}>
+                {['Case', 'Category', 'Age', 'Risk', 'Date', 'Status'].map((header, i) => (
                   <th
                     key={header}
                     style={{
-                      textAlign: 'left',
-                      padding: '10px 12px',
-                      color: 'var(--color-neutral-400)',
-                      fontSize: '0.75rem',
+                      padding: `var(--sp-2) var(--sp-4)`,
+                      paddingLeft: i === 0 ? 'var(--panel-pad)' : 'var(--sp-4)',
+                      paddingRight: i === 5 ? 'var(--panel-pad)' : 'var(--sp-4)',
+                      color: 'var(--ns-n500)',
+                      fontSize: 'var(--ts-caption)',
+                      fontWeight: 'var(--fw-semibold)',
+                      letterSpacing: 'var(--ls-label)',
                       textTransform: 'uppercase',
-                      letterSpacing: '0.05em',
-                      borderBottom: '1px solid var(--color-neutral-100)',
                     }}
                   >
                     {header}
@@ -341,31 +323,42 @@ export default function Dashboard() {
                 <tr
                   key={record.id}
                   onClick={() => navigate(`/app/results/${record.id}`)}
-                  style={{ cursor: 'pointer', borderBottom: '1px solid var(--color-neutral-100)' }}
+                  style={{ cursor: 'pointer', borderBottom: 'var(--border)', transition: 'background-color var(--ease-fast)' }}
+                  onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'var(--ns-surface-2)'}
+                  onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                 >
-                  <td style={{ padding: '14px 12px' }}>
-                    <strong style={{ color: 'var(--color-neutral-900)' }}>
+                  <td style={{ padding: 'var(--sp-3) var(--sp-4)', paddingLeft: 'var(--panel-pad)' }}>
+                    <div style={{ fontWeight: 'var(--fw-medium)', color: 'var(--ns-n900)' }}>
                       {record.subjectName || 'Unnamed case'}
-                    </strong>
-                    <div style={{ color: 'var(--color-neutral-500)', fontSize: '0.82rem', marginTop: '4px' }}>
+                    </div>
+                    <div style={{ color: 'var(--ns-n500)', fontSize: 'var(--ts-caption)', fontFamily: 'var(--font-data)', marginTop: '2px' }}>
                       {record.id}
                     </div>
                   </td>
-                  <td style={{ padding: '14px 12px' }}>
+                  <td style={{ padding: 'var(--sp-3) var(--sp-4)' }}>
                     <CategoryBadge category={record.category} size="sm" />
                   </td>
-                  <td style={{ padding: '14px 12px', color: 'var(--color-neutral-700)' }}>{record.age}</td>
-                  <td style={{ padding: '14px 12px' }}>
+                  <td style={{ padding: 'var(--sp-3) var(--sp-4)', color: 'var(--ns-n700)', fontSize: 'var(--ts-small)' }}>
+                    {record.age}
+                  </td>
+                  <td style={{ padding: 'var(--sp-3) var(--sp-4)' }}>
                     <RiskBadge level={record.riskLevel} size="sm" showScore score={record.riskScore} />
                   </td>
-                  <td style={{ padding: '14px 12px', color: 'var(--color-neutral-600)' }}>
+                  <td style={{ padding: 'var(--sp-3) var(--sp-4)', color: 'var(--ns-n600)', fontSize: 'var(--ts-small)' }}>
                     {record.screeningDate}
                   </td>
-                  <td style={{ padding: '14px 12px', color: 'var(--color-neutral-600)' }}>
+                  <td style={{ padding: 'var(--sp-3) var(--sp-4)', paddingRight: 'var(--panel-pad)', color: 'var(--ns-n600)', fontSize: 'var(--ts-small)' }}>
                     {record.status}
                   </td>
                 </tr>
               ))}
+              {(summary?.recentCases?.length === 0) && (
+                <tr>
+                  <td colSpan={6} style={{ padding: 'var(--sp-8)', textAlign: 'center', color: 'var(--ns-n500)' }}>
+                    No recent cases found.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>

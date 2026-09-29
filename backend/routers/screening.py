@@ -28,7 +28,7 @@ try:
         ScreeningResponse,
     )
 except ImportError:  # pragma: no cover - fallback for backend cwd execution
-    from core.categories import (
+    from ..core.categories import (
         build_case_tags,
         build_diagnosis_summary,
         build_initial_notes,
@@ -38,7 +38,7 @@ except ImportError:  # pragma: no cover - fallback for backend cwd execution
         screening_tool_for_category,
     )
     from core.cases_store import upsert_case_record
-    from ml.fusion_engine import fuse, modality_breakdown_as_dicts
+    from ..ml.fusion_engine import fuse, modality_breakdown_as_dicts
     from ml.model import get_bundle, predict
     from ml.preprocessing_pipeline import preprocess_screening_input
     from schemas.screening import (

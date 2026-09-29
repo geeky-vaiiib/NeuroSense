@@ -1,161 +1,99 @@
 /**
  * StatCard.jsx
- * A metric display card with trend indicator and optional sparkline slot.
+ *
+ * Metric display for the dashboard. Design intent: neutral, data-forward.
+ * The value is the dominant element; the label and trend are secondary.
+ * No colored icon backgrounds — icons are inline at low contrast.
+ * Trend direction uses a text label + arrow, not color alone.
  */
 
-import { useState } from 'react';
-
-const trendColors = {
-  up: 'var(--color-risk-high)',
-  down: 'var(--color-risk-low)',
-  neutral: 'var(--color-neutral-500)',
+const TREND_ICON = {
+  up:      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="18 15 12 9 6 15"/></svg>,
+  down:    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>,
+  neutral: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/></svg>,
 };
 
-const trendIcons = {
-  up: (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="18 15 12 9 6 15" />
-    </svg>
-  ),
-  down: (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="6 9 12 15 18 9" />
-    </svg>
-  ),
-  neutral: (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-      <line x1="5" y1="12" x2="19" y2="12" />
-    </svg>
-  ),
+// trend color — only on the badge text, not on backgrounds
+const TREND_COLOR = {
+  up:      'var(--ns-risk-high-text)',
+  down:    'var(--ns-risk-low-text)',
+  neutral: 'var(--ns-n500)',
 };
 
-const styles = {
-  card: {
-    backgroundColor: 'var(--color-bg-card)',
-    border: '1px solid var(--color-neutral-200)',
-    borderRadius: 'var(--radius-xl)',
-    padding: 'var(--space-6)',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 'var(--space-4)',
-    boxShadow: 'var(--shadow-sm)',
-    transition: 'box-shadow var(--transition-base), transform var(--transition-base)',
-    cursor: 'default',
-  },
-  header: {
-    display: 'flex',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    gap: 'var(--space-3)',
-  },
-  iconWrapper: {
-    width: '40px',
-    height: '40px',
-    borderRadius: 'var(--radius-lg)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  },
-  label: {
-    fontSize: 'var(--font-size-sm)',
-    fontWeight: 'var(--font-weight-medium)',
-    color: 'var(--color-neutral-500)',
-    letterSpacing: 'var(--letter-spacing-wide)',
-  },
-  value: {
-    fontSize: 'var(--font-size-3xl)',
-    fontWeight: 'var(--font-weight-bold)',
-    fontFamily: 'var(--font-mono)',
-    color: 'var(--color-neutral-900)',
-    lineHeight: '1',
-    letterSpacing: 'var(--letter-spacing-tight)',
-  },
-  footer: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 'var(--space-2)',
-  },
-  trendBadge: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '3px',
-    fontSize: 'var(--font-size-xs)',
-    fontWeight: 'var(--font-weight-semibold)',
-    fontFamily: 'var(--font-mono)',
-    borderRadius: 'var(--radius-full)',
-    padding: '2px var(--space-2)',
-  },
-  trendLabel: {
-    fontSize: 'var(--font-size-xs)',
-    color: 'var(--color-neutral-400)',
-  },
-};
-
-/**
- * @param {object} props
- * @param {string}  props.id        - Unique element ID
- * @param {string}  props.label     - Metric label
- * @param {string|number} props.value - Primary metric value
- * @param {React.ReactNode} [props.icon] - Icon element
- * @param {string}  [props.iconBg]  - Icon background CSS color
- * @param {string}  [props.iconColor] - Icon color
- * @param {'up'|'down'|'neutral'} [props.trend]
- * @param {string}  [props.trendValue] - e.g. "+12%"
- * @param {string}  [props.trendLabel] - e.g. "vs last month"
- */
 export default function StatCard({
   id,
   label,
   value,
   icon,
-  iconBg = 'var(--color-primary-subtle)',
-  iconColor = 'var(--color-primary)',
   trend = 'neutral',
   trendValue,
   trendLabel = 'vs last month',
 }) {
-  const [hovered, setHovered] = useState(false);
-
   return (
     <article
       id={id}
       role="region"
       aria-label={`${label}: ${value}`}
       style={{
-        ...styles.card,
-        boxShadow: hovered ? 'var(--shadow-md)' : 'var(--shadow-sm)',
-        transform: hovered ? 'translateY(-2px)' : 'translateY(0)',
+        backgroundColor: 'var(--ns-panel)',
+        border: 'var(--border)',
+        borderRadius: 'var(--r-md)',
+        padding: 'var(--sp-5)',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 'var(--sp-3)',
       }}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
     >
-      <div style={styles.header}>
-        <div>
-          <div style={styles.label}>{label}</div>
-        </div>
+      {/* Label row */}
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 'var(--sp-2)' }}>
+        <span style={{
+          fontSize: 'var(--ts-small)',
+          fontWeight: 'var(--fw-medium)',
+          color: 'var(--ns-n500)',
+          letterSpacing: 'var(--ls-label)',
+          lineHeight: 'var(--lh-snug)',
+        }}>
+          {label}
+        </span>
         {icon && (
-          <div style={{ ...styles.iconWrapper, backgroundColor: iconBg, color: iconColor }}>
+          <span style={{ color: 'var(--ns-n400)', lineHeight: 0, flexShrink: 0 }} aria-hidden="true">
             {icon}
-          </div>
+          </span>
         )}
       </div>
 
-      <div style={styles.value} aria-live="polite">{value}</div>
+      {/* Primary value — data font, large */}
+      <div
+        style={{
+          fontFamily: 'var(--font-data)',
+          fontSize: 'var(--ts-h1)',
+          fontWeight: 'var(--fw-semibold)',
+          color: 'var(--ns-n900)',
+          lineHeight: 1,
+          letterSpacing: 'var(--ls-tight)',
+        }}
+        aria-live="polite"
+      >
+        {value}
+      </div>
 
+      {/* Trend badge — text + direction icon */}
       {trendValue && (
-        <div style={styles.footer}>
-          <span
-            style={{
-              ...styles.trendBadge,
-              color: trendColors[trend],
-              backgroundColor: `${trendColors[trend]}18`,
-            }}
-          >
-            {trendIcons[trend]}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)' }}>
+          <span style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '3px',
+            fontSize: 'var(--ts-caption)',
+            fontWeight: 'var(--fw-medium)',
+            color: TREND_COLOR[trend] ?? TREND_COLOR.neutral,
+          }}>
+            {TREND_ICON[trend] ?? TREND_ICON.neutral}
             {trendValue}
           </span>
-          <span style={styles.trendLabel}>{trendLabel}</span>
+          <span style={{ fontSize: 'var(--ts-caption)', color: 'var(--ns-n400)' }}>
+            {trendLabel}
+          </span>
         </div>
       )}
     </article>

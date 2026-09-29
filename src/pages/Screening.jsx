@@ -34,95 +34,10 @@ const BASE_DEMO = {
 
 const BASE_CONSENTS = [false, false, false, false];
 
-const styles = {
-  page: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '24px',
-    maxWidth: '980px',
-  },
-  hero: (content) => ({
-    background: `linear-gradient(135deg, ${content.accentSoft}, rgba(255,255,255,0.92))`,
-    border: `1px solid ${content.accentBorder}`,
-    borderRadius: '24px',
-    padding: '28px',
-    display: 'grid',
-    gridTemplateColumns: '1.4fr 1fr',
-    gap: '20px',
-    alignItems: 'start',
-  }),
-  sectionCard: {
-    backgroundColor: 'var(--color-bg-card)',
-    border: '1px solid var(--color-neutral-200)',
-    borderRadius: '20px',
-    padding: '24px',
-    boxShadow: 'var(--shadow-xs)',
-  },
-  label: {
-    display: 'block',
-    fontSize: '0.75rem',
-    fontWeight: 700,
-    color: 'var(--color-neutral-500)',
-    letterSpacing: '0.05em',
-    textTransform: 'uppercase',
-    marginBottom: '8px',
-  },
-  input: {
-    width: '100%',
-    minHeight: '44px',
-    padding: '10px 12px',
-    borderRadius: '12px',
-    border: '1px solid var(--color-neutral-200)',
-    backgroundColor: '#fff',
-    color: 'var(--color-neutral-800)',
-    fontSize: '0.95rem',
-    fontFamily: 'var(--font-body)',
-  },
-  grid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-    gap: '16px',
-  },
-  buttonRow: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    gap: '12px',
-    flexWrap: 'wrap',
-    alignItems: 'center',
-  },
-  button: {
-    minHeight: '44px',
-    padding: '0 20px',
-    borderRadius: '12px',
-    border: '1px solid var(--color-neutral-200)',
-    backgroundColor: '#fff',
-    color: 'var(--color-neutral-700)',
-    fontSize: '0.95rem',
-    fontWeight: 600,
-    fontFamily: 'var(--font-body)',
-    cursor: 'pointer',
-  },
-  primaryButton: (content, disabled) => ({
-    minHeight: '46px',
-    padding: '0 20px',
-    borderRadius: '12px',
-    border: 'none',
-    background: disabled
-      ? 'var(--color-neutral-200)'
-      : `linear-gradient(135deg, ${content.accent}, var(--color-primary-dark))`,
-    color: disabled ? 'var(--color-neutral-500)' : '#fff',
-    fontSize: '0.95rem',
-    fontWeight: 700,
-    fontFamily: 'var(--font-body)',
-    cursor: disabled ? 'not-allowed' : 'pointer',
-    boxShadow: disabled ? 'none' : '0 10px 24px rgba(26, 26, 24, 0.10)',
-  }),
-};
-
 function StepIndicator({ current, isToddler }) {
   const labels = isToddler ? STEP_LABELS_TODDLER : STEP_LABELS_FULL;
   return (
-    <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-2)' }}>
       {labels.map((label, index) => {
         const active = current === index;
         const completed = current > index;
@@ -130,44 +45,35 @@ function StepIndicator({ current, isToddler }) {
           <div
             key={label}
             style={{
-              display: 'inline-flex',
+              display: 'flex',
               alignItems: 'center',
-              gap: '8px',
-              padding: '8px 12px',
-              borderRadius: '999px',
-              border: `1px solid ${
-                active || completed ? 'var(--color-primary)' : 'var(--color-neutral-200)'
-              }`,
-              backgroundColor:
-                active || completed ? 'var(--color-primary-muted)' : 'var(--color-bg-card)',
-              color:
-                active || completed
-                  ? 'var(--color-primary-dark)'
-                  : 'var(--color-neutral-500)',
-              fontSize: '0.8rem',
-              fontWeight: active ? 700 : 500,
+              gap: 'var(--sp-3)',
+              padding: 'var(--sp-2)',
+              borderRadius: 'var(--r-md)',
+              backgroundColor: active ? 'var(--ns-instrument-dim)' : 'transparent',
+              color: active ? 'var(--ns-instrument)' : completed ? 'var(--ns-n900)' : 'var(--ns-n500)',
+              fontWeight: active ? 'var(--fw-semibold)' : 'var(--fw-medium)',
+              transition: 'all var(--ease-fast)',
             }}
           >
             <span
               style={{
-                width: '20px',
-                height: '20px',
+                width: '24px',
+                height: '24px',
                 borderRadius: '50%',
-                display: 'inline-flex',
+                display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                backgroundColor: completed ? 'var(--color-primary)' : '#fff',
-                color: completed ? '#fff' : 'inherit',
-                border: `1px solid ${
-                  active || completed ? 'var(--color-primary)' : 'var(--color-neutral-300)'
-                }`,
-                fontFamily: 'var(--font-mono)',
-                fontSize: '0.75rem',
+                backgroundColor: completed ? 'var(--ns-instrument)' : active ? 'transparent' : 'var(--ns-surface-2)',
+                color: completed ? '#fff' : active ? 'var(--ns-instrument)' : 'var(--ns-n500)',
+                border: `1px solid ${completed ? 'var(--ns-instrument)' : active ? 'var(--ns-instrument)' : 'var(--border-color)'}`,
+                fontFamily: 'var(--font-data)',
+                fontSize: 'var(--ts-caption)',
               }}
             >
               {completed ? '✓' : index + 1}
             </span>
-            {label}
+            <span style={{ fontSize: 'var(--ts-small)' }}>{label}</span>
           </div>
         );
       })}
@@ -181,52 +87,36 @@ function TrackCard({ id, active, onSelect }) {
     <button
       type="button"
       onClick={() => onSelect(id)}
+      className="panel"
       style={{
         textAlign: 'left',
-        padding: '22px',
-        borderRadius: '20px',
-        border: `1px solid ${active ? content.accent : 'var(--color-neutral-200)'}`,
-        background: active
-          ? `linear-gradient(135deg, ${content.accentSoft}, rgba(255,255,255,0.96))`
-          : 'var(--color-bg-card)',
-        boxShadow: active ? 'var(--shadow-md)' : 'var(--shadow-xs)',
+        padding: 'var(--sp-6)',
+        border: `1px solid ${active ? 'var(--ns-instrument)' : 'var(--border-color)'}`,
+        boxShadow: active ? '0 0 0 1px var(--ns-instrument)' : 'none',
+        backgroundColor: active ? 'var(--ns-instrument-dim)' : 'var(--ns-panel)',
         cursor: 'pointer',
         display: 'flex',
         flexDirection: 'column',
-        gap: '12px',
+        gap: 'var(--sp-4)',
+        transition: 'all var(--ease-fast)',
+      }}
+      onMouseOver={(e) => {
+        if (!active) e.currentTarget.style.borderColor = 'var(--ns-n400)';
+      }}
+      onMouseOut={(e) => {
+        if (!active) e.currentTarget.style.borderColor = 'var(--border-color)';
       }}
     >
       <CategoryBadge category={id} size="lg" />
       <div>
-        <h3
-          style={{
-            margin: '0 0 6px',
-            fontSize: '1.1rem',
-            color: 'var(--color-neutral-900)',
-          }}
-        >
+        <h3 style={{ margin: '0 0 var(--sp-1)', fontSize: 'var(--ts-h3)', color: 'var(--ns-n900)' }}>
           {content.entryTitle}
         </h3>
-        <p
-          style={{
-            margin: 0,
-            fontSize: '0.92rem',
-            lineHeight: 1.6,
-            color: 'var(--color-neutral-600)',
-          }}
-        >
+        <p style={{ margin: 0, fontSize: 'var(--ts-body)', color: 'var(--ns-n600)', lineHeight: 'var(--lh-body)' }}>
           {content.entryDescription}
         </p>
       </div>
-      <div
-        style={{
-          paddingTop: '8px',
-          borderTop: '1px solid var(--color-neutral-100)',
-          fontSize: '0.82rem',
-          color: content.accent,
-          fontWeight: 700,
-        }}
-      >
+      <div style={{ paddingTop: 'var(--sp-3)', borderTop: 'var(--border)', fontSize: 'var(--ts-small)', color: 'var(--ns-instrument)', fontWeight: 'var(--fw-semibold)' }}>
         {content.trackSummary}
       </div>
     </button>
@@ -236,33 +126,19 @@ function TrackCard({ id, active, onSelect }) {
 function FormField({ label, children }) {
   return (
     <label style={{ display: 'block' }}>
-      <span style={styles.label}>{label}</span>
+      <span className="field-label">{label}</span>
       {children}
     </label>
   );
 }
 
-function QuestionBlock({ question, value, onChange, accent }) {
+function QuestionBlock({ question, value, onChange }) {
   return (
-    <div
-      style={{
-        padding: '18px',
-        borderRadius: '18px',
-        border: '1px solid var(--color-neutral-200)',
-        backgroundColor: 'var(--color-bg-card)',
-      }}
-    >
-      <p
-        style={{
-          margin: '0 0 14px',
-          fontWeight: 600,
-          color: 'var(--color-neutral-800)',
-          lineHeight: 1.55,
-        }}
-      >
+    <div className="panel" style={{ padding: 'var(--sp-5)' }}>
+      <p style={{ margin: '0 0 var(--sp-4)', fontWeight: 'var(--fw-medium)', color: 'var(--ns-n900)', lineHeight: 'var(--lh-snug)' }}>
         {question.prompt}
       </p>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '10px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 'var(--sp-2)' }}>
         {ANSWER_OPTIONS.map((option) => {
           const active = value === option;
           return (
@@ -271,14 +147,21 @@ function QuestionBlock({ question, value, onChange, accent }) {
               type="button"
               onClick={() => onChange(question.id, option)}
               style={{
-                minHeight: '42px',
-                padding: '0 12px',
-                borderRadius: '12px',
-                border: `1px solid ${active ? accent : 'var(--color-neutral-200)'}`,
-                backgroundColor: active ? 'rgba(124, 154, 133, 0.10)' : '#fff',
-                color: active ? 'var(--color-neutral-900)' : 'var(--color-neutral-600)',
-                fontWeight: active ? 700 : 500,
+                minHeight: '40px',
+                padding: '0 var(--sp-3)',
+                borderRadius: 'var(--r-sm)',
+                border: `1px solid ${active ? 'var(--ns-instrument)' : 'var(--border-color)'}`,
+                backgroundColor: active ? 'var(--ns-instrument-dim)' : 'var(--ns-panel)',
+                color: active ? 'var(--ns-instrument)' : 'var(--ns-n700)',
+                fontWeight: active ? 'var(--fw-semibold)' : 'var(--fw-medium)',
                 cursor: 'pointer',
+                transition: 'all var(--ease-fast)',
+              }}
+              onMouseOver={(e) => {
+                if (!active) e.currentTarget.style.backgroundColor = 'var(--ns-surface-2)';
+              }}
+              onMouseOut={(e) => {
+                if (!active) e.currentTarget.style.backgroundColor = 'var(--ns-panel)';
               }}
             >
               {option}
@@ -295,9 +178,7 @@ export default function Screening() {
   const navigate = useNavigate();
   const { submit, loading, error } = useScreening();
 
-  const [step, setStep] = useState(
-    routeCategory && CATEGORY_CONTENT[routeCategory] ? 1 : 0
-  );
+  const [step, setStep] = useState(routeCategory && CATEGORY_CONTENT[routeCategory] ? 1 : 0);
   const [consents, setConsents] = useState(BASE_CONSENTS);
   const [demo, setDemo] = useState(BASE_DEMO);
   const [answers, setAnswers] = useState({});
@@ -310,22 +191,17 @@ export default function Screening() {
   const [facialSkipped, setFacialSkipped] = useState(false);
   const [validationMessage, setValidationMessage] = useState('');
 
-  const category =
-    routeCategory && CATEGORY_CONTENT[routeCategory] ? routeCategory : '';
+  const category = routeCategory && CATEGORY_CONTENT[routeCategory] ? routeCategory : '';
   const content = category ? getCategoryContent(category) : null;
   const questions = category ? QUESTION_BANK[category] : [];
   const aq10Score = useMemo(() => buildAq10Score(answers, category || 'adult'), [answers, category]);
-  const ageCheck = useMemo(
-    () => validateCategoryAge(category, Number(demo.age)),
-    [category, demo.age]
-  );
+  const ageCheck = useMemo(() => validateCategoryAge(category, Number(demo.age)), [category, demo.age]);
 
-  // Gaze + speech + facial sessions are available for adult & child only (not toddler)
   const isToddler = category === 'toddler';
   const hasGaze = !isToddler && (category === 'adult' || category === 'child');
-  const GAZE_STEP = 4;    // adult/child only
-  const SPEECH_STEP = 5;  // adult/child only
-  const FACIAL_STEP = 6;  // adult/child only
+  const GAZE_STEP = 4;
+  const SPEECH_STEP = 5;
+  const FACIAL_STEP = 6;
   const REVIEW_STEP = isToddler ? 4 : 7;
 
   function selectCategory(nextCategory) {
@@ -334,17 +210,14 @@ export default function Screening() {
     setConsents(BASE_CONSENTS);
     setDemo((current) => ({
       ...current,
-      respondentRelationship:
-        CATEGORY_CONTENT[nextCategory].demographics.respondentRelationshipValue,
+      respondentRelationship: CATEGORY_CONTENT[nextCategory].demographics.respondentRelationshipValue,
     }));
     navigate(`/app/screening/${nextCategory}`, { replace: true });
   }
 
   function updateDemo(key, value) {
     setDemo((current) => ({ ...current, [key]: value }));
-    if (key === 'age' || key === 'respondentRelationship') {
-      setValidationMessage('');
-    }
+    if (key === 'age' || key === 'respondentRelationship') setValidationMessage('');
   }
 
   function updateConsent(index, checked) {
@@ -356,12 +229,9 @@ export default function Screening() {
   }
 
   const allConsentsAccepted = consents.every(Boolean);
-  const demographicsReady =
-    Number(demo.age) >= 0 &&
-    demo.gender &&
-    (category === 'adult' || Boolean(demo.respondentRelationship));
+  const demographicsReady = Number(demo.age) >= 0 && demo.gender && (category === 'adult' || Boolean(demo.respondentRelationship));
   const questionnaireReady = questions.every((question) => answers[question.id]);
-  // Build gaze status label for the review summary
+
   const gazeStatusLabel = (() => {
     if (isToddler) return 'N/A — Toddler track';
     if (gazeSkipped) return 'Skipped';
@@ -369,7 +239,6 @@ export default function Screening() {
     return 'Not started';
   })();
 
-  // Build speech status label for the review summary
   const speechStatusLabel = (() => {
     if (isToddler) return 'N/A — Toddler track';
     if (speechSkipped) return 'Skipped';
@@ -389,12 +258,7 @@ export default function Screening() {
     ['Screening tool', content?.screeningTool],
     ['AQ-10 score', `${aq10Score}/10`],
     ['Submitted for', demo.subjectName || 'No name provided'],
-    [
-      category === 'adult' ? 'Completion mode' : 'Respondent relationship',
-      category === 'adult'
-        ? content?.trackSummary
-        : demo.respondentRelationship || 'Not provided',
-    ],
+    [category === 'adult' ? 'Completion mode' : 'Respondent relationship', category === 'adult' ? content?.trackSummary : demo.respondentRelationship || 'Not provided'],
     ['Age', demo.age || 'Not provided'],
     ['Gender', demo.gender || 'Not provided'],
     ['Eye Gaze', gazeStatusLabel],
@@ -404,73 +268,38 @@ export default function Screening() {
 
   async function handlePrimaryAction() {
     if (!category) return;
-
     if (step === 1) {
-      if (!allConsentsAccepted) {
-        setValidationMessage('Please confirm all consent items before continuing.');
-        return;
-      }
-      setValidationMessage('');
-      setStep(2);
-      return;
+      if (!allConsentsAccepted) { setValidationMessage('Please confirm all consent items before continuing.'); return; }
+      setValidationMessage(''); setStep(2); return;
     }
-
     if (step === 2) {
-      if (!demographicsReady) {
-        setValidationMessage('Please complete the required demographic fields.');
-        return;
-      }
-      if (!ageCheck.valid) {
-        setValidationMessage(ageCheck.message);
-        return;
-      }
-      setValidationMessage('');
-      setStep(3);
-      return;
+      if (!demographicsReady) { setValidationMessage('Please complete the required demographic fields.'); return; }
+      if (!ageCheck.valid) { setValidationMessage(ageCheck.message); return; }
+      setValidationMessage(''); setStep(3); return;
     }
-
     if (step === 3) {
-      if (!questionnaireReady) {
-        setValidationMessage('Please answer all ten questionnaire items before continuing.');
-        return;
-      }
-      setValidationMessage('');
-      // For adult/child → go to gaze step (4). For toddler → skip to review.
-      setStep(hasGaze ? GAZE_STEP : REVIEW_STEP);
-      return;
+      if (!questionnaireReady) { setValidationMessage('Please answer all ten questionnaire items before continuing.'); return; }
+      setValidationMessage(''); setStep(hasGaze ? GAZE_STEP : REVIEW_STEP); return;
     }
-
-    // Gaze, speech and facial steps are handled internally by their own callbacks.
 
     if (step === REVIEW_STEP) {
       try {
-        // Encode audio blob to base64 if present
         let audioBase64 = null;
         if (audioBlob) {
           if (audioBlob.size > 2_000_000) {
-            // Audio too large — skip speech to avoid payload issues
-            setSpeechSkipped(true);
-            setAudioBlob(null);
+            setSpeechSkipped(true); setAudioBlob(null);
           } else {
             const arrayBuffer = await audioBlob.arrayBuffer();
             const uint8 = new Uint8Array(arrayBuffer);
             let binary = '';
-            for (let i = 0; i < uint8.length; i++) {
-              binary += String.fromCharCode(uint8[i]);
-            }
+            for (let i = 0; i < uint8.length; i++) binary += String.fromCharCode(uint8[i]);
             audioBase64 = btoa(binary);
           }
         }
 
         const payload = {
           category,
-          demo: {
-            ...demo,
-            respondentRelationship:
-              demo.respondentRelationship ||
-              content.demographics.respondentRelationshipValue,
-            age: Number(demo.age),
-          },
+          demo: { ...demo, respondentRelationship: demo.respondentRelationship || content.demographics.respondentRelationshipValue, age: Number(demo.age) },
           answers,
           aq10Score,
           gazePoints: gazeData || [],
@@ -484,459 +313,252 @@ export default function Screening() {
         };
         const result = await submit(payload);
         navigate(`/app/results/${result.caseId}`);
-      } catch {
-        // The hook surfaces the error message for the UI.
-      }
+      } catch {}
     }
   }
 
   function handleBack() {
     if (step <= 1) {
-      setStep(0);
-      navigate('/app/screening', { replace: true });
-      return;
+      setStep(0); navigate('/app/screening', { replace: true }); return;
     }
     setValidationMessage('');
-    // When going back from Review on gaze/speech tracks, skip back to AQ-10
-    // (gaze and speech are internally managed, not by the wizard's Continue button)
-    if (step === REVIEW_STEP && hasGaze) {
-      setStep(3); // back to AQ-10
-      return;
-    }
+    if (step === REVIEW_STEP && hasGaze) { setStep(3); return; }
     setStep((current) => current - 1);
   }
 
   return (
-    <main id="screening-page" style={styles.page}>
-      <div style={styles.sectionCard}>
-        <StepIndicator current={step} isToddler={isToddler} />
-      </div>
-
-      {step === 0 && (
-        <section style={styles.sectionCard}>
-          <div style={{ marginBottom: '18px' }}>
-            <p
-              style={{
-                margin: '0 0 8px',
-                fontSize: '0.8rem',
-                fontWeight: 700,
-                letterSpacing: '0.08em',
-                textTransform: 'uppercase',
-                color: 'var(--color-primary)',
-              }}
-            >
-              Choose a screening track
-            </p>
-            <h1
-              style={{
-                margin: '0 0 8px',
-                fontSize: '1.7rem',
-                color: 'var(--color-neutral-900)',
-              }}
-            >
-              Start with the right age-based experience
-            </h1>
-            <p
-              style={{
-                margin: 0,
-                color: 'var(--color-neutral-600)',
-                lineHeight: 1.7,
-                maxWidth: '700px',
-              }}
-            >
-              NeuroSense routes every screening through an age-based track — adult, child, or
-              toddler. Each track has its own language, validation rules, model pipeline, and
-              results interpretation.
-            </p>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
-            {CATEGORY_ORDER.map((item) => (
-              <TrackCard
-                key={item}
-                id={item}
-                active={category === item}
-                onSelect={selectCategory}
-              />
-            ))}
-          </div>
-        </section>
+    <main id="screening-page" style={{ display: 'flex', gap: 'var(--sp-12)', alignItems: 'flex-start', maxWidth: step === 0 ? '980px' : '960px', margin: step === 0 ? '0 auto' : '0' }}>
+      
+      {/* Wizard Step Indicator Sidebar */}
+      {step > 0 && (
+        <aside style={{ width: '200px', flexShrink: 0, position: 'sticky', top: 'calc(var(--navbar-height) + var(--sp-8))' }}>
+          <StepIndicator current={step} isToddler={isToddler} />
+        </aside>
       )}
 
-      {content && step > 0 && (
-        <>
-          <section style={styles.hero(content)}>
-            <div>
-              <CategoryBadge category={category} size="lg" />
-              <h1
-                style={{
-                  margin: '14px 0 8px',
-                  fontSize: '1.85rem',
-                  color: 'var(--color-neutral-900)',
-                }}
-              >
-                {content.introTitle}
+      {/* Main Content Area */}
+      <div style={{ flex: 1, maxWidth: step === 0 ? '100%' : '640px', display: 'flex', flexDirection: 'column', gap: 'var(--sp-6)' }}>
+        
+        {step === 0 && (
+          <section className="panel" style={{ border: 'none', backgroundColor: 'transparent', padding: 0 }}>
+            <div style={{ marginBottom: 'var(--sp-6)' }}>
+              <h1 style={{ margin: '0 0 var(--sp-2)', fontSize: 'var(--ts-h1)', color: 'var(--ns-n900)' }}>
+                Start a screening
               </h1>
-              <p
-                style={{
-                  margin: 0,
-                  color: 'var(--color-neutral-700)',
-                  lineHeight: 1.7,
-                }}
-              >
-                {content.introDescription}
+              <p style={{ margin: 0, color: 'var(--ns-n600)', lineHeight: 'var(--lh-body)', maxWidth: '60ch' }}>
+                NeuroSense routes every screening through an age-based track. Each track has its own 
+                validated questions, model pipeline, and diagnostic thresholds.
               </p>
             </div>
-            <div
-              style={{
-                backgroundColor: '#fff',
-                borderRadius: '18px',
-                padding: '18px',
-                border: '1px solid rgba(255,255,255,0.7)',
-              }}
-            >
-              <p style={styles.label}>Track details</p>
-              <div style={{ display: 'grid', gap: '10px' }}>
-                <div>
-                  <strong style={{ color: 'var(--color-neutral-800)' }}>Primary tool:</strong>{' '}
-                  <span style={{ color: 'var(--color-neutral-600)' }}>{content.screeningTool}</span>
-                </div>
-                <div>
-                  <strong style={{ color: 'var(--color-neutral-800)' }}>Respondent mode:</strong>{' '}
-                  <span style={{ color: 'var(--color-neutral-600)' }}>{content.trackSummary}</span>
-                </div>
-                <div>
-                  <strong style={{ color: 'var(--color-neutral-800)' }}>Model pipeline:</strong>{' '}
-                  <span style={{ color: 'var(--color-neutral-600)' }}>{category}_pipeline</span>
-                </div>
-              </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 'var(--sp-4)' }}>
+              {CATEGORY_ORDER.map((item) => (
+                <TrackCard key={item} id={item} active={category === item} onSelect={selectCategory} />
+              ))}
             </div>
           </section>
+        )}
 
-          {step === 1 && (
-            <section style={styles.sectionCard}>
-              <h2 style={{ marginTop: 0, color: 'var(--color-neutral-900)' }}>
-                {content.consentTitle}
-              </h2>
-              <p style={{ color: 'var(--color-neutral-600)', lineHeight: 1.7 }}>
-                {content.consentDescription}
-              </p>
-              <div style={{ display: 'grid', gap: '12px', marginTop: '18px' }}>
-                {content.consentItems.map((item, index) => (
-                  <label
-                    key={item}
-                    style={{
-                      display: 'flex',
-                      gap: '12px',
-                      alignItems: 'flex-start',
-                      padding: '14px 16px',
-                      borderRadius: '14px',
-                      border: `1px solid ${
-                        consents[index] ? content.accent : 'var(--color-neutral-200)'
-                      }`,
-                      backgroundColor: consents[index]
-                        ? content.accentSoft
-                        : 'var(--color-bg-card)',
-                    }}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={consents[index]}
-                      onChange={(event) => updateConsent(index, event.target.checked)}
-                      style={{ marginTop: '3px' }}
-                    />
-                    <span style={{ color: 'var(--color-neutral-700)', lineHeight: 1.6 }}>
-                      {item}
-                    </span>
-                  </label>
-                ))}
+        {content && step > 0 && (
+          <div className="wizard-step-enter" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-6)' }}>
+            
+            {/* Top track summary banner */}
+            <section className="panel" style={{ backgroundColor: 'var(--ns-surface-2)', border: 'none' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--sp-2)' }}>
+                <CategoryBadge category={category} size="md" />
+                <span style={{ fontSize: 'var(--ts-caption)', color: 'var(--ns-n500)', fontFamily: 'var(--font-data)' }}>
+                  Model: {category}_pipeline
+                </span>
               </div>
-            </section>
-          )}
-
-          {step === 2 && (
-            <section style={styles.sectionCard}>
-              <h2 style={{ marginTop: 0, color: 'var(--color-neutral-900)' }}>
-                Demographics and respondent context
-              </h2>
-              <p style={{ color: 'var(--color-neutral-600)', lineHeight: 1.7 }}>
-                {category === 'adult'
-                  ? 'These details stay attached to the adult result, case record, and explanation.'
-                  : category === 'toddler'
-                    ? 'These details stay attached to the toddler result, case record, and caregiver context.'
-                    : 'These details stay attached to the child result, case record, and caregiver context.'}
+              <h1 style={{ margin: '0 0 var(--sp-1)', fontSize: 'var(--ts-h2)', color: 'var(--ns-n900)' }}>
+                {content.introTitle}
+              </h1>
+              <p style={{ margin: 0, color: 'var(--ns-n600)', fontSize: 'var(--ts-small)' }}>
+                {content.screeningTool} · {content.trackSummary}
               </p>
-              <div style={styles.grid}>
-                <FormField label={content.demographics.subjectNameLabel}>
-                  <input
-                    value={demo.subjectName}
-                    onChange={(event) => updateDemo('subjectName', event.target.value)}
-                    style={styles.input}
-                  />
-                </FormField>
-                <FormField label={content.demographics.respondentNameLabel}>
-                  <input
-                    value={demo.respondentName}
-                    onChange={(event) => updateDemo('respondentName', event.target.value)}
-                    style={styles.input}
-                  />
-                </FormField>
-                <FormField label={content.demographics.respondentRelationshipLabel}>
-                  <input
-                    value={demo.respondentRelationship}
-                    disabled={category === 'adult'}
-                    onChange={(event) =>
-                      updateDemo('respondentRelationship', event.target.value)
-                    }
-                    style={{
-                      ...styles.input,
-                      backgroundColor:
-                        category === 'adult' ? 'var(--color-neutral-100)' : '#fff',
-                    }}
-                  />
-                </FormField>
-                <FormField label={content.demographics.ageLabel}>
-                  <input
-                    type="number"
-                    min={category === 'toddler' ? '0' : '1'}
-                    max={category === 'toddler' ? '4' : '99'}
-                    value={demo.age}
-                    onChange={(event) => updateDemo('age', event.target.value)}
-                    style={styles.input}
-                  />
-                </FormField>
-                <FormField label={content.demographics.genderLabel}>
-                  <select
-                    value={demo.gender}
-                    onChange={(event) => updateDemo('gender', event.target.value)}
-                    style={styles.input}
-                  >
-                    {GENDER_OPTIONS.map((option) => (
-                      <option key={option} value={option}>
-                        {option}
-                      </option>
-                    ))}
-                  </select>
-                </FormField>
-                <FormField label={content.demographics.ethnicityLabel}>
-                  <select
-                    value={demo.ethnicity}
-                    onChange={(event) => updateDemo('ethnicity', event.target.value)}
-                    style={styles.input}
-                  >
-                    <option value="">Select one</option>
-                    {ETHNICITY_OPTIONS.map((option) => (
-                      <option key={option} value={option}>
-                        {option}
-                      </option>
-                    ))}
-                  </select>
-                </FormField>
-                <FormField label={content.demographics.jaundiceLabel}>
-                  <select
-                    value={demo.jaundice}
-                    onChange={(event) => updateDemo('jaundice', event.target.value)}
-                    style={styles.input}
-                  >
-                    {YES_NO_OPTIONS.map((option) => (
-                      <option key={option} value={option}>
-                        {option}
-                      </option>
-                    ))}
-                  </select>
-                </FormField>
-                <FormField label={content.demographics.familyAsdLabel}>
-                  <select
-                    value={demo.familyAsd}
-                    onChange={(event) => updateDemo('familyAsd', event.target.value)}
-                    style={styles.input}
-                  >
-                    {YES_NO_OPTIONS.map((option) => (
-                      <option key={option} value={option}>
-                        {option}
-                      </option>
-                    ))}
-                  </select>
-                </FormField>
-              </div>
-              {!ageCheck.valid && (
-                <p
-                  style={{
-                    marginTop: '16px',
-                    color: 'var(--color-risk-high)',
-                    fontWeight: 600,
-                  }}
-                >
-                  {ageCheck.message}
-                </p>
-              )}
             </section>
-          )}
 
-          {step === 3 && (
-            <section style={styles.sectionCard}>
-              <h2 style={{ marginTop: 0, color: 'var(--color-neutral-900)' }}>
-                {content.questionnaireTitle}
-              </h2>
-              <p style={{ color: 'var(--color-neutral-600)', lineHeight: 1.7 }}>
-                {content.questionnaireDescription}
-              </p>
-              <div style={{ display: 'grid', gap: '14px', marginTop: '18px' }}>
-                {questions.map((question) => (
-                  <QuestionBlock
-                    key={question.id}
-                    question={question}
-                    value={answers[question.id]}
-                    onChange={updateAnswer}
-                    accent={content.accent}
-                  />
-                ))}
-              </div>
-            </section>
-          )}
-
-          {hasGaze && step === GAZE_STEP && (
-            <GazeSession
-              category={category}
-              onComplete={(data) => {
-                setGazeData(data);
-                setGazeSkipped(false);
-                setStep(SPEECH_STEP);
-              }}
-              onSkip={() => {
-                setGazeData(null);
-                setGazeSkipped(true);
-                setStep(SPEECH_STEP);
-              }}
-            />
-          )}
-
-          {hasGaze && step === SPEECH_STEP && (
-            <SpeechSession
-              category={category}
-              onComplete={(blob, hint) => {
-                setAudioBlob(blob);
-                setTranscriptHint(hint || '');
-                setSpeechSkipped(false);
-                setStep(FACIAL_STEP);
-              }}
-              onSkip={() => {
-                setAudioBlob(null);
-                setSpeechSkipped(true);
-                setStep(FACIAL_STEP);
-              }}
-            />
-          )}
-
-          {hasGaze && step === FACIAL_STEP && (
-            <FacialSession
-              category={category}
-              onComplete={(base64Image) => {
-                setFacialImage(base64Image);
-                setFacialSkipped(false);
-                setStep(REVIEW_STEP);
-              }}
-              onSkip={() => {
-                setFacialImage(null);
-                setFacialSkipped(true);
-                setStep(REVIEW_STEP);
-              }}
-            />
-          )}
-
-          {step === REVIEW_STEP && (
-            <section style={styles.sectionCard}>
-              <h2 style={{ marginTop: 0, color: 'var(--color-neutral-900)' }}>
-                {content.reviewTitle}
-              </h2>
-              <p style={{ color: 'var(--color-neutral-600)', lineHeight: 1.7 }}>
-                {content.reviewDescription}
-              </p>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', marginTop: '18px' }}>
-                {summaryRows.map(([label, value]) => {
-                  // Style multimodal rows differently based on status
-                  const isGazeRow = label === 'Eye Gaze';
-                  const isSpeechRow = label === 'Speech Sample';
-                  const isFacialRow = label === 'Facial Expression';
-                  const isMultimodal = isGazeRow || isSpeechRow || isFacialRow;
-
-                  const hasCapturedData = isGazeRow
-                    ? (gazeData && !gazeSkipped)
-                    : isSpeechRow
-                      ? (audioBlob && !speechSkipped)
-                      : isFacialRow
-                        ? (facialImage && !facialSkipped)
-                        : false;
-
-                  const valueColor = isMultimodal
-                    ? hasCapturedData
-                      ? 'var(--color-primary-dark)'
-                      : 'var(--color-neutral-400)'
-                    : 'var(--color-neutral-900)';
-
-                  return (
-                    <div
-                      key={label}
+            {step === 1 && (
+              <section className="panel">
+                <h2 style={{ marginTop: 0, color: 'var(--ns-n900)', fontSize: 'var(--ts-h3)' }}>{content.consentTitle}</h2>
+                <p style={{ color: 'var(--ns-n600)', lineHeight: 'var(--lh-body)' }}>{content.consentDescription}</p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-3)', marginTop: 'var(--sp-5)' }}>
+                  {content.consentItems.map((item, index) => (
+                    <label
+                      key={item}
                       style={{
-                        padding: '16px',
-                        borderRadius: '16px',
-                        border: `1px solid ${hasCapturedData ? 'var(--color-primary-muted)' : 'var(--color-neutral-200)'}`,
-                        backgroundColor: hasCapturedData ? 'var(--color-risk-low-bg)' : 'var(--color-bg)',
+                        display: 'flex', gap: 'var(--sp-3)', alignItems: 'flex-start',
+                        padding: 'var(--sp-4)', borderRadius: 'var(--r-md)',
+                        border: `1px solid ${consents[index] ? 'var(--ns-instrument)' : 'var(--border-color)'}`,
+                        backgroundColor: consents[index] ? 'var(--ns-instrument-dim)' : 'var(--ns-panel)',
+                        cursor: 'pointer', transition: 'all var(--ease-fast)'
                       }}
                     >
-                      <p style={{ ...styles.label, marginBottom: '6px' }}>{label}</p>
-                      <strong style={{ color: valueColor }}>{value}</strong>
-                    </div>
-                  );
-                })}
-              </div>
-              <div
-                style={{
-                  marginTop: '18px',
-                  padding: '16px',
-                  borderRadius: '16px',
-                  backgroundColor: content.accentSoft,
-                  border: `1px solid ${content.accentBorder}`,
-                }}
-              >
-                <p style={{ margin: 0, color: 'var(--color-neutral-700)', lineHeight: 1.7 }}>
-                  {content.riskCopy[aq10Score >= 7 ? 'High' : aq10Score >= 4 ? 'Moderate' : 'Low']}
+                      <input
+                        type="checkbox"
+                        checked={consents[index]}
+                        onChange={(e) => updateConsent(index, e.target.checked)}
+                        style={{ marginTop: '3px', width: '16px', height: '16px', accentColor: 'var(--ns-instrument)' }}
+                      />
+                      <span style={{ color: 'var(--ns-n800)', lineHeight: 'var(--lh-body)', fontSize: 'var(--ts-body)' }}>{item}</span>
+                    </label>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {step === 2 && (
+              <section className="panel">
+                <h2 style={{ marginTop: 0, color: 'var(--ns-n900)', fontSize: 'var(--ts-h3)' }}>Demographics and context</h2>
+                <p style={{ color: 'var(--ns-n600)', lineHeight: 'var(--lh-body)', marginBottom: 'var(--sp-5)' }}>
+                  These details stay attached to the case record and influence the AI's explanation.
                 </p>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 'var(--sp-4)' }}>
+                  <FormField label={content.demographics.subjectNameLabel}>
+                    <input className="field-input" value={demo.subjectName} onChange={(e) => updateDemo('subjectName', e.target.value)} />
+                  </FormField>
+                  <FormField label={content.demographics.respondentNameLabel}>
+                    <input className="field-input" value={demo.respondentName} onChange={(e) => updateDemo('respondentName', e.target.value)} />
+                  </FormField>
+                  <FormField label={content.demographics.respondentRelationshipLabel}>
+                    <input
+                      className="field-input"
+                      value={demo.respondentRelationship}
+                      disabled={category === 'adult'}
+                      onChange={(e) => updateDemo('respondentRelationship', e.target.value)}
+                      style={{ backgroundColor: category === 'adult' ? 'var(--ns-surface-2)' : 'var(--ns-panel)' }}
+                    />
+                  </FormField>
+                  <FormField label={content.demographics.ageLabel}>
+                    <input className="field-input" type="number" min={category === 'toddler' ? '0' : '1'} max={category === 'toddler' ? '4' : '99'} value={demo.age} onChange={(e) => updateDemo('age', e.target.value)} />
+                  </FormField>
+                  <FormField label={content.demographics.genderLabel}>
+                    <select className="field-select" value={demo.gender} onChange={(e) => updateDemo('gender', e.target.value)}>
+                      {GENDER_OPTIONS.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
+                    </select>
+                  </FormField>
+                  <FormField label={content.demographics.ethnicityLabel}>
+                    <select className="field-select" value={demo.ethnicity} onChange={(e) => updateDemo('ethnicity', e.target.value)}>
+                      <option value="">Select one</option>
+                      {ETHNICITY_OPTIONS.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
+                    </select>
+                  </FormField>
+                  <FormField label={content.demographics.jaundiceLabel}>
+                    <select className="field-select" value={demo.jaundice} onChange={(e) => updateDemo('jaundice', e.target.value)}>
+                      {YES_NO_OPTIONS.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
+                    </select>
+                  </FormField>
+                  <FormField label={content.demographics.familyAsdLabel}>
+                    <select className="field-select" value={demo.familyAsd} onChange={(e) => updateDemo('familyAsd', e.target.value)}>
+                      {YES_NO_OPTIONS.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
+                    </select>
+                  </FormField>
+                </div>
+                {!ageCheck.valid && <p style={{ marginTop: 'var(--sp-4)', color: 'var(--ns-risk-high)', fontWeight: 'var(--fw-semibold)' }}>{ageCheck.message}</p>}
+              </section>
+            )}
+
+            {step === 3 && (
+              <section>
+                <div className="panel" style={{ marginBottom: 'var(--sp-4)', border: 'none', backgroundColor: 'transparent', padding: 0 }}>
+                  <h2 style={{ marginTop: 0, color: 'var(--ns-n900)', fontSize: 'var(--ts-h3)' }}>{content.questionnaireTitle}</h2>
+                  <p style={{ color: 'var(--ns-n600)', lineHeight: 'var(--lh-body)' }}>{content.questionnaireDescription}</p>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-4)' }}>
+                  {questions.map((question) => (
+                    <QuestionBlock key={question.id} question={question} value={answers[question.id]} onChange={updateAnswer} />
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {hasGaze && step === GAZE_STEP && (
+              <GazeSession
+                category={category}
+                onComplete={(data) => { setGazeData(data); setGazeSkipped(false); setStep(SPEECH_STEP); }}
+                onSkip={() => { setGazeData(null); setGazeSkipped(true); setStep(SPEECH_STEP); }}
+              />
+            )}
+
+            {hasGaze && step === SPEECH_STEP && (
+              <SpeechSession
+                category={category}
+                onComplete={(blob, hint) => { setAudioBlob(blob); setTranscriptHint(hint || ''); setSpeechSkipped(false); setStep(FACIAL_STEP); }}
+                onSkip={() => { setAudioBlob(null); setSpeechSkipped(true); setStep(FACIAL_STEP); }}
+              />
+            )}
+
+            {hasGaze && step === FACIAL_STEP && (
+              <FacialSession
+                category={category}
+                onComplete={(base64Image) => { setFacialImage(base64Image); setFacialSkipped(false); setStep(REVIEW_STEP); }}
+                onSkip={() => { setFacialImage(null); setFacialSkipped(true); setStep(REVIEW_STEP); }}
+              />
+            )}
+
+            {step === REVIEW_STEP && (
+              <section className="panel">
+                <h2 style={{ marginTop: 0, color: 'var(--ns-n900)', fontSize: 'var(--ts-h3)' }}>{content.reviewTitle}</h2>
+                <p style={{ color: 'var(--ns-n600)', lineHeight: 'var(--lh-body)', marginBottom: 'var(--sp-5)' }}>{content.reviewDescription}</p>
+                
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 'var(--sp-3)' }}>
+                  {summaryRows.map(([label, value]) => {
+                    const isMultimodal = ['Eye Gaze', 'Speech Sample', 'Facial Expression'].includes(label);
+                    const hasCapturedData = isMultimodal && (
+                      (label === 'Eye Gaze' && gazeData && !gazeSkipped) ||
+                      (label === 'Speech Sample' && audioBlob && !speechSkipped) ||
+                      (label === 'Facial Expression' && facialImage && !facialSkipped)
+                    );
+
+                    return (
+                      <div
+                        key={label}
+                        style={{
+                          padding: 'var(--sp-3) var(--sp-4)',
+                          borderRadius: 'var(--r-sm)',
+                          border: `1px solid ${hasCapturedData ? 'var(--ns-signal-dim)' : 'var(--border-color)'}`,
+                          backgroundColor: hasCapturedData ? 'var(--ns-signal-dim)' : 'var(--ns-surface-2)',
+                        }}
+                      >
+                        <p className="field-label" style={{ marginBottom: 'var(--sp-1)' }}>{label}</p>
+                        <strong style={{ color: isMultimodal && !hasCapturedData ? 'var(--ns-n500)' : 'var(--ns-n900)', fontWeight: 'var(--fw-medium)' }}>
+                          {value}
+                        </strong>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div style={{ marginTop: 'var(--sp-5)', padding: 'var(--sp-4)', borderRadius: 'var(--r-md)', backgroundColor: 'var(--ns-surface-2)', borderLeft: '3px solid var(--ns-n300)' }}>
+                  <p style={{ margin: 0, color: 'var(--ns-n700)', lineHeight: 'var(--lh-body)' }}>
+                    {content.riskCopy[aq10Score >= 7 ? 'High' : aq10Score >= 4 ? 'Moderate' : 'Low']}
+                  </p>
+                </div>
+              </section>
+            )}
+
+            {(validationMessage || error) && (
+              <div className="panel" style={{ borderColor: 'var(--ns-risk-high-border)', backgroundColor: 'var(--ns-risk-high-bg)', color: 'var(--ns-risk-high)', fontWeight: 'var(--fw-medium)' }}>
+                {validationMessage || error}
               </div>
-            </section>
-          )}
+            )}
 
-          {(validationMessage || error) && (
-            <div
-              style={{
-                ...styles.sectionCard,
-                borderColor: 'var(--color-risk-high-border)',
-                backgroundColor: 'var(--color-risk-high-muted)',
-                color: 'var(--color-risk-high)',
-              }}
-            >
-              {validationMessage || error}
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 'var(--sp-3)', flexWrap: 'wrap', alignItems: 'center', marginTop: 'var(--sp-4)' }}>
+              <button type="button" onClick={handleBack} className="btn btn-secondary">
+                {step === 1 ? 'Change track' : 'Back'}
+              </button>
+              <button
+                type="button"
+                onClick={handlePrimaryAction}
+                disabled={loading}
+                className="btn btn-primary"
+              >
+                {step === REVIEW_STEP ? (loading ? 'Submitting…' : `Submit ${content.label.toLowerCase()} screening`) : 'Continue'}
+              </button>
             </div>
-          )}
 
-          <div style={styles.buttonRow}>
-            <button type="button" onClick={handleBack} style={styles.button}>
-              {step === 1 ? 'Change track' : 'Back'}
-            </button>
-            <button
-              type="button"
-              onClick={handlePrimaryAction}
-              disabled={loading}
-              style={styles.primaryButton(content, loading)}
-            >
-              {step === REVIEW_STEP
-                ? loading
-                  ? 'Submitting…'
-                  : `Submit ${content.label.toLowerCase()} screening`
-                : 'Continue'}
-            </button>
           </div>
-        </>
-      )}
+        )}
+      </div>
     </main>
   );
 }

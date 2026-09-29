@@ -1,21 +1,108 @@
+/**
+ * RiskBadge.jsx
+ *
+ * Displays a risk level with both a geometric shape AND a text label —
+ * never color alone (WCAG 1.4.1 non-text color requirement).
+ *
+ * Shape language:
+ *   High     → filled square  (urgent, definite)
+ *   Moderate → filled diamond (transitional)
+ *   Low      → filled circle  (resolved, calm)
+ */
+
 const CONFIG = {
-  High: { bg: '#F5DDE2', text: '#B05464', dot: '#B05464' },
-  Moderate: { bg: '#F5E4C3', text: '#C98B2E', dot: '#C98B2E' },
-  Low: { bg: '#E8F2EB', text: '#4A6B52', dot: '#7C9A85' },
-  Escalated: { bg: '#F0E0F5', text: '#7B3F9E', dot: '#7B3F9E' },
+  High: {
+    bg:     'var(--ns-risk-high-bg)',
+    border: 'var(--ns-risk-high-border)',
+    text:   'var(--ns-risk-high-text)',
+    shape:  'square',
+    label:  'High',
+  },
+  Moderate: {
+    bg:     'var(--ns-risk-mod-bg)',
+    border: 'var(--ns-risk-mod-border)',
+    text:   'var(--ns-risk-mod-text)',
+    shape:  'diamond',
+    label:  'Moderate',
+  },
+  Low: {
+    bg:     'var(--ns-risk-low-bg)',
+    border: 'var(--ns-risk-low-border)',
+    text:   'var(--ns-risk-low-text)',
+    shape:  'circle',
+    label:  'Low',
+  },
+  Escalated: {
+    bg:     'rgba(107, 54, 171, 0.08)',
+    border: 'rgba(107, 54, 171, 0.22)',
+    text:   '#5B2D9B',
+    shape:  'square',
+    label:  'Escalated',
+  },
 };
 
 const FALLBACK = {
-  bg: '#F0F0ED',
-  text: '#6A6A62',
-  dot: '#B0B0A8',
+  bg:     'var(--ns-n100)',
+  border: 'var(--ns-n200)',
+  text:   'var(--ns-n600)',
+  shape:  'circle',
+  label:  'Unknown',
 };
 
 const SIZE_MAP = {
-  sm: { fontSize: '11px', padding: '2px 8px', dot: 5 },
-  md: { fontSize: '12px', padding: '3px 10px', dot: 6 },
-  lg: { fontSize: '13px', padding: '4px 12px', dot: 7 },
+  sm: { fontSize: 'var(--ts-caption)', padding: '2px 8px',  shapeSize: 6 },
+  md: { fontSize: 'var(--ts-small)',   padding: '3px 10px', shapeSize: 7 },
+  lg: { fontSize: 'var(--ts-body)',    padding: '5px 12px', shapeSize: 8 },
 };
+
+function ShapeIndicator({ shape, size, color }) {
+  const s = size;
+  if (shape === 'square') {
+    return (
+      <span
+        aria-hidden="true"
+        style={{
+          display: 'inline-block',
+          width: s,
+          height: s,
+          borderRadius: 1,
+          backgroundColor: color,
+          flexShrink: 0,
+        }}
+      />
+    );
+  }
+  if (shape === 'diamond') {
+    return (
+      <span
+        aria-hidden="true"
+        style={{
+          display: 'inline-block',
+          width: s,
+          height: s,
+          backgroundColor: color,
+          flexShrink: 0,
+          transform: 'rotate(45deg)',
+          borderRadius: 1,
+        }}
+      />
+    );
+  }
+  // circle
+  return (
+    <span
+      aria-hidden="true"
+      style={{
+        display: 'inline-block',
+        width: s,
+        height: s,
+        borderRadius: '50%',
+        backgroundColor: color,
+        flexShrink: 0,
+      }}
+    />
+  );
+}
 
 function normalizeRisk(value) {
   if (!value) return 'Unknown';
@@ -40,31 +127,24 @@ export default function RiskBadge({ risk, level, size = 'md', showScore = false,
       style={{
         display: 'inline-flex',
         alignItems: 'center',
-        gap: '5px',
+        gap: 6,
         padding: metric.padding,
-        borderRadius: '20px',
+        borderRadius: 'var(--r-sm)',
         backgroundColor: cfg.bg,
+        border: `1px solid ${cfg.border}`,
         color: cfg.text,
         fontSize: metric.fontSize,
-        fontWeight: 500,
-        fontFamily: "'DM Sans', system-ui, sans-serif",
-        lineHeight: 1.6,
+        fontWeight: 'var(--fw-medium)',
+        fontFamily: 'var(--font-body)',
+        lineHeight: 'var(--lh-tight)',
         whiteSpace: 'nowrap',
+        letterSpacing: 'var(--ls-label)',
       }}
     >
-      <span
-        aria-hidden="true"
-        style={{
-          width: metric.dot,
-          height: metric.dot,
-          borderRadius: '50%',
-          backgroundColor: cfg.dot,
-          flexShrink: 0,
-        }}
-      />
-      {label}
+      <ShapeIndicator shape={cfg.shape} size={metric.shapeSize} color={cfg.text} />
+      {label} risk
       {showNumericScore && (
-        <span style={{ fontFamily: 'var(--font-mono)', opacity: 0.85 }}>
+        <span style={{ fontFamily: 'var(--font-data)', opacity: 0.85, fontSize: '0.9em' }}>
           {Math.round(score * 100)}%
         </span>
       )}

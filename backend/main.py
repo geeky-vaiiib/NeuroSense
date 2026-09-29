@@ -16,7 +16,7 @@ try:
     from .routers import cases, explainability, screening
     from .schemas.screening import HealthResponse
 except ImportError:  # pragma: no cover - fallback for backend cwd execution
-    from core import database
+    from .core import database
     from ml.model import load_models
     from routers import cases, explainability, screening
     from schemas.screening import HealthResponse
