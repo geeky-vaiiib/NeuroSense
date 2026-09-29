@@ -151,6 +151,15 @@ def fuse(
                 ),
                 available=False,
             ))
+    else:
+        breakdown.append(ModalityComponent(
+            modality="gaze",
+            score=0.0,
+            method="rule_based_heuristic",
+            is_trained_model=False,
+            modality_label="Gaze Analysis (Research Heuristic — Jones & Klin 2013)",
+            available=False,
+        ))
 
     # Speech
     speech_score: Optional[float] = None
@@ -183,6 +192,15 @@ def fuse(
                 ),
                 available=False,
             ))
+    else:
+        breakdown.append(ModalityComponent(
+            modality="speech",
+            score=0.0,
+            method="rule_based_heuristic",
+            is_trained_model=False,
+            modality_label="Speech Analysis (Research Heuristic — Bone et al. 2014)",
+            available=False,
+        ))
 
     # Facial
     facial_score: Optional[float] = None
@@ -215,6 +233,15 @@ def fuse(
                 ),
                 available=False,
             ))
+    else:
+        breakdown.append(ModalityComponent(
+            modality="facial",
+            score=0.0,
+            method="rule_based_heuristic",
+            is_trained_model=False,
+            modality_label="Facial Analysis (Research Heuristic)",
+            available=False,
+        ))
 
     # Separate trained vs heuristic auxiliary signals
     heuristic_parts: list[tuple[float, float]] = []
