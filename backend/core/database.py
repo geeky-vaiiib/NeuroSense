@@ -35,6 +35,7 @@ from pymongo import ASCENDING, MongoClient
 from pymongo.collection import Collection
 from pymongo.database import Database
 from pymongo.errors import ConnectionFailure, OperationFailure
+import certifi
 
 logger = logging.getLogger("neurosense.database")
 
@@ -87,6 +88,7 @@ def init_db() -> None:
         serverSelectionTimeoutMS=10_000,   # 10 s — fail fast at startup
         connectTimeoutMS=10_000,
         socketTimeoutMS=30_000,
+            tlsCAFile=certifi.where(),
     )
     _db = _client[db_name]
 
