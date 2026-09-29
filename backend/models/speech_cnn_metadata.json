@@ -1,0 +1,33 @@
+{
+  "architecture": "SpeechCNN_1D",
+  "feature_order": [
+    "MFCC_13"
+  ],
+  "preprocessing_version": "librosa_22050_25s",
+  "sample_rate": 22050,
+  "input_dimensions": "(batch, 13, T)",
+  "labels": {
+    "0": "Typical",
+    "1": "ASD"
+  },
+  "threshold": 0.5,
+  "dataset_identifier": "SYNTHETIC_PROXY \u2014 NOT clinically validated",
+  "is_synthetic_proxy": true,
+  "n_participants": 60,
+  "n_asd": 30,
+  "n_td": 30,
+  "train_samples": 144,
+  "val_samples": 36,
+  "model_version": "1.0",
+  "training_seed": 42,
+  "training_date": "2026-09-29T11:47:21.618555+00:00",
+  "evaluation_metrics": {
+    "accuracy": 1.0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1_score": 1.0,
+    "roc_auc": 1.0
+  },
+  "limitation": "This model was trained on SYNTHETIC MFCC data with planted statistical differences between classes. It is NOT trained on real ASD speech recordings. Scores are for pipeline verification only and have NO clinical validity.",
+  "planted_signal": "ASD-class: reduced MFCC variability (\u00d70.6), shifted MFCC[1] (pitch proxy) \u22123.0, flattened energy contour. Inspired by Bone et al. 2014 findings on monotone prosody."
+}
