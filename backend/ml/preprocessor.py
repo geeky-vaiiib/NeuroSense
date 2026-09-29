@@ -121,5 +121,8 @@ def preprocess_for_inference(
     else:
         ethnicity = 0
 
-    features = aq_scores + [age, gender, jaundice, family_asd, ethnicity]
+    if category == "toddler":
+        features = aq_scores + [age, gender, jaundice, family_asd, ethnicity]
+    else:
+        features = aq_scores + [age, gender, ethnicity, jaundice, family_asd]
     return np.array(features, dtype=np.float64).reshape(1, -1)

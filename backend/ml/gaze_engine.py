@@ -131,9 +131,14 @@ def _predict_lstm(gaze_points: list[dict], category: str) -> dict:
         pupil = pt.get("pupil", 4.0)
         is_fix = 1.0 if pt.get("category", "") == "Fixation" else 0.0
 
+        # Scale 0-1 normalized coordinates to approximate 1024x768 screen bounds 
+        # (matching por_x / por_y from Cilia F. dataset)
+        por_x = float(pt.get("x", 0)) * 1024.0
+        por_y = float(pt.get("y", 0)) * 768.0
+
         rows.append([
-            float(pt.get("x", 0)),
-            float(pt.get("y", 0)),
+            por_x,
+            por_y,
             float(dt),
             is_fix,
             float(pupil),

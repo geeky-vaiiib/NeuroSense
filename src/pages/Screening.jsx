@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import CategoryBadge from '../components/CategoryBadge';
 import GazeSession from '../components/GazeSession';
 import SpeechSession from '../components/SpeechSession';
+import FacialSession from '../components/FacialSession';
 import { useScreening } from '../hooks/useScreening';
 import {
   ANSWER_OPTIONS,
@@ -17,7 +18,7 @@ import {
   validateCategoryAge,
 } from '../data/screeningContent';
 
-const STEP_LABELS_FULL = ['Track', 'Consent', 'Demographics', 'AQ-10', 'Gaze', 'Speech', 'Review'];
+const STEP_LABELS_FULL = ['Track', 'Consent', 'Demographics', 'AQ-10', 'Gaze', 'Speech', 'Facial', 'Review'];
 const STEP_LABELS_TODDLER = ['Track', 'Consent', 'Demographics', 'Q-CHAT-10', 'Review'];
 
 const BASE_DEMO = {
@@ -305,6 +306,8 @@ export default function Screening() {
   const [audioBlob, setAudioBlob] = useState(null);
   const [transcriptHint, setTranscriptHint] = useState('');
   const [speechSkipped, setSpeechSkipped] = useState(false);
+  const [facialImage, setFacialImage] = useState(null);
+  const [facialSkipped, setFacialSkipped] = useState(false);
   const [validationMessage, setValidationMessage] = useState('');
 
   const category =
@@ -317,12 +320,13 @@ export default function Screening() {
     [category, demo.age]
   );
 
-  // Gaze + speech sessions are available for adult & child only (not toddler)
+  // Gaze + speech + facial sessions are available for adult & child only (not toddler)
   const isToddler = category === 'toddler';
   const hasGaze = !isToddler && (category === 'adult' || category === 'child');
   const GAZE_STEP = 4;    // adult/child only
   const SPEECH_STEP = 5;  // adult/child only
-  const REVIEW_STEP = isToddler ? 4 : 6;
+  const FACIAL_STEP = 6;  // adult/child only
+  const REVIEW_STEP = isToddler ? 4 : 7;
 
   function selectCategory(nextCategory) {
     setStep(1);
@@ -373,6 +377,13 @@ export default function Screening() {
     return 'Not started';
   })();
 
+  const facialStatusLabel = (() => {
+    if (isToddler) return 'N/A — Toddler track';
+    if (facialSkipped) return 'Skipped';
+    if (facialImage) return 'Image captured';
+    return 'Not started';
+  })();
+
   const summaryRows = [
     ['Category', content?.label],
     ['Screening tool', content?.screeningTool],
@@ -388,6 +399,7 @@ export default function Screening() {
     ['Gender', demo.gender || 'Not provided'],
     ['Eye Gaze', gazeStatusLabel],
     ['Speech Sample', speechStatusLabel],
+    ['Facial Expression', facialStatusLabel],
   ];
 
   async function handlePrimaryAction() {
@@ -423,12 +435,12 @@ export default function Screening() {
         return;
       }
       setValidationMessage('');
-      // For adult/child → go to gaze step (4). For toddler → skip to review (4).
+      // For adult/child → go to gaze step (4). For toddler → skip to review.
       setStep(hasGaze ? GAZE_STEP : REVIEW_STEP);
       return;
     }
 
-    // Gaze and speech steps are handled internally by their own callbacks, not here.
+    // Gaze, speech and facial steps are handled internally by their own callbacks.
 
     if (step === REVIEW_STEP) {
       try {
@@ -466,7 +478,9 @@ export default function Screening() {
           audioBase64: audioBase64,
           audioMimeType: audioBlob?.type || null,
           transcriptHint: transcriptHint,
-          speechSkipped: speechSkipped,
+          speechSkipped,
+          facialImageBase64: facialImage,
+          facialSkipped,
         };
         const result = await submit(payload);
         navigate(`/app/results/${result.caseId}`);
@@ -803,11 +817,27 @@ export default function Screening() {
                 setAudioBlob(blob);
                 setTranscriptHint(hint || '');
                 setSpeechSkipped(false);
-                setStep(REVIEW_STEP);
+                setStep(FACIAL_STEP);
               }}
               onSkip={() => {
                 setAudioBlob(null);
                 setSpeechSkipped(true);
+                setStep(FACIAL_STEP);
+              }}
+            />
+          )}
+
+          {hasGaze && step === FACIAL_STEP && (
+            <FacialSession
+              category={category}
+              onComplete={(base64Image) => {
+                setFacialImage(base64Image);
+                setFacialSkipped(false);
+                setStep(REVIEW_STEP);
+              }}
+              onSkip={() => {
+                setFacialImage(null);
+                setFacialSkipped(true);
                 setStep(REVIEW_STEP);
               }}
             />
@@ -826,13 +856,16 @@ export default function Screening() {
                   // Style multimodal rows differently based on status
                   const isGazeRow = label === 'Eye Gaze';
                   const isSpeechRow = label === 'Speech Sample';
-                  const isMultimodal = isGazeRow || isSpeechRow;
+                  const isFacialRow = label === 'Facial Expression';
+                  const isMultimodal = isGazeRow || isSpeechRow || isFacialRow;
 
                   const hasCapturedData = isGazeRow
                     ? (gazeData && !gazeSkipped)
                     : isSpeechRow
                       ? (audioBlob && !speechSkipped)
-                      : false;
+                      : isFacialRow
+                        ? (facialImage && !facialSkipped)
+                        : false;
 
                   const valueColor = isMultimodal
                     ? hasCapturedData

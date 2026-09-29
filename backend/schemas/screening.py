@@ -170,6 +170,16 @@ class ScreeningRequest(BaseModel):
         alias="speechSkipped",
         description="True if the user explicitly skipped the speech step",
     )
+    facial_image_base64: Optional[str] = Field(
+        default=None,
+        alias="facialImageBase64",
+        description="Base64-encoded facial snapshot from the screening step",
+    )
+    facial_skipped: Optional[bool] = Field(
+        default=False,
+        alias="facialSkipped",
+        description="True if the user explicitly skipped the facial step",
+    )
 
     model_config = ConfigDict(populate_by_name=True)
 
@@ -231,6 +241,11 @@ class ScreeningResponse(BaseModel):
         None,
         alias="speechInterpretation",
         description="Plain-English interpretation of speech analysis results",
+    )
+    facial_interpretation: Optional[str] = Field(
+        None,
+        alias="facialInterpretation",
+        description="Plain-English interpretation of facial analysis results",
     )
     speech_flags: Optional[list[str]] = Field(
         None,
