@@ -5,7 +5,7 @@ import Modal from '../components/Modal';
 import RiskBadge from '../components/RiskBadge';
 import { casesApi } from '../services/api';
 
-const CATEGORY_FILTERS = ['all', 'adult', 'child', 'toddler'];
+
 const RISK_FILTERS = ['all', 'High', 'Moderate', 'Low'];
 
 const styles = {
@@ -141,7 +141,6 @@ styles.linkButton = {
 
 export default function Cases() {
   const navigate = useNavigate();
-  const [categoryFilter, setCategoryFilter] = useState('all');
   const [riskFilter, setRiskFilter] = useState('all');
   const [query, setQuery] = useState('');
   const [records, setRecords] = useState([]);
@@ -155,9 +154,7 @@ export default function Cases() {
       setLoading(true);
       setError('');
       try {
-        const list = await casesApi.list(
-          categoryFilter === 'all' ? {} : { category: categoryFilter }
-        );
+        const list = await casesApi.list({});
         if (active) {
           setRecords(list);
         }
@@ -176,7 +173,7 @@ export default function Cases() {
     return () => {
       active = false;
     };
-  }, [categoryFilter]);
+  }, []);
 
   const filteredRecords = useMemo(() => {
     const loweredQuery = query.trim().toLowerCase();
@@ -234,16 +231,7 @@ export default function Cases() {
             }}
           />
 
-          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-            {CATEGORY_FILTERS.map((filter) => (
-              <FilterChip
-                key={filter}
-                label={filter === 'all' ? 'All categories' : `${filter[0].toUpperCase()}${filter.slice(1)}`}
-                active={categoryFilter === filter}
-                onClick={() => setCategoryFilter(filter)}
-              />
-            ))}
-          </div>
+
 
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
             {RISK_FILTERS.map((filter) => (

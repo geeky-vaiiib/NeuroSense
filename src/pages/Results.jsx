@@ -203,7 +203,7 @@ export default function Results() {
   const gazeMock = selectedCase?.gaze_mock ?? selectedCase?.gazeMock ?? true;
   const gazeSkipped = selectedCase?.gaze_skipped ?? selectedCase?.gazeSkipped ?? false;
   const hasGazeData = gazeFeatures && typeof gazeFeatures === 'object' && Object.keys(gazeFeatures).length > 0;
-  const isToddler = selectedCase?.category === 'toddler';
+  const isToddler = false;
 
   // Speech data from case record
   const speechFeatures = selectedCase?.speech_features || selectedCase?.speechFeatures || null;

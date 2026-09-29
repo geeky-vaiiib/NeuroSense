@@ -14,7 +14,7 @@ const STORAGE_KEY = 'neurosense_mock_cases_v2';
 const SEEDED_CASES = [
   {
     id: 'NS-A-2026-0412',
-    category: 'adult',
+    category: 'child',
     subjectName: 'Jordan A.',
     respondentName: 'Jordan A.',
     respondentRelationship: 'Self',
@@ -84,7 +84,7 @@ const SEEDED_CASES = [
   },
   {
     id: 'NS-A-2026-0416',
-    category: 'adult',
+    category: 'child',
     subjectName: 'Sam T.',
     respondentName: 'Sam T.',
     respondentRelationship: 'Self',
@@ -124,7 +124,7 @@ const SEEDED_CASES = [
   },
   {
     id: 'NS-A-2026-0408',
-    category: 'adult',
+    category: 'child',
     subjectName: 'Alex K.',
     respondentName: 'Alex K.',
     respondentRelationship: 'Self',
@@ -393,7 +393,7 @@ function getRiskLevel(score) {
   return 'Low';
 }
 
-function getRiskScore(category, aq10Score) {
+function getRiskScore('child', aq10Score) {
   let multiplier;
   if (category === 'toddler') {
     multiplier = 1.4;
@@ -426,7 +426,7 @@ function toStorageCase(record) {
     familyAsd: record.demo?.familyAsd ?? record.familyAsd ?? 'No',
   };
   const aq10Score = record.aq10Score ?? buildAq10Score(record.answers ?? {}, category);
-  const riskScore = Number((record.riskScore ?? getRiskScore(category, aq10Score)).toFixed(2));
+  const riskScore = Number((record.riskScore ?? getRiskScore('child', aq10Score)).toFixed(2));
   const riskLevel = record.riskLevel ?? getRiskLevel(riskScore);
   const interpretation = record.interpretation ?? content.riskCopy[riskLevel];
 
@@ -467,7 +467,7 @@ function toStorageCase(record) {
       record.tags ??
       [
         `${category}-track`,
-        category === 'adult' ? 'self-report' : 'caregiver-report',
+        'caregiver-report',
         `${riskLevel.toLowerCase()}-risk`,
         record.isMock === false ? 'live-model' : 'mock-pipeline',
       ],
@@ -703,8 +703,7 @@ export function getMockDashboardSummary(category) {
     (record) => !category || record.category === category
   );
   const totalCases = records.length;
-  const adultCases = records.filter((record) => record.category === 'adult').length;
-  const childCases = records.filter((record) => record.category === 'child').length;
+    const childCases = records.filter((record) => record.category === 'child').length;
   const highRisk = records.filter((record) => record.riskLevel === 'High').length;
   const moderateRisk = records.filter(
     (record) => record.riskLevel === 'Moderate'
@@ -729,10 +728,9 @@ export function getMockDashboardSummary(category) {
       )
     : 0;
 
-  const toddlerCases = records.filter((record) => record.category === 'toddler').length;
-
+  
   return {
-    categoryFilter: category ?? 'all',
+    categoryFilter: 'child',
     totals: {
       totalCases,
       adultCases,
@@ -748,27 +746,25 @@ export function getMockDashboardSummary(category) {
     },
     recentCases: records.slice(0, 5).map(toSummary),
     categoryBreakdown: [
-      { category: 'adult', label: 'Adult', count: adultCases },
-      { category: 'child', label: 'Child', count: childCases },
-      { category: 'toddler', label: 'Toddler', count: toddlerCases },
-    ],
+            { category: 'child', label: 'Child', count: childCases },
+          ],
     modalityConfidence: category
-      ? CATEGORY_CONTENT[category]?.modalityConfidence ??
+      ? CATEGORY_CONTENT.child.modalityConfidence ??
         getMixedModalityConfidence()
       : getMixedModalityConfidence(),
   };
 }
 
 export async function submitMockScreening(payload) {
-  const category = payload.category ?? deriveCategoryFromAge(payload.demo?.age ?? 18);
+  const category = payload.category ?? 'child';
   const ageCheck = validateCategoryAge(category, payload.demo?.age);
   if (!ageCheck.valid) {
     throw new Error(ageCheck.message);
   }
 
   const content = getCategoryContent(category);
-  const aq10Score = payload.aq10Score ?? buildAq10Score(payload.answers, category);
-  const riskScore = getRiskScore(category, aq10Score);
+  const aq10Score = payload.aq10Score ?? buildAq10Score(payload.answers, 'child');
+  const riskScore = getRiskScore('child', aq10Score);
   const riskLevel = getRiskLevel(riskScore);
   const submittedAt = new Date().toISOString();
   const caseRecord = normaliseCase({
@@ -805,7 +801,7 @@ export async function submitMockScreening(payload) {
     dataSource: 'mock',
     tags: [
       `${category}-track`,
-      category === 'adult' ? 'self-report' : 'caregiver-report',
+      'caregiver-report',
       `${riskLevel.toLowerCase()}-risk`,
       'mock-pipeline',
     ],

@@ -174,11 +174,10 @@ function QuestionBlock({ question, value, onChange }) {
 }
 
 export default function Screening() {
-  const { category: routeCategory } = useParams();
   const navigate = useNavigate();
   const { submit, loading, error } = useScreening();
 
-  const [step, setStep] = useState(routeCategory && CATEGORY_CONTENT[routeCategory] ? 1 : 0);
+  const [step, setStep] = useState(1);
   const [consents, setConsents] = useState(BASE_CONSENTS);
   const [demo, setDemo] = useState(BASE_DEMO);
   const [answers, setAnswers] = useState({});
@@ -191,29 +190,20 @@ export default function Screening() {
   const [facialSkipped, setFacialSkipped] = useState(false);
   const [validationMessage, setValidationMessage] = useState('');
 
-  const category = routeCategory && CATEGORY_CONTENT[routeCategory] ? routeCategory : '';
-  const content = category ? getCategoryContent(category) : null;
-  const questions = category ? QUESTION_BANK[category] : [];
-  const aq10Score = useMemo(() => buildAq10Score(answers, category || 'adult'), [answers, category]);
+  const category = 'child';
+  const content = getCategoryContent(category);
+  const questions = QUESTION_BANK[category];
+  const aq10Score = useMemo(() => buildAq10Score(answers, category), [answers, category]);
   const ageCheck = useMemo(() => validateCategoryAge(category, Number(demo.age)), [category, demo.age]);
 
-  const isToddler = category === 'toddler';
-  const hasGaze = !isToddler && (category === 'adult' || category === 'child');
+  const isToddler = false;
+  const hasGaze = true;
   const GAZE_STEP = 4;
   const SPEECH_STEP = 5;
   const FACIAL_STEP = 6;
-  const REVIEW_STEP = isToddler ? 4 : 7;
+  const REVIEW_STEP = 7;
 
-  function selectCategory(nextCategory) {
-    setStep(1);
-    setValidationMessage('');
-    setConsents(BASE_CONSENTS);
-    setDemo((current) => ({
-      ...current,
-      respondentRelationship: CATEGORY_CONTENT[nextCategory].demographics.respondentRelationshipValue,
-    }));
-    navigate(`/app/screening/${nextCategory}`, { replace: true });
-  }
+  
 
   function updateDemo(key, value) {
     setDemo((current) => ({ ...current, [key]: value }));
@@ -229,7 +219,7 @@ export default function Screening() {
   }
 
   const allConsentsAccepted = consents.every(Boolean);
-  const demographicsReady = Number(demo.age) >= 0 && demo.gender && (category === 'adult' || Boolean(demo.respondentRelationship));
+  const demographicsReady = Number(demo.age) >= 0 && demo.gender && Boolean(demo.respondentRelationship);
   const questionnaireReady = questions.every((question) => answers[question.id]);
 
   const gazeStatusLabel = (() => {
@@ -258,7 +248,7 @@ export default function Screening() {
     ['Screening tool', content?.screeningTool],
     ['AQ-10 score', `${aq10Score}/10`],
     ['Submitted for', demo.subjectName || 'No name provided'],
-    [category === 'adult' ? 'Completion mode' : 'Respondent relationship', category === 'adult' ? content?.trackSummary : demo.respondentRelationship || 'Not provided'],
+    ['Respondent relationship', demo.respondentRelationship || 'Not provided'],
     ['Age', demo.age || 'Not provided'],
     ['Gender', demo.gender || 'Not provided'],
     ['Eye Gaze', gazeStatusLabel],
@@ -299,7 +289,7 @@ export default function Screening() {
 
         const payload = {
           category,
-          demo: { ...demo, respondentRelationship: demo.respondentRelationship || content.demographics.respondentRelationshipValue, age: Number(demo.age) },
+          demo: { ...demo, age: Number(demo.age) },
           answers,
           aq10Score,
           gazePoints: gazeData || [],
@@ -327,7 +317,7 @@ export default function Screening() {
   }
 
   return (
-    <main id="screening-page" style={{ display: 'flex', gap: 'var(--sp-12)', alignItems: 'flex-start', maxWidth: step === 0 ? '980px' : '960px', margin: step === 0 ? '0 auto' : '0' }}>
+    <main id="screening-page" style={{ display: 'flex', gap: 'var(--sp-12)', alignItems: 'flex-start', maxWidth: '960px', margin: '0' }}>
       
       {/* Wizard Step Indicator Sidebar */}
       {step > 0 && (
@@ -337,28 +327,14 @@ export default function Screening() {
       )}
 
       {/* Main Content Area */}
-      <div style={{ flex: 1, maxWidth: step === 0 ? '100%' : '640px', display: 'flex', flexDirection: 'column', gap: 'var(--sp-6)' }}>
+      <div style={{ flex: 1, maxWidth: '640px', display: 'flex', flexDirection: 'column', gap: 'var(--sp-6)' }}>
         
-        {step === 0 && (
-          <section className="panel" style={{ border: 'none', backgroundColor: 'transparent', padding: 0 }}>
-            <div style={{ marginBottom: 'var(--sp-6)' }}>
-              <h1 style={{ margin: '0 0 var(--sp-2)', fontSize: 'var(--ts-h1)', color: 'var(--ns-n900)' }}>
-                Start a screening
-              </h1>
-              <p style={{ margin: 0, color: 'var(--ns-n600)', lineHeight: 'var(--lh-body)', maxWidth: '60ch' }}>
-                NeuroSense routes every screening through an age-based track. Each track has its own 
-                validated questions, model pipeline, and diagnostic thresholds.
-              </p>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 'var(--sp-4)' }}>
-              {CATEGORY_ORDER.map((item) => (
-                <TrackCard key={item} id={item} active={category === item} onSelect={selectCategory} />
-              ))}
+        
             </div>
           </section>
         )}
 
-        {content && step > 0 && (
+        {content && (
           <div className="wizard-step-enter" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-6)' }}>
             
             {/* Top track summary banner */}
@@ -423,13 +399,13 @@ export default function Screening() {
                     <input
                       className="field-input"
                       value={demo.respondentRelationship}
-                      disabled={category === 'adult'}
+                      disabled={false}
                       onChange={(e) => updateDemo('respondentRelationship', e.target.value)}
-                      style={{ backgroundColor: category === 'adult' ? 'var(--ns-surface-2)' : 'var(--ns-panel)' }}
+                      style={{ backgroundColor: 'var(--ns-panel)' }}
                     />
                   </FormField>
                   <FormField label={content.demographics.ageLabel}>
-                    <input className="field-input" type="number" min={category === 'toddler' ? '0' : '1'} max={category === 'toddler' ? '4' : '99'} value={demo.age} onChange={(e) => updateDemo('age', e.target.value)} />
+                    <input className="field-input" type="number" min='4' max='11' value={demo.age} onChange={(e) => updateDemo('age', e.target.value)} />
                   </FormField>
                   <FormField label={content.demographics.genderLabel}>
                     <select className="field-select" value={demo.gender} onChange={(e) => updateDemo('gender', e.target.value)}>

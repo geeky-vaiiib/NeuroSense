@@ -45,7 +45,6 @@ function FilterChip({ label, active, onClick }) {
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const [categoryFilter, setCategoryFilter] = useState('all');
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -56,9 +55,7 @@ export default function Dashboard() {
       setLoading(true);
       setError('');
       try {
-        const data = await casesApi.dashboard(
-          categoryFilter === 'all' ? {} : { category: categoryFilter }
-        );
+        const data = await casesApi.dashboard({});
         if (active) {
           setSummary(data);
         }
@@ -77,7 +74,7 @@ export default function Dashboard() {
     return () => {
       active = false;
     };
-  }, [categoryFilter]);
+  }, []);
 
   const totals = summary?.totals ?? {
     totalCases: 0,
@@ -93,10 +90,7 @@ export default function Dashboard() {
   const statCards = [
     {
       id: 'stat-total',
-      label:
-        categoryFilter === 'all'
-          ? 'Total cases'
-          : `${categoryFilter[0].toUpperCase() + categoryFilter.slice(1)} cases`,
+      label: 'Total cases',
       value: totals.totalCases,
       trendLabel: 'Current dashboard scope',
       trendValue: null,
@@ -147,16 +141,7 @@ export default function Dashboard() {
               Track mixed adult and child screening activity with category-aware counts.
             </p>
           </div>
-          <div style={{ display: 'flex', gap: 'var(--sp-2)', flexWrap: 'wrap' }}>
-            {FILTERS.map((filter) => (
-              <FilterChip
-                key={filter}
-                label={filter === 'all' ? 'All' : filter[0].toUpperCase() + filter.slice(1)}
-                active={categoryFilter === filter}
-                onClick={() => setCategoryFilter(filter)}
-              />
-            ))}
-          </div>
+
         </div>
 
         {loading ? (

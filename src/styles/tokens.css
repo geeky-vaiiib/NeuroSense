@@ -1,156 +1,144 @@
 /* ============================================================
    NeuroSense Design System — tokens.css
-   Clinical precision palette · IBM Plex type scale · 4px grid
+   Clinical precision palette · Syne & DM Sans type scale · 4px grid
    ============================================================ */
 
-/* ── IBM Plex Sans + Mono ────────────────────────────────── */
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@300;400;500&display=swap');
+/* ── Fonts ────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,700;1,400&family=Syne:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
 
 :root {
   /* ── Core Palette ──────────────────────────────────────────────────────
-     Six deliberate values, each with a single function.
-     Nothing decorative — color carries semantic load only.
+     Dark-mode-first approach with teal (#0ECFC8) and violet (#7B61FF).
      ────────────────────────────────────────────────────────────────────── */
 
-  /* Base surfaces — pulled from the blue end of neutral, not warm */
-  --ns-surface:       #F7F8FA;   /* page bg (light) — barely blue-white */
-  --ns-surface-2:     #EEF0F4;   /* inset zones, table rows, step bg */
-  --ns-panel:         #FFFFFF;   /* content panels, form fields */
-  --ns-ink:           #0E1117;   /* page bg (dark), primary text (light) */
-  --ns-panel-dark:    #161B25;   /* panels in dark mode */
-  --ns-surface-dark:  #0E1117;
+  /* Base surfaces — Dark mode first */
+  --ns-surface:       #0A0A0B;   /* page bg (dark) */
+  --ns-surface-2:     #121214;   /* inset zones, table rows, step bg */
+  --ns-panel:         #18181B;   /* content panels, form fields */
+  --ns-ink:           #FFFFFF;   /* primary text (light) */
+  --ns-panel-dark:    #18181B;
+  --ns-surface-dark:  #0A0A0B;
 
-  /* Primary action — instrument blue (medical device UI reference) */
-  --ns-instrument:      #2563B0;  /* buttons, links, focus rings */
-  --ns-instrument-light: #3B7DD8; /* hover state */
-  --ns-instrument-dim:   rgba(37, 99, 176, 0.10); /* subtle tints */
-  --ns-instrument-focus: rgba(37, 99, 176, 0.25); /* focus ring fill */
+  /* Primary action — Violet (#7B61FF) */
+  --ns-instrument:      #7B61FF;
+  --ns-instrument-light: #947EFF;
+  --ns-instrument-dim:   rgba(123, 97, 255, 0.15);
+  --ns-instrument-focus: rgba(123, 97, 255, 0.35);
 
-  /* Signal — clinical teal (EEG trace / ophthalmology display reference) */
-  --ns-signal:        #1A7A6A;  /* success, low risk, confirmation */
-  --ns-signal-light:  #22A08A;
-  --ns-signal-dim:    rgba(26, 122, 106, 0.10);
+  /* Signal — Clinical Teal (#0ECFC8) */
+  --ns-signal:        #0ECFC8;
+  --ns-signal-light:  #3EEBE5;
+  --ns-signal-dim:    rgba(14, 207, 200, 0.15);
 
-  /* ── Risk Semantic Colors ──────────────────────────────────────────────
-     Chosen to be WCAG AA against white AND against their own muted bg.
-     Text + icon + label — never color alone.
-     ────────────────────────────────────────────────────────────────────── */
-  --ns-risk-high:         #B42B35;  /* clinical red — not saturated/alarm */
-  --ns-risk-high-bg:      #FDF2F3;
-  --ns-risk-high-border:  #F5C6C9;
-  --ns-risk-high-text:    #8A2028;  /* darkened for AA contrast on bg */
+  /* ── Risk Semantic Colors ────────────────────────────────────────────── */
+  --ns-risk-high:         #FF4C6A;
+  --ns-risk-high-bg:      rgba(255, 76, 106, 0.12);
+  --ns-risk-high-border:  rgba(255, 76, 106, 0.30);
+  --ns-risk-high-text:    #FF4C6A;
 
-  --ns-risk-mod:          #A05C00;  /* deep amber-brown, not consumer orange */
-  --ns-risk-mod-bg:       #FDF6EC;
-  --ns-risk-mod-border:   #F5DFB0;
-  --ns-risk-mod-text:     #7A4600;
+  --ns-risk-mod:          #FFAE43;
+  --ns-risk-mod-bg:       rgba(255, 174, 67, 0.12);
+  --ns-risk-mod-border:   rgba(255, 174, 67, 0.30);
+  --ns-risk-mod-text:     #FFAE43;
 
-  --ns-risk-low:          #1A7A6A;  /* same as --ns-signal */
-  --ns-risk-low-bg:       #F0F9F7;
-  --ns-risk-low-border:   #B3E2D8;
-  --ns-risk-low-text:     #145F53;
+  --ns-risk-low:          #0ECFC8;
+  --ns-risk-low-bg:       rgba(14, 207, 200, 0.12);
+  --ns-risk-low-border:   rgba(14, 207, 200, 0.30);
+  --ns-risk-low-text:     #0ECFC8;
 
-  /* ── Neutral Scale ─────────────────────────────────────────────────────
-     Cool-leaning (blue undertone) to match the surface colors.
-     ────────────────────────────────────────────────────────────────────── */
-  --ns-n50:   #F7F8FA;
-  --ns-n100:  #EEF0F4;
-  --ns-n150:  #E3E6EC;
-  --ns-n200:  #D3D8E2;
-  --ns-n300:  #B4BBCA;
-  --ns-n400:  #8E97AB;
-  --ns-n500:  #68738A;
-  --ns-n600:  #495466;
-  --ns-n700:  #313D52;
-  --ns-n800:  #1E2738;
-  --ns-n900:  #0E1117;
+  /* ── Neutral Scale ───────────────────────────────────────────────────── */
+  --ns-n900:  #FFFFFF;
+  --ns-n800:  #F4F4F5;
+  --ns-n700:  #E4E4E7;
+  --ns-n600:  #A1A1AA;
+  --ns-n500:  #71717A;
+  --ns-n400:  #52525B;
+  --ns-n300:  #3F3F46;
+  --ns-n200:  #27272A;
+  --ns-n150:  #1C1C1E;
+  --ns-n100:  #18181B;
+  --ns-n50:   #121214;
 
   /* ── Typography ────────────────────────────────────────────────────────
-     IBM Plex Sans for all prose/UI; IBM Plex Mono for numeric data only.
+     Syne for headings, DM Sans for prose, IBM Plex Mono for numeric data.
      ────────────────────────────────────────────────────────────────────── */
-  --font-body:   'IBM Plex Sans', system-ui, -apple-system, sans-serif;
-  --font-data:   'IBM Plex Mono', 'Cascadia Code', 'Fira Mono', monospace;
+  --font-heading: 'Syne', sans-serif;
+  --font-body:    'DM Sans', system-ui, -apple-system, sans-serif;
+  --font-data:    'IBM Plex Mono', 'Cascadia Code', 'Fira Mono', monospace;
+  --font-mono:    var(--font-data);
 
-  /* Scale: display / heading / subhead / body / label / caption / data */
-  --ts-display:  2.5rem;    /* 40px — hero, Results gauge number */
-  --ts-h1:       1.875rem;  /* 30px — page titles */
-  --ts-h2:       1.5rem;    /* 24px — section headings */
-  --ts-h3:       1.125rem;  /* 18px — panel headers */
-  --ts-body:     0.9375rem; /* 15px — default prose */
-  --ts-small:    0.8125rem; /* 13px — labels, table headers */
-  --ts-caption:  0.6875rem; /* 11px — fine print */
-  --ts-data:     0.875rem;  /* 14px — mono numeric readouts */
+  /* Scale */
+  --ts-display:  2.5rem;    /* 40px */
+  --ts-h1:       1.875rem;  /* 30px */
+  --ts-h2:       1.5rem;    /* 24px */
+  --ts-h3:       1.125rem;  /* 18px */
+  --ts-body:     0.9375rem; /* 15px */
+  --ts-small:    0.8125rem; /* 13px */
+  --ts-caption:  0.6875rem; /* 11px */
+  --ts-data:     0.875rem;  /* 14px */
 
   /* Weights */
-  --fw-light:    300;
+  --fw-light:    400;
   --fw-regular:  400;
   --fw-medium:   500;
   --fw-semibold: 600;
   --fw-bold:     700;
 
   /* Leading */
-  --lh-tight:   1.2;   /* display, headings */
-  --lh-snug:    1.35;  /* subheadings */
-  --lh-body:    1.6;   /* prose — slightly open for clinical legibility */
-  --lh-data:    1.4;   /* table cells, data labels */
+  --lh-tight:   1.2;
+  --lh-snug:    1.35;
+  --lh-body:    1.6;
+  --lh-data:    1.4;
 
   /* Tracking */
   --ls-tight:  -0.03em;
   --ls-snug:   -0.015em;
   --ls-normal:  0em;
-  --ls-label:   0.01em;  /* small labels: fractionally open */
+  --ls-label:   0.01em;
 
-  /* Body prose max line length */
-  --prose-width: 64ch;
+  /* ── 4px Base Grid Spacing ───────────────────────────────────────────── */
+  --sp-1:   0.25rem;
+  --sp-2:   0.5rem;
+  --sp-3:   0.75rem;
+  --sp-4:   1rem;
+  --sp-5:   1.25rem;
+  --sp-6:   1.5rem;
+  --sp-8:   2rem;
+  --sp-10:  2.5rem;
+  --sp-12:  3rem;
+  --sp-16:  4rem;
+  --sp-20:  5rem;
+  --sp-24:  6rem;
 
-  /* ── 4px Base Grid Spacing ─────────────────────────────────────────────
-     All spacing values are multiples of 4px.
-     Use these tokens — never ad-hoc pixel values in components.
-     ────────────────────────────────────────────────────────────────────── */
-  --sp-1:   0.25rem;   /*  4px */
-  --sp-2:   0.5rem;    /*  8px */
-  --sp-3:   0.75rem;   /* 12px */
-  --sp-4:   1rem;      /* 16px */
-  --sp-5:   1.25rem;   /* 20px */
-  --sp-6:   1.5rem;    /* 24px */
-  --sp-8:   2rem;      /* 32px */
-  --sp-10:  2.5rem;    /* 40px */
-  --sp-12:  3rem;      /* 48px */
-  --sp-16:  4rem;      /* 64px */
-  --sp-20:  5rem;      /* 80px */
-  --sp-24:  6rem;      /* 96px */
-
-  /* ── Radii ─────────────────────────────────────────────────────────────
-     Deliberately restrained — not everything gets max rounding.
-     ────────────────────────────────────────────────────────────────────── */
-  --r-xs:   2px;
-  --r-sm:   4px;
-  --r-md:   6px;   /* default for panels — NOT 12-16px SaaS pill */
-  --r-lg:   10px;  /* modals, larger surface areas */
+  /* ── Radii ───────────────────────────────────────────────────────────── */
+  --r-xs:   4px;
+  --r-sm:   8px;
+  --r-md:   12px;
+  --r-lg:   16px;
+  --r-xl:   20px;
   --r-pill: 9999px;
 
   /* ── Borders ───────────────────────────────────────────────────────────*/
-  --border:      1px solid var(--ns-n150);
-  --border-mid:  1px solid var(--ns-n200);
-  --border-strong: 1px solid var(--ns-n300);
+  --border:      1px solid var(--ns-n200);
+  --border-mid:  1px solid var(--ns-n300);
+  --border-strong: 1px solid var(--ns-n400);
 
-  /* ── Shadows ───────────────────────────────────────────────────────────
-     Single-layer, cool-toned (blue-black, not warm-black).
-     ────────────────────────────────────────────────────────────────────── */
-  --sh-xs:  0 1px 2px rgba(14, 17, 23, 0.04);
-  --sh-sm:  0 1px 4px rgba(14, 17, 23, 0.06), 0 1px 2px rgba(14, 17, 23, 0.04);
-  --sh-md:  0 4px 12px rgba(14, 17, 23, 0.07), 0 1px 4px rgba(14, 17, 23, 0.04);
-  --sh-lg:  0 8px 24px rgba(14, 17, 23, 0.08), 0 2px 8px rgba(14, 17, 23, 0.04);
+  /* ── Shadows ─────────────────────────────────────────────────────────── */
+  --sh-xs:  0 1px 2px rgba(0, 0, 0, 0.40);
+  --sh-sm:  0 2px 8px rgba(0, 0, 0, 0.40);
+  --sh-md:  0 8px 24px rgba(0, 0, 0, 0.50);
+  --sh-lg:  0 16px 48px rgba(0, 0, 0, 0.60);
+  --sh-glow: 0 0 20px var(--ns-instrument-dim);
 
   /* ── Transitions ───────────────────────────────────────────────────────*/
   --ease-fast:   150ms cubic-bezier(0.4, 0, 0.2, 1);
   --ease-base:   220ms cubic-bezier(0.4, 0, 0.2, 1);
   --ease-slow:   380ms cubic-bezier(0.4, 0, 0.2, 1);
-  --ease-gauge:  600ms cubic-bezier(0.33, 1, 0.68, 1);  /* gauge reveal only */
+  --ease-spring: 500ms cubic-bezier(0.175, 0.885, 0.32, 1.275);
 
   /* ── Layout ────────────────────────────────────────────────────────────*/
   --sidebar-width:  240px;
-  --navbar-height:  56px;
+  --navbar-height:  64px;
   --content-max:    1200px;
   --panel-pad:      var(--sp-6);
 
@@ -161,9 +149,7 @@
   --z-overlay:  200;
   --z-modal:    300;
 
-  /* ── Legacy aliases — keep old names pointing to new values ────────────
-     So existing inline-style references don't break.
-     ────────────────────────────────────────────────────────────────────── */
+  /* ── Legacy aliases ──────────────────────────────────────────────────── */
   --color-primary:        var(--ns-instrument);
   --color-primary-dark:   var(--ns-instrument);
   --color-primary-light:  var(--ns-instrument-light);
@@ -173,9 +159,9 @@
   --color-bg:             var(--ns-surface);
   --color-bg-alt:         var(--ns-surface-2);
   --color-bg-card:        var(--ns-panel);
-  --color-bg-elevated:    var(--ns-panel);
+  --color-bg-elevated:    var(--ns-n100);
   --color-bg-sidebar:     var(--ns-surface-2);
-  --color-bg-overlay:     rgba(247, 248, 250, 0.94);
+  --color-bg-overlay:     rgba(10, 10, 11, 0.94);
   --color-neutral-50:     var(--ns-n50);
   --color-neutral-100:    var(--ns-n100);
   --color-neutral-200:    var(--ns-n200);
@@ -193,8 +179,6 @@
   --shadow-sm:  var(--sh-sm);
   --shadow-md:  var(--sh-md);
   --shadow-lg:  var(--sh-lg);
-  --font-body:  'IBM Plex Sans', system-ui, -apple-system, sans-serif;
-  --font-mono:  'IBM Plex Mono', monospace;
   --font-size-xs:   var(--ts-caption);
   --font-size-sm:   var(--ts-small);
   --font-size-base: var(--ts-body);
@@ -221,98 +205,40 @@
   --space-8:  var(--sp-8);  --space-10: var(--sp-10); --space-12: var(--sp-12);
   --space-16: var(--sp-16); --space-20: var(--sp-20); --space-24: var(--sp-24);
   --radius-xs:  var(--r-xs); --radius-sm: var(--r-sm); --radius-md: var(--r-md);
-  --radius-lg:  var(--r-lg); --radius-xl: 14px; --radius-2xl: 18px;
-  --radius-3xl: 22px; --radius-full: var(--r-pill);
+  --radius-lg:  var(--r-lg); --radius-xl: var(--r-xl); --radius-2xl: 24px;
+  --radius-3xl: 32px; --radius-full: var(--r-pill);
   --transition-fast:   var(--ease-fast);
   --transition-base:   var(--ease-base);
   --transition-slow:   var(--ease-slow);
-  --transition-spring: 350ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  --transition-spring: var(--ease-spring);
   --sidebar-width-compact: 64px;
-  --navbar-height: 56px;
   --content-max-width: var(--content-max);
   --card-padding: var(--panel-pad);
   --page-padding-x: var(--sp-8);
   --page-padding-y: var(--sp-6);
   --border-width: 1px;
-  --border-color: var(--ns-n150);
-  --border-color-alt: var(--ns-n200);
-  --border-primary: rgba(37, 99, 176, 0.25);
-  --shadow-primary: 0 4px 14px rgba(37, 99, 176, 0.20);
-  --shadow-inset: inset 0 1px 3px rgba(14, 17, 23, 0.06);
-  --z-raised: 10; --z-dropdown: 100; --z-sticky: 100;
-  --z-overlay: 200; --z-modal: 300; --z-toast: 400; --z-tooltip: 500;
+  --border-color: var(--ns-n200);
+  --border-color-alt: var(--ns-n300);
+  --border-primary: rgba(123, 97, 255, 0.35);
+  --shadow-primary: var(--sh-glow);
+  --shadow-inset: inset 0 1px 0 rgba(255,255,255,0.05);
+  --z-dropdown: 100;
+  --z-toast: 400; --z-tooltip: 500;
   --color-secondary-light: var(--ns-n400);
-  --color-secondary-dark: var(--ns-n600);
-  --color-secondary-muted: rgba(104, 115, 138, 0.15);
+  --color-secondary-dark: var(--ns-n300);
+  --color-secondary-muted: rgba(161, 161, 170, 0.15);
   --color-risk-high-light: var(--ns-risk-high);
   --color-risk-high-bg: var(--ns-risk-high-bg);
   --color-risk-high-border: var(--ns-risk-high-border);
-  --color-risk-high-muted: rgba(180, 43, 53, 0.10);
+  --color-risk-high-muted: rgba(255, 76, 106, 0.10);
   --color-risk-moderate: var(--ns-risk-mod);
   --color-risk-moderate-light: var(--ns-risk-mod);
   --color-risk-moderate-bg: var(--ns-risk-mod-bg);
   --color-risk-moderate-border: var(--ns-risk-mod-border);
-  --color-risk-moderate-muted: rgba(160, 92, 0, 0.10);
+  --color-risk-moderate-muted: rgba(255, 174, 67, 0.10);
   --color-risk-low-light: var(--ns-risk-low);
   --color-risk-low-bg: var(--ns-risk-low-bg);
   --color-risk-low-border: var(--ns-risk-low-border);
-  --color-risk-low-muted: rgba(26, 122, 106, 0.10);
+  --color-risk-low-muted: rgba(14, 207, 200, 0.10);
 }
 
-/* ── Dark mode ─────────────────────────────────────────────── */
-.dark-mode {
-  --ns-surface:      var(--ns-surface-dark);
-  --ns-surface-2:    #131820;
-  --ns-panel:        var(--ns-panel-dark);
-  --color-bg:        var(--ns-surface-dark);
-  --color-bg-alt:    #131820;
-  --color-bg-card:   var(--ns-panel-dark);
-  --color-bg-elevated: #1C2333;
-  --color-bg-sidebar:  #131820;
-  --color-bg-overlay:  rgba(14, 17, 23, 0.94);
-  --ns-n900:    #EEF0F4;
-  --ns-n800:    #D3D8E2;
-  --ns-n700:    #B4BBCA;
-  --ns-n600:    #8E97AB;
-  --ns-n500:    #68738A;
-  --ns-n400:    #495466;
-  --ns-n300:    #313D52;
-  --ns-n200:    #232E42;
-  --ns-n150:    #1C2739;
-  --ns-n100:    #161E2E;
-  --color-neutral-900: var(--ns-n900);
-  --color-neutral-800: var(--ns-n800);
-  --color-neutral-700: var(--ns-n700);
-  --color-neutral-600: var(--ns-n600);
-  --color-neutral-500: var(--ns-n500);
-  --color-neutral-400: var(--ns-n400);
-  --color-neutral-300: var(--ns-n300);
-  --color-neutral-200: var(--ns-n200);
-  --color-neutral-100: var(--ns-n100);
-  --border-color: var(--ns-n150);
-  --border-color-alt: var(--ns-n200);
-  --ns-instrument:       #4B8FE0;
-  --ns-instrument-light: #6BAEF5;
-  --ns-instrument-dim:   rgba(75, 143, 224, 0.12);
-  --color-primary: var(--ns-instrument);
-  --color-primary-dark: var(--ns-instrument);
-  --color-primary-light: var(--ns-instrument-light);
-  --color-primary-muted: var(--ns-instrument-dim);
-  --color-primary-subtle: var(--ns-instrument-dim);
-  --ns-risk-high-bg:    rgba(180, 43, 53, 0.12);
-  --ns-risk-high-border: rgba(180, 43, 53, 0.30);
-  --ns-risk-mod-bg:     rgba(160, 92, 0, 0.12);
-  --ns-risk-mod-border: rgba(160, 92, 0, 0.30);
-  --ns-risk-low-bg:     rgba(26, 122, 106, 0.12);
-  --ns-risk-low-border: rgba(26, 122, 106, 0.30);
-  --color-risk-high-bg:       var(--ns-risk-high-bg);
-  --color-risk-high-border:   var(--ns-risk-high-border);
-  --color-risk-moderate-bg:   var(--ns-risk-mod-bg);
-  --color-risk-moderate-border: var(--ns-risk-mod-border);
-  --color-risk-low-bg:        var(--ns-risk-low-bg);
-  --color-risk-low-border:    var(--ns-risk-low-border);
-  --sh-xs:  0 1px 2px rgba(0, 0, 0, 0.20);
-  --sh-sm:  0 1px 4px rgba(0, 0, 0, 0.25), 0 1px 2px rgba(0, 0, 0, 0.15);
-  --sh-md:  0 4px 12px rgba(0, 0, 0, 0.28), 0 1px 4px rgba(0, 0, 0, 0.18);
-  --sh-lg:  0 8px 24px rgba(0, 0, 0, 0.32), 0 2px 8px rgba(0, 0, 0, 0.20);
-}
