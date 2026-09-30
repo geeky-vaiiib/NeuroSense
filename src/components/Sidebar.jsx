@@ -5,7 +5,7 @@
  */
 import { useEffect, useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { NeuroLogo } from '../pages/Landing';
+import { NeuroSenseLogo } from './branding/NeuroSenseLogo';
 import { useAuth } from '../context/AuthContext';
 import { useBackendStatus } from '../hooks/useBackendStatus';
 import { casesApi } from '../services/api';
@@ -76,8 +76,8 @@ export default function Sidebar({ isOpen, onClose }) {
     casesApi.list().then(list => setCaseCount(Array.isArray(list) ? list.length : 0)).catch(() => {});
   }, []);
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     navigate('/', { replace: true });
   };
 
@@ -85,11 +85,7 @@ export default function Sidebar({ isOpen, onClose }) {
     <aside className={`ns-sidebar${isOpen ? ' ns-sidebar--open' : ''}`} role="navigation" aria-label="Main navigation">
       {/* Brand */}
       <div className="ns-sb-brand">
-        <NeuroLogo size={32} />
-        <div className="ns-sb-brand-text">
-          <span className="ns-sb-app-name">NeuroSense</span>
-          <span className="ns-sb-app-sub">Clinical Intelligence</span>
-        </div>
+        <NeuroSenseLogo size={28} tone="dark" animated />
       </div>
 
       <div className="ns-sb-divider" />
@@ -111,9 +107,9 @@ export default function Sidebar({ isOpen, onClose }) {
                 {to === '/app/cases' && caseCount !== null && (
                   <span style={{
                     marginLeft: 'auto',
-                    backgroundColor: 'var(--ns-surface)',
+                    backgroundColor: 'rgba(148,163,184,0.14)',
                     color: 'var(--ns-n600)',
-                    border: 'var(--border)',
+                    border: 'none',
                     borderRadius: 'var(--r-pill)',
                     padding: '1px 8px',
                     fontSize: 'var(--ts-caption)',
@@ -170,7 +166,7 @@ export default function Sidebar({ isOpen, onClose }) {
         {/* Avatar */}
         <div style={{
           width: '32px', height: '32px', borderRadius: '50%', flexShrink: 0,
-          backgroundColor: 'var(--ns-instrument)',
+          background: 'linear-gradient(135deg, #0E93A0, #26365A)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           fontSize: 'var(--ts-small)', fontWeight: 'var(--fw-semibold)', color: '#fff',
           position: 'relative',
@@ -183,7 +179,7 @@ export default function Sidebar({ isOpen, onClose }) {
             {user?.name ?? 'Clinician'}
           </div>
           <div style={{ fontSize: 'var(--ts-caption)', color: 'var(--ns-n500)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {user?.role ?? 'Role'}
+            {user?.roleLabel ?? 'Role'}
           </div>
         </div>
 
@@ -217,7 +213,7 @@ export default function Sidebar({ isOpen, onClose }) {
           <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
           <polyline points="9 12 11 14 15 10"/>
         </svg>
-        <span>DPDP Act 2023 Compliant</span>
+        <span>Screening support, not a diagnosis</span>
       </footer>
     </aside>
   );

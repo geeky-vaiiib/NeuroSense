@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+import os
 import uuid
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 
 try:
+    from ..core.auth import CurrentUser, get_current_user
     from ..core.categories import (
         build_case_tags,
         build_diagnosis_summary,
@@ -28,6 +30,7 @@ try:
         ScreeningResponse,
     )
 except ImportError:  # pragma: no cover - fallback for backend cwd execution
+    from ..core.auth import CurrentUser, get_current_user
     from ..core.categories import (
         build_case_tags,
         build_diagnosis_summary,
@@ -52,7 +55,11 @@ router = APIRouter(prefix="/screening", tags=["Screening"])
 
 
 @router.post("/screen", response_model=ScreeningResponse)
-async def run_screening(body: ScreeningRequest, request: Request):
+async def run_screening(
+    body: ScreeningRequest,
+    request: Request,
+    user: CurrentUser = Depends(get_current_user),
+):
     """Submit a completed screening and persist a category-aware case record."""
     registry = request.app.state.model_registry or {}
     category = body.category.value
@@ -64,6 +71,10 @@ async def run_screening(body: ScreeningRequest, request: Request):
         result = predict(category, bundle, demo_dict, answers_dict)
     except Exception as exc:  # pragma: no cover - defensive error surface
         raise HTTPException(status_code=500, detail=f"Inference failed: {exc}") from exc
+
+    if result["mock"] and os.environ.get("NEUROSENSE_ALLOW_MOCK_INFERENCE", "").lower() not in ("1", "true"):
+        # The questionnaire model is missing: never invent a probability from the AQ-10 sum.
+        raise HTTPException(status_code=503, detail="Screening model is unavailable on the server.")
 
     now = datetime.now(timezone.utc)
     case_id = (
@@ -120,6 +131,8 @@ async def run_screening(body: ScreeningRequest, request: Request):
             isTrainedModel=c.is_trained_model,
             modalityLabel=c.modality_label,
             available=c.available,
+            weight=c.weight,
+            contribution=c.contribution,
         )
         for c in fusion.modality_breakdown
     ]
@@ -138,6 +151,7 @@ async def run_screening(body: ScreeningRequest, request: Request):
     upsert_case_record(
         {
             "id": case_id,
+            "user_id": user.user_id,   # from the verified token, never from the request body
             "category": category,
             "subject_name": subject_name,
             "respondent_name": respondent_name,
@@ -182,11 +196,15 @@ async def run_screening(body: ScreeningRequest, request: Request):
             "answers": answers_dict,
             "gaze_features": gaze_raw.get("features", {}),
             "gaze_status": gaze_raw.get("status", "skipped" if body.gaze_skipped else "not_submitted"),
-            "gaze_reason": gaze_raw.get("reason"),
+            "gaze_reason": gaze_raw.get("reason") or body.gaze_skip_reason,
             "gaze_model_version": gaze_raw.get("model_version"),
             "gaze_quality": gaze_raw.get("quality"),
             "gaze_session_id": gaze_raw.get("session_id"),
             "gaze_analyzed_at": gaze_raw.get("analyzed_at"),
+            "gaze_preprocessing_version": gaze_raw.get("preprocessing_version"),
+            "gaze_error_code": gaze_raw.get("error_code"),
+            "gaze_model_status": gaze_raw.get("model_status"),
+            "gaze_fusion_eligible": gaze_raw.get("fusion_eligible"),
             "gaze_mock": gaze_raw.get("isMock", True),
             "gaze_method": gaze_raw.get("method", "lstm_trained") if gaze_raw else None,
             "gaze_is_trained": gaze_raw.get("is_trained_model", False),
@@ -227,7 +245,7 @@ async def run_screening(body: ScreeningRequest, request: Request):
         gazeResult=(
             {k: gaze_raw.get(k) for k in (
                 "status", "probability", "model_status", "model_version",
-                "reason", "quality", "analyzed_at",
+                "reason", "quality", "analyzed_at", "preprocessing_version", "error_code",
             )} if gaze_raw else None
         ),
         gazeInterpretation=gaze_raw.get("interpretation") or None,

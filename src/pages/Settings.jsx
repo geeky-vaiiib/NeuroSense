@@ -88,7 +88,7 @@ function LabelledInput({ id, label, value, onChange, mono, desc, type = 'text' }
           backgroundColor: foc ? '#fff' : 'var(--color-bg)',
           fontFamily: mono ? 'var(--font-mono)' : 'var(--font-body)',
           fontSize: '0.9rem', color: 'var(--color-neutral-800)', outline: 'none',
-          boxShadow: foc ? '0 0 0 3px rgba(124,154,133,0.12)' : 'none',
+          boxShadow: foc ? '0 0 0 3px rgba(11,122,133,0.12)' : 'none',
           transition: 'all 150ms',
         }}
       />
@@ -169,7 +169,7 @@ export default function Settings() {
   }
 
   function handleClearData() {
-    if (!window.confirm('This will permanently delete all mock case data and screening sessions. This action cannot be undone. Continue?')) return;
+    if (!window.confirm('This removes notes and preferences saved in this browser. Cases stored on the server are not affected. Continue?')) return;
     const keysToRemove = [];
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
@@ -187,10 +187,10 @@ export default function Settings() {
 
       {/* Profile card */}
       <section style={{
-        background: 'linear-gradient(135deg, var(--color-primary-dark) 0%, var(--color-primary) 100%)',
+        background: 'linear-gradient(135deg, var(--ns-navy-900) 0%, var(--ns-navy-600) 100%)',
         borderRadius: '16px', padding: '24px 28px',
         display: 'flex', alignItems: 'center', gap: '18px',
-        boxShadow: '0 4px 24px rgba(94,122,103,0.25)',
+        boxShadow: 'var(--shadow-md)', border: '1px solid rgba(148,163,184,0.16)',
       }}>
         <div style={{
           width: '60px', height: '60px', borderRadius: '16px', flexShrink: 0,
@@ -201,7 +201,7 @@ export default function Settings() {
         }}>{initials(user?.name)}</div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: '1.125rem', fontWeight: 700, color: '#fff' }}>{user?.name ?? 'Clinician'}</div>
-          <div style={{ fontSize: '0.875rem', color: 'rgba(255,255,255,0.75)', marginTop: '2px' }}>{user?.role ?? ''}</div>
+          <div style={{ fontSize: '0.875rem', color: 'rgba(255,255,255,0.75)', marginTop: '2px' }}>{user?.roleLabel ?? ''}</div>
           <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.55)', marginTop: '2px', fontFamily: 'var(--font-mono)' }}>{user?.email ?? ''}</div>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', alignItems: 'flex-end' }}>
@@ -221,7 +221,7 @@ export default function Settings() {
       </section>
 
       {/* API & Integrations */}
-      <Section title="API & Integrations" icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>}>
+      <Section title="Application" icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>}>
         <LabelledInput id="api-base-url" label="Backend API URL" value={apiUrl} onChange={(e) => setApiUrl(e.target.value)} mono desc="NeuroSense connects to this endpoint for live inference and data sync." />
         <LabelledInput id="api-timeout" label="Request Timeout (seconds)" value={timeoutVal} onChange={(e) => setTimeoutVal(e.target.value)} type="number" />
         <div style={{ padding: '14px 0', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
@@ -240,7 +240,7 @@ export default function Settings() {
       </Section>
 
       {/* Clinical preferences */}
-      <Section title="Clinical Preferences" icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M4.8 2.3A.3.3 0 105 2H4a2 2 0 00-2 2v5a6 6 0 006 6 6 6 0 006-6V4a2 2 0 00-2-2h-1a.2.2 0 10.3.3"/><path d="M8 15v1a6 6 0 006 6 6 6 0 006-6v-4"/><circle cx="20" cy="10" r="2"/></svg>}>
+      <Section title="Screening Preferences" icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M4.8 2.3A.3.3 0 105 2H4a2 2 0 00-2 2v5a6 6 0 006 6 6 6 0 006-6V4a2 2 0 00-2-2h-1a.2.2 0 10.3.3"/><path d="M8 15v1a6 6 0 006 6 6 6 0 006-6v-4"/><circle cx="20" cy="10" r="2"/></svg>}>
         <Toggle id="toggle-xai-default" checked={toggls.xaiDefault} onChange={() => toggle('xaiDefault')}
           label="Show XAI explanations by default"
           desc="Automatically display SHAP feature importances on every result." />
@@ -263,7 +263,7 @@ export default function Settings() {
         <Toggle id="toggle-auto-save" checked={toggls.autoSave} onChange={() => toggle('autoSave')}
           label="Auto-save sessions" desc="Automatically save incomplete screening sessions every 60 seconds." />
         <Toggle id="toggle-audit-log" checked={toggls.auditLog} onChange={() => toggle('auditLog')}
-          label="Enable audit logging" desc="Log all case access and modifications (required for DPDP compliance)." />
+          label="Enable audit logging" desc="Keep a record of case access and changes." />
       </Section>
 
       {/* Notifications */}
@@ -282,6 +282,27 @@ export default function Settings() {
           label="High contrast mode" desc="Increases colour contrast for improved readability." />
       </Section>
 
+      {/* Security */}
+      <Section title="Security" icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>}>
+        <div style={{ padding: '14px 0', borderBottom: '1px solid var(--color-neutral-100)', fontSize: '0.84rem', color: 'var(--color-neutral-500)', lineHeight: 1.6 }}>
+          Your session is held in a secure, HttpOnly cookie that scripts on this page cannot read, and it is revoked on the server when you sign out.
+        </div>
+        {/* Sign Out */}
+        <div style={{ padding: '14px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px' }}>
+          <div>
+            <div style={{ fontWeight: 500, color: 'var(--color-neutral-800)', fontSize: '0.9rem' }}>Sign Out</div>
+            <div style={{ fontSize: '0.8rem', color: 'var(--color-neutral-400)', marginTop: '2px' }}>End your current session and return to login</div>
+          </div>
+          <button id="settings-logout-btn" onClick={() => { if (window.confirm('Are you sure you want to sign out?')) { logout(); } }} style={{
+            padding: '7px 16px', borderRadius: '8px',
+            border: '1px solid var(--color-risk-high-border)',
+            backgroundColor: 'var(--color-risk-high-muted)', color: 'var(--color-risk-high)',
+            fontSize: '0.8125rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-body)',
+            whiteSpace: 'nowrap', flexShrink: 0,
+          }}>Sign Out</button>
+        </div>
+      </Section>
+
       {/* Save button */}
       <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
         <button id="save-settings-btn" onClick={handleSave} style={{
@@ -289,7 +310,7 @@ export default function Settings() {
           background: 'linear-gradient(135deg, var(--color-primary), var(--color-primary-dark))',
           color: '#fff', fontWeight: 600, cursor: 'pointer',
           fontFamily: 'var(--font-body)', fontSize: '0.9375rem',
-          boxShadow: '0 4px 14px rgba(124,154,133,0.30)',
+          boxShadow: '0 4px 14px rgba(11,122,133,0.30)',
         }}>Save Changes</button>
         {saved && (
           <span style={{
@@ -337,8 +358,8 @@ export default function Settings() {
         {/* Clear all mock data */}
         <div style={{ padding: '14px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', borderBottom: '1px solid var(--color-risk-high-border)' }}>
           <div>
-            <div style={{ fontWeight: 500, color: 'var(--color-neutral-800)', fontSize: '0.9rem' }}>Clear All Mock Data</div>
-            <div style={{ fontSize: '0.8rem', color: 'var(--color-neutral-400)', marginTop: '2px' }}>Remove all demo cases and screening sessions</div>
+            <div style={{ fontWeight: 500, color: 'var(--color-neutral-800)', fontSize: '0.9rem' }}>Clear local data</div>
+            <div style={{ fontSize: '0.8rem', color: 'var(--color-neutral-400)', marginTop: '2px' }}>Remove notes and preferences stored in this browser (saved cases on the server are not affected)</div>
           </div>
           <button id="clear-data-btn" onClick={handleClearData} style={{
             padding: '7px 16px', borderRadius: '8px',
@@ -346,21 +367,7 @@ export default function Settings() {
             backgroundColor: 'transparent', color: 'var(--color-risk-high)',
             fontSize: '0.8125rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-body)',
             whiteSpace: 'nowrap', flexShrink: 0,
-          }}>Clear Data</button>
-        </div>
-        {/* Sign Out */}
-        <div style={{ padding: '14px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px' }}>
-          <div>
-            <div style={{ fontWeight: 500, color: 'var(--color-neutral-800)', fontSize: '0.9rem' }}>Sign Out</div>
-            <div style={{ fontSize: '0.8rem', color: 'var(--color-neutral-400)', marginTop: '2px' }}>End your current session and return to login</div>
-          </div>
-          <button id="settings-logout-btn" onClick={() => { if (window.confirm('Are you sure you want to sign out?')) { logout(); } }} style={{
-            padding: '7px 16px', borderRadius: '8px',
-            border: '1px solid var(--color-risk-high-border)',
-            backgroundColor: 'var(--color-risk-high-muted)', color: 'var(--color-risk-high)',
-            fontSize: '0.8125rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-body)',
-            whiteSpace: 'nowrap', flexShrink: 0,
-          }}>Sign Out</button>
+          }}>Clear local data</button>
         </div>
       </Section>
     </main>

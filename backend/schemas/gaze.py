@@ -35,6 +35,7 @@ class CalibrationInfo(BaseModel):
     completed: bool
     quality_score: float = Field(..., ge=0.0, le=1.0)
     sample_count: int = Field(..., ge=0, le=100000)
+    duration_ms: Optional[int] = Field(default=None, ge=0, le=3_600_000)
     mean_error_px: Optional[float] = Field(default=None, ge=0.0)
     method: Optional[str] = Field(default=None, max_length=64)
 
@@ -66,20 +67,28 @@ class GazeQuality(BaseModel):
     valid_ratio: float
     calibration_score: Optional[float] = None
     duration_s: float
+    duration_ms: int = 0
     sequence_steps: int
     rejected: dict[str, int] = {}
+    warnings: list[str] = []
+    sampling_rate_hz: Optional[float] = None
+    tracking_continuity: Optional[float] = None
 
 
 class GazeAnalyzeResponse(BaseModel):
     modality: str = "gaze"
     status: str                       # success | insufficient_quality | unavailable
     probability: Optional[float] = Field(default=None, ge=0.0, le=1.0)
-    model_status: str                 # trained | unavailable
+    model_status: str                 # trained | incompatible | unavailable
     model_version: Optional[str] = None
+    preprocessing_version: Optional[str] = None
+    error_code: Optional[str] = None
     reason: Optional[str] = None
     detail: Optional[str] = None
     session_id: Optional[str] = None
     analyzed_at: str
     quality: GazeQuality
     features: dict = {}
+    fusion_eligible: bool = False
+    validation: Optional[dict] = None
     interpretation: str = ""

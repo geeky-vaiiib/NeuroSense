@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import SpeechVisualizer from './screening/SpeechVisualizer';
 
 /* ──────────────────────────────────────────────────────────────
    Shared inline-style helpers (match NeuroSense card aesthetic)
@@ -86,7 +87,6 @@ export default function SpeechSession({ onComplete, onSkip }) {
   const preTimerRef = useRef(null);
   const autoProceedRef = useRef(null);
   const analyserRef = useRef(null);
-  const canvasRef = useRef(null);
   const animFrameRef = useRef(null);
 
   const reduceMotion =
@@ -262,47 +262,6 @@ export default function SpeechSession({ onComplete, onSkip }) {
   const handleStopEarly = () => {
     stopRecording();
   };
-
-  const drawVisualiser = useCallback(() => {
-    const analyser = analyserRef.current;
-    const canvas = canvasRef.current;
-    if (!analyser || !canvas) return;
-
-    const ctx = canvas.getContext('2d');
-    const bufferLength = analyser.frequencyBinCount;
-    const dataArray = new Uint8Array(bufferLength);
-
-    const draw = () => {
-      animFrameRef.current = requestAnimationFrame(draw);
-      analyser.getByteFrequencyData(dataArray);
-
-      const { width, height } = canvas;
-      ctx.clearRect(0, 0, width, height);
-
-      const barWidth = Math.max(width / bufferLength, 2);
-      const gap = 1;
-
-      for (let i = 0; i < bufferLength; i++) {
-        const barHeight = (dataArray[i] / 255) * height;
-        const x = i * (barWidth + gap);
-        const hue = 145; // sage-green hue
-        const lightness = 40 + (dataArray[i] / 255) * 20;
-        ctx.fillStyle = `hsl(${hue}, 30%, ${lightness}%)`;
-        ctx.fillRect(x, height - barHeight, barWidth, barHeight);
-      }
-    };
-
-    draw();
-  }, []);
-
-  useEffect(() => {
-    if (phase === 'recording' && analyserRef.current && canvasRef.current) {
-      drawVisualiser();
-    }
-    return () => {
-      if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
-    };
-  }, [phase, drawVisualiser]);
 
   /* ════════════════════════════════════════════════════════════
      RENDER — each phase
@@ -510,7 +469,7 @@ export default function SpeechSession({ onComplete, onSkip }) {
         style={{
           ...card,
           position: 'relative',
-          background: '#1A1A18',
+          background: 'var(--ns-navy-900)',
           color: '#fff',
         }}
       >
@@ -558,7 +517,7 @@ export default function SpeechSession({ onComplete, onSkip }) {
             fontWeight: 700,
             fontFamily: 'var(--font-mono)',
             marginBottom: '12px',
-            color: countdown <= 5 ? '#EF4444' : '#fff',
+            color: countdown <= 5 ? '#FCD34D' : '#fff',
             transition: reduceMotion ? 'none' : 'color 300ms ease',
           }}
         >
@@ -580,25 +539,14 @@ export default function SpeechSession({ onComplete, onSkip }) {
               width: `${progressPct}%`,
               height: '100%',
               borderRadius: '999px',
-              backgroundColor: 'var(--color-primary)',
+              backgroundColor: 'var(--ns-signal)',
               transition: reduceMotion ? 'none' : 'width 1s linear',
             }}
           />
         </div>
 
-        {/* Amplitude visualiser */}
-        <canvas
-          ref={canvasRef}
-          width={400}
-          height={60}
-          style={{
-            width: '100%',
-            height: '60px',
-            borderRadius: '10px',
-            backgroundColor: 'rgba(255,255,255,0.04)',
-            marginBottom: '16px',
-          }}
-        />
+        {/* Live amplitude visualiser (real analyser data) */}
+        <div style={{ marginBottom: '16px' }}><SpeechVisualizer analyserRef={analyserRef} reduced={reduceMotion} /></div>
 
         {/* Prompt reminder */}
         <p

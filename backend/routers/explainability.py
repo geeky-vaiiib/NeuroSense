@@ -5,9 +5,10 @@ from __future__ import annotations
 from datetime import datetime, timezone
 
 import numpy as np
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 
 try:
+    from ..core.auth import CurrentUser, get_current_user
     from ..core.categories import build_interpretation, category_label, feature_label
     from ..core.cases_store import get_case_record
     from ..ml.lime_engine import compute_lime
@@ -16,6 +17,7 @@ try:
     from ..ml.shap_engine import FEATURE_NAMES, compute_shap
     from ..schemas.screening import CombinedExplainResponse
 except ImportError:  # pragma: no cover - fallback for backend cwd execution
+    from core.auth import CurrentUser, get_current_user
     from core.categories import build_interpretation, category_label, feature_label
     from core.cases_store import get_case_record
     from ml.lime_engine import compute_lime
@@ -56,13 +58,13 @@ def _build_summary(case_data: dict, shap_results: list[dict]) -> str:
 
 
 @router.get("/{case_id}", response_model=CombinedExplainResponse)
-async def explain_case(case_id: str, request: Request):
+async def explain_case(case_id: str, request: Request, user: CurrentUser = Depends(get_current_user)):
     """Compute SHAP + LIME explanations — category-aware."""
     registry = request.app.state.model_registry or {}
-    case_data = get_case_record(case_id)
+    case_data = get_case_record(case_id, user.user_id)   # authorisation happens before any model work
 
     if case_data is None:
-        raise HTTPException(status_code=404, detail=f"Case '{case_id}' not found.")
+        raise HTTPException(status_code=404, detail="Case not found")
 
     category = case_data["category"]
     demo = case_data.get("demo", {})

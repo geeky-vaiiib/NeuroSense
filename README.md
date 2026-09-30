@@ -231,3 +231,76 @@ in browser storage so new demo cases appear in the case list, dashboard, and res
 
 Heuristic scores appear in `modality_breakdown` for transparency but **do not affect
 `final_probability` or `riskLevel`** under the current fusion strategy.
+
+---
+
+## Authentication & authorization
+
+**Architecture.** The FastAPI backend is the only authority: it hashes passwords (Argon2id), signs and verifies JWTs, and resolves the current user from MongoDB on every request. The browser never creates, sees or stores a credential.
+
+```
+POST /auth/login → verify Argon2id hash → sign JWT (HS256) → Set-Cookie ns_session (HttpOnly, SameSite=Lax)
+request + cookie → get_current_user(): verify signature/exp/iss/aud/jti → not revoked → user row exists & is_active
+                 → CurrentUser(user_id, role from DB) → query scoped by user_id → response
+```
+
+**Session/token.** Access JWT in an `HttpOnly` cookie (`Secure` when `COOKIE_SECURE=true`), lifetime `JWT_ACCESS_TOKEN_EXPIRE_MINUTES` (default 60), no refresh token: an expired session means logging in again. Claims: `sub, email, role, iat, nbf, exp, iss, aud, jti` only. `POST /auth/logout` stores the `jti` in `revoked_tokens` (TTL index) so a copied token dies too. Non-browser clients may send `Authorization: Bearer <jwt>`. Cookie-authenticated writes must also send `X-Requested-With: NeuroSense` (CSRF defence; the CORS allow-list blocks other origins from sending it). Trade-off: HttpOnly cookies keep the token away from XSS; the cost is that CSRF must be handled (done as above).
+
+**Users** (`users` collection): `user_id, name, email (lower-cased, unique index idx_user_email_unique), password_hash, role (user|clinician), created_at, updated_at, is_active`. Registration always creates role `user`; a `role` field in the request is rejected. Promote an account on a trusted machine: `python3 -m backend.scripts.manage_users set-role --email x@y.z --role clinician`. Password policy: 10–128 chars with a letter and a digit. Failed logins are throttled (5 per 15 min per IP+email, in-process).
+
+**Endpoints.**
+
+| Route | Access |
+|---|---|
+| `GET /`, `POST /auth/register`, `POST /auth/login` | public |
+| `GET /auth/me`, `POST /auth/logout`, `POST /gaze/analyze`, `GET /gaze/status`, `POST /screening/screen`, `GET /cases/`, `GET /cases/{id}`, `GET /cases/dashboard/summary`, `GET /explain/{id}` | authenticated |
+| role-restricted | none yet; `require_roles("clinician")` is available |
+
+**Ownership.** Every case stores `user_id` taken from the verified token (never from the request). Lists, dashboard and detail queries filter by `user_id` in MongoDB; another user's case returns `404 Case not found` (same as a missing one). `/explain/{id}` checks ownership before any model work. Cases created before authentication have no `user_id`; they are visible to nobody until an operator runs `manage_users assign-legacy-cases --email owner@x --yes` (dry run without `--yes`).
+
+**Indexes.** `users.email` (unique), `users.user_id` (unique), `cases.user_id+screening_date`, `revoked_tokens.jti` (unique) and `revoked_tokens.expires_at` (TTL), plus the existing case indexes.
+
+**Environment** (`backend/.env`, see `backend/.env.example`): `MONGODB_URI`, `MONGODB_DB_NAME`, `JWT_SECRET` (required, ≥32 random chars — startup fails otherwise), `JWT_ALGORITHM`, `JWT_ACCESS_TOKEN_EXPIRE_MINUTES`, `JWT_ISSUER`, `JWT_AUDIENCE`, `COOKIE_SECURE`, `COOKIE_SAMESITE`, `CORS_ALLOWED_ORIGINS` (explicit origins, `*` rejected). Frontend: optional `VITE_API_URL`.
+
+**Local setup.** `cp backend/.env.example backend/.env`, fill `MONGODB_URI` and a generated `JWT_SECRET`, start the backend, then register an account on `/auth`. There are no built-in accounts.
+
+**Tests.** `PYTHONPATH=backend python3 -m pytest backend/tests` (uses an in-memory MongoDB; never touches Atlas) and `npm test`.
+
+### Failure behaviour (no synthetic results)
+The frontend has **no mock mode**: `src/data/mockData.js` and every network-failure fallback were removed. A failed request surfaces as an `ApiError` (`unauthenticated` 401, `forbidden` 403, `not_found` 404, `validation` 422, `server` 5xx, `network`, `timeout`) and the page shows it. If the questionnaire model is not loaded the server answers `503` instead of estimating a probability (`NEUROSENSE_ALLOW_MOCK_INFERENCE=true` re-enables the old AQ-10 estimate for local development only). Unavailable modalities (gaze, speech, facial) are reported as unavailable and excluded from fusion.
+
+### Legacy cases (created before accounts)
+They have no `user_id`, are preserved, and are invisible to every account. An administrator assigns them deliberately, to one known owner:
+```bash
+python3 -m backend.scripts.manage_users legacy-cases                                   # count
+python3 -m backend.scripts.manage_users assign-legacy-cases --email owner@x.org        # dry run
+python3 -m backend.scripts.manage_users assign-legacy-cases --email owner@x.org --yes  # write
+```
+
+### Login throttle limitation
+5 failed attempts per IP+email per 15 minutes, held in process memory: it resets on restart, is per worker, and is not suitable for multi-instance deployments (use a shared store such as Redis there).
+
+### Local development
+```bash
+uvicorn backend.main:app --reload --port 8000     # backend (needs backend/.env with MONGODB_URI and JWT_SECRET)
+npm run dev                                       # frontend on http://localhost:5173
+PYTHONPATH=backend python3 -m pytest backend/tests  # backend tests (in-memory MongoDB)
+npm test && npm run lint && npm run build           # frontend
+```
+
+
+---
+
+## Gaze pipeline (browser -> backend)
+
+```
+camera (getUserMedia) -> MediaPipe FaceMesh (vendored, 478 landmarks incl. iris) -> features [gx, gy, yaw, pitch, cx, cy]
+  -> 9-point auto calibration (ridge regression, leave-one-target-out quality) -> 30 s task, one sample per tracked frame
+  -> POST /gaze/analyze (canonical samples: timestamp, x, y, stimulus_id, face_detected)
+  -> backend: validation -> I-DT fixations -> 10 Hz resample -> [x, y, speed, is_fixation] -> BiLSTM -> probability
+```
+- **Code:** `src/gaze/` (landmarks, mapper, calibration, filters, tracker), `src/components/GazeSession.jsx`, `backend/ml/gaze/`.
+- **Requirements:** Chrome or Edge; `http://localhost` or HTTPS (camera access is blocked on plain-HTTP remote origins). WebGazer is no longer used.
+- **Calibration quality** = 0.75 x accuracy + 0.25 x validity; accepted when >= 8/9 targets have >= 10 clean frames and the leave-one-target-out error is <= 12 % of the screen diagonal (constants and rationale in `src/gaze/calibration.js`). It is a technical usability indicator, not a clinical measure. Skipping is offered only after 3 failed attempts (or immediately for unrecoverable conditions such as a denied camera or an unavailable model); every reason is stored and shown on the report.
+- **Model status:** `GET /gaze/status` (authenticated) and `modalities.gaze_detail` on `GET /`. The gaze step checks it first and refuses to start if the model cannot run. The backend interpreter needs `torch` (`pip install -r backend/requirements.txt`).
+- **Debug overlay (development builds only):** open the app with `?gazeDebug=1` (or `localStorage.ns_gaze_debug = "1"`): FPS, landmark count, feature vector and order, valid samples, calibration score, model status; every landmark is drawn on the preview.

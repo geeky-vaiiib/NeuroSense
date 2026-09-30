@@ -1,9 +1,10 @@
 import pytest
 from fastapi.testclient import TestClient
-from backend.main import app
 
-def test_full_pipeline_smoke():
-    with TestClient(app) as client:
+def test_full_pipeline_smoke(app_client):
+    if True:
+        client = app_client()
+        client.post('/auth/register', json={'name': 'E2E', 'email': 'e2e@example.com', 'password': 'correct-horse-9'})
         payload = {
             "category": "adult",
             "demo": {

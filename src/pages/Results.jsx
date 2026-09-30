@@ -6,6 +6,10 @@ import { useShap } from '../hooks/useShap';
 import { casesApi } from '../services/api';
 import { getCategoryContent } from '../data/screeningContent';
 import { generatePDF } from '../utils/generatePDF';
+import RiskGauge from '../components/results/RiskGauge';
+import FusionVisualization from '../components/results/FusionVisualization';
+import ExplanationPanel from '../components/results/ExplanationPanel';
+import StatusBadge from '../components/ui/StatusBadge';
 
 const styles = {
   page: {
@@ -28,58 +32,6 @@ const styles = {
     textTransform: 'uppercase',
   },
 };
-
-function FeatureBars({ features }) {
-  const maxValue = Math.max(...features.map((item) => Math.abs(item.shapValue)), 0.01);
-
-  return (
-    <div style={{ display: 'grid', gap: '12px' }}>
-      {features.map((item) => {
-        const pct = Math.abs(item.shapValue) / maxValue;
-        const color =
-          item.direction === 'positive'
-            ? 'var(--ns-risk-high)'
-            : 'var(--ns-signal)';
-
-        return (
-          <div key={`${item.feature}-${item.shapValue}`} style={{ display: 'grid', gap: '6px' }}>
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                gap: '12px',
-                alignItems: 'baseline',
-              }}
-            >
-              <strong style={{ color: 'var(--ns-n800)' }}>{item.feature}</strong>
-              <span style={{ color, fontFamily: 'var(--font-data)', fontSize: '0.85rem' }}>
-                {item.shapValue > 0 ? '+' : ''}
-                {item.shapValue.toFixed(2)}
-              </span>
-            </div>
-            <div
-              style={{
-                height: '10px',
-                borderRadius: '999px',
-                backgroundColor: 'var(--ns-surface-2)',
-                overflow: 'hidden',
-              }}
-            >
-              <div
-                style={{
-                  width: `${Math.max(pct * 100, 6)}%`,
-                  height: '100%',
-                  borderRadius: '999px',
-                  backgroundColor: color,
-                }}
-              />
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
 
 export default function Results() {
   const { caseId: routeCaseId } = useParams();
@@ -210,16 +162,51 @@ export default function Results() {
   const gazeReason = selectedCase?.gaze_reason ?? null;
   const legacyGazeFeatures = gazeFeatures && typeof gazeFeatures === 'object' && Object.keys(gazeFeatures).length > 0;
   const hasGazeData = gazeStatus ? gazeStatus === 'success' : legacyGazeFeatures;
+  const GAZE_REASON_TEXT = {
+    poor_calibration: 'the eye-tracking calibration was not accurate enough',
+    calibration_incomplete: 'calibration was not completed',
+    insufficient_samples: 'too few gaze samples were recorded',
+    insufficient_valid_samples: 'too many gaze samples were unusable',
+    insufficient_usable_duration: 'not enough continuous gaze data was recorded',
+    face_not_detected: 'the face was not detected for much of the session',
+    inconsistent_timestamps: 'the recording timing was inconsistent',
+  };
   const gazeUnavailableText = (() => {
-    if (gazeSkipped || gazeStatus === 'skipped') return 'Gaze session was skipped by the respondent.';
+    if (gazeStatus === 'skipped' || (!gazeStatus && gazeSkipped)) {
+      const why = {
+        calibration_poor: 'The gaze step was stopped because eye-tracking calibration was not accurate enough.',
+        calibration_failed: 'The gaze step was stopped because calibration could not reach a usable accuracy after several attempts.',
+        face_not_detected: 'The gaze step was stopped because the camera could not detect the face.',
+        camera_permission_denied: 'The gaze step was not run because camera permission was denied.',
+        no_camera: 'The gaze step was not run because no camera was found.',
+        camera_in_use: 'The gaze step was not run because the camera was in use by another application.',
+        insecure_context: 'The gaze step was not run because the page was not served over HTTPS or localhost.',
+        face_model_load_failed: 'The gaze step was not run because the face-tracking model could not load.',
+        video_not_ready: 'The gaze step was not run because the camera produced no video.',
+        insufficient_data: 'The gaze step ended because too little gaze data was captured.',
+        model_unavailable: 'The gaze step was not run because the gaze model is unavailable on the server.',
+        camera_denied: 'The gaze step was not run because camera access was denied.',
+        camera_unavailable: 'The gaze step was not run because no usable camera was found.',
+        engine_load_failed: 'The gaze step was not run because the eye-tracking library could not load.',
+        engine_init_failed: 'The gaze step was not run because the eye-tracking engine failed to start.',
+        backend_unavailable: 'Gaze data was captured but the analysis server could not be reached.',
+        backend_timeout: 'Gaze data was captured but the analysis timed out.',
+      }[gazeReason];
+      return why || 'Gaze session was skipped by the respondent.';
+    }
     if (gazeStatus === 'insufficient_quality') {
-      return `Gaze data quality was too low to score (${gazeReason || 'unknown reason'}). Gaze is reported as not available and did not affect the result.`;
+      return `Gaze data was recorded but could not be scored: ${GAZE_REASON_TEXT[gazeReason] || gazeReason || 'quality too low'}. `
+        + `(${gazeQuality?.valid_sample_count ?? 0} of ${gazeQuality?.sample_count ?? 0} samples usable.) It did not affect the result.`;
     }
     if (gazeStatus === 'unavailable') {
-      return `The gaze model could not score this session (${gazeReason || 'unknown reason'}). Gaze did not affect the result.`;
+      return `The gaze model could not score this session (${gazeReason || 'unknown reason'}). It did not affect the result.`;
     }
     return 'Gaze session was not completed for this case.';
   })();
+  const gazeBadgeText = {
+    skipped: 'Skipped', insufficient_quality: 'Recorded · not scored', unavailable: 'Unavailable',
+  }[gazeStatus] || 'Not captured';
+  const gazeUsedInFusion = selectedCase?.gaze_fusion_eligible === true;
   const isToddler = false;
 
   // Speech data from case record
@@ -229,6 +216,49 @@ export default function Results() {
   const speechSkipped = selectedCase?.speech_skipped ?? selectedCase?.speechSkipped ?? false;
   const speechFlags = selectedCase?.speech_flags || selectedCase?.speechFlags || [];
   const hasSpeechData = speechFeatures && typeof speechFeatures === 'object' && Object.keys(speechFeatures).length > 0;
+
+  // ── Modality cards: everything below is read from the stored backend result ──
+  const bMap = Object.fromEntries((selectedCase?.modality_breakdown || []).map((c) => [c.modality, c]));
+  const pct = (v) => (typeof v === 'number' ? `${Math.round(v * 100)}%` : null);
+  const qProb = selectedCase?.questionnaire_probability ?? selectedCase?.riskScore ?? null;
+  const gazeQ = gazeQuality;
+  const otherModality = (id, label) => {
+    const c = bMap[id];
+    const has = Boolean(c?.available);
+    const used = has && c?.isTrainedModel === true;
+    return {
+      id, label, available: has, used, probability: has ? c.score : null, contribution: c?.contribution,
+      stateLabel: !has ? 'Skipped or unavailable' : used ? 'Scored · used' : 'Scored · supplemental',
+      tone: !has ? 'muted' : used ? 'ok' : 'warn',
+      quality: has ? 'Quality not reported' : null,
+      detail: !has ? 'No usable signal for this session, so it did not affect the result.'
+        : used ? `Probability ${pct(c.score)}; contributes ${pct(c.contribution) ?? 'a share'} of the final result.`
+        : `Probability ${pct(c.score)} is shown for context and did not influence the final result.`,
+    };
+  };
+  const insightItems = selectedCase ? [
+    {
+      id: 'questionnaire', label: 'Questionnaire', available: true, used: true, probability: qProb, contribution: bMap.questionnaire?.contribution,
+      stateLabel: 'Scored · used', tone: 'ok', quality: `AQ-10 score ${selectedCase.aq10Score ?? 0}/10`,
+      detail: `Probability ${pct(qProb) ?? '—'}; contributes ${pct(bMap.questionnaire?.contribution) ?? 'a share'} of the final result.`,
+    },
+    (() => {
+      const ok = gazeStatus === 'success';
+      const label = ok ? (gazeUsedInFusion ? 'Scored · used' : 'Scored · supplemental')
+        : gazeStatus === 'skipped' ? 'Skipped' : gazeStatus === 'insufficient_quality' ? 'Not scored · low quality'
+        : gazeStatus === 'unavailable' ? 'Model unavailable' : 'Not captured';
+      return {
+        id: 'gaze', label: 'Gaze', available: ok, used: ok && gazeUsedInFusion, probability: ok ? gazeScore : null, contribution: bMap.gaze?.contribution,
+        stateLabel: label, tone: ok ? (gazeUsedInFusion ? 'ok' : 'warn') : 'muted',
+        quality: gazeQ ? `${gazeQ.valid_sample_count}/${gazeQ.sample_count} usable samples · calibration ${gazeQ.calibration_score?.toFixed?.(2) ?? '—'}` : null,
+        detail: ok ? (gazeUsedInFusion ? `Probability ${pct(gazeScore)}; contributes ${pct(bMap.gaze?.contribution) ?? 'a share'} of the final result.`
+          : `Probability ${pct(gazeScore)} is shown for context; the gaze model has not met its validation threshold, so it did not influence the result.`)
+          : gazeUnavailableText,
+      };
+    })(),
+    otherModality('speech', 'Speech'),
+  ] : [];
+  const finalValue = selectedCase ? (selectedCase.fusion_score ?? selectedCase.fusionScore ?? null) : null;
 
   const topMetadata = selectedCase
     ? [
@@ -255,12 +285,13 @@ export default function Results() {
           }}
         >
           <div>
-            <h1 style={{ margin: '0 0 6px', color: 'var(--ns-n900)' }}>
-              Category-aware results and explainability
+            <p className="ns-eyebrow" style={{ marginBottom: 8 }}>Results &amp; explainability</p>
+            <h1 style={{ margin: '0 0 6px', color: 'var(--ns-n900)', letterSpacing: '-0.03em' }}>
+              Screening insight
             </h1>
             <p style={{ margin: 0, color: 'var(--ns-n600)', lineHeight: 1.7 }}>
-              Every case keeps its adult or child track visible through the result, model,
-              explanation, and stored case summary.
+              The overall indicator, what each signal contributed, and why. Screening support for
+              a qualified reviewer — not a diagnosis.
             </p>
           </div>
           <button id="download-pdf-btn" onClick={handleDownloadPDF} disabled={pdfLoading || !selectedCase || !explanation} className="btn btn-secondary">
@@ -366,257 +397,113 @@ export default function Results() {
 
       {selectedCase && content && (
         <>
-          <section className="panel">
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: '1.35fr 1fr',
-                gap: '20px',
-              }}
-            >
-              <div>
-                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
-                  <CategoryBadge category={selectedCase.category} size="lg" />
-                  <RiskBadge level={selectedCase.riskLevel} size="lg" showScore score={selectedCase.riskScore} />
-                </div>
-                <h2 style={{ margin: '14px 0 8px', color: 'var(--ns-n900)' }}>
-                  {content.resultsTitle}
-                </h2>
-                <p style={{ margin: 0, color: 'var(--ns-n600)', lineHeight: 1.7 }}>
-                  {selectedCase.interpretation}
-                </p>
-                <div
-                  style={{
-                    marginTop: '16px',
-                    padding: '16px',
-                    borderRadius: '16px',
-                    border: `1px solid ${content.accentBorder}`,
-                    backgroundColor: content.accentSoft,
-                    color: 'var(--ns-n700)',
-                    lineHeight: 1.7,
-                  }}
-                >
-                  {explanation?.summary || 'Generating explanation summary…'}
-                </div>
+          {/* ── Screening insight hero ─────────────────────────── */}
+          <section className="ns-dark ns-insight" aria-labelledby="insight-title">
+            <div className="ns-insight__gauge">
+              <RiskGauge value={finalValue} level={selectedCase.riskLevel} size={280} />
+              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center', marginTop: 4 }}>
+                <RiskBadge level={selectedCase.riskLevel} size="lg" />
+                <CategoryBadge category={selectedCase.category} size="lg" />
               </div>
-
-              <div
-                style={{
-                  border: '1px solid var(--border-color)',
-                  borderRadius: '18px',
-                  padding: '18px',
-                  backgroundColor: 'var(--ns-surface-2)',
-                }}
-              >
-                <p style={{ margin: '0 0 10px', ...styles.metaLabel }}>Attached metadata</p>
-                <div style={{ display: 'grid', gap: '12px' }}>
-                  {topMetadata.map(([label, value]) => (
-                    <div key={label} style={{ display: 'flex', justifyContent: 'space-between', gap: '12px' }}>
-                      <span style={{ color: 'var(--ns-n500)', fontSize: '0.85rem' }}>
-                        {label}
-                      </span>
-                      <strong style={{ color: 'var(--ns-n900)', textAlign: 'right' }}>
-                        {value}
-                      </strong>
-                    </div>
-                  ))}
-                </div>
-              </div>
+            </div>
+            <div className="ns-insight__body">
+              <p className="ns-eyebrow ns-eyebrow--dark">Screening insight</p>
+              <h2 id="insight-title" style={{ fontSize: 'clamp(1.35rem, 2.6vw, 1.8rem)', marginTop: 10 }}>{content.resultsTitle}</h2>
+              <p style={{ marginTop: 12, lineHeight: 1.7, maxWidth: '62ch' }}>{selectedCase.interpretation}</p>
+              {(() => {
+                // The backend summary starts with the interpretation; show only what it adds.
+                const sm = explanation?.summary;
+                const extra = sm ? (sm.startsWith(selectedCase.interpretation) ? sm.slice(selectedCase.interpretation.length).trim() : sm) : '';
+                return extra ? (
+                  <p style={{ marginTop: 14, paddingLeft: 14, borderLeft: '2px solid var(--ns-signal)', lineHeight: 1.65, maxWidth: '62ch', color: '#C9D5E8' }}>{extra}</p>
+                ) : null;
+              })()}
+              <dl className="ns-insight__meta">
+                {topMetadata.map(([label, value]) => (
+                  <div key={label}><dt>{label}</dt><dd>{value}</dd></div>
+                ))}
+              </dl>
+              <p style={{ marginTop: 16, fontSize: '0.76rem', color: '#7F92AF', maxWidth: '62ch' }}>
+                {selectedCase.confidence_note || 'The final indicator is computed on the server from the signals that passed quality checks.'}
+              </p>
             </div>
           </section>
 
-          <section
-            style={{
-              display: 'grid',
-              gridTemplateColumns: '1.3fr 1fr',
-              gap: '20px',
-            }}
-          >
-            <div className="panel">
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  gap: '16px',
-                  alignItems: 'center',
-                  marginBottom: '16px',
-                }}
-              >
-                <div>
-                  <h3 style={{ margin: 0, color: 'var(--ns-n900)' }}>
-                    SHAP feature contributions
-                  </h3>
-                  <p style={{ margin: '6px 0 0', color: 'var(--ns-n500)' }}>
-                    Top factors driving the {selectedCase.category} model output.
-                  </p>
-                </div>
-                {explanation?.isMock && (
-                  <span
-                    style={{
-                      padding: '4px 10px',
-                      borderRadius: '999px',
-                      backgroundColor: 'var(--ns-surface-2)',
-                      color: 'var(--ns-n500)',
-                      fontFamily: 'var(--font-data)',
-                      fontSize: '0.75rem',
-                    }}
-                  >
-                    mock mode
-                  </span>
-                )}
-              </div>
-              {loadingDetail || explanationLoading[selectedCaseId] ? (
-                <p style={{ margin: 0, color: 'var(--ns-n500)' }}>
-                  Loading explainability…
-                </p>
-              ) : (
-                <FeatureBars features={features} />
-              )}
-            </div>
-
-            <div style={{ display: 'grid', gap: '20px' }}>
-              <section className="panel">
-                <h3 style={{ marginTop: 0, color: 'var(--ns-n900)' }}>
-                  Respondent context
-                </h3>
-                <div style={{ display: 'grid', gap: '12px' }}>
-                  {[
-                    ['Subject', selectedCase.subjectName || 'No name provided'],
-                    ['Respondent', selectedCase.respondentName || 'No name provided'],
-                    ['Relationship', selectedCase.respondentRelationship || content.trackSummary],
-                    ['Age', selectedCase.age],
-                    ['Gender', selectedCase.gender],
-                    ['Clinician', selectedCase.clinician || 'Awaiting clinician assignment'],
-                  ].map(([label, value]) => (
-                    <div key={label} style={{ display: 'flex', justifyContent: 'space-between', gap: '12px' }}>
-                      <span style={{ color: 'var(--ns-n500)' }}>{label}</span>
-                      <strong style={{ color: 'var(--ns-n900)', textAlign: 'right' }}>
-                        {value}
-                      </strong>
-                    </div>
-                  ))}
-                </div>
-              </section>
-
-              <section className="panel">
-                <h3 style={{ marginTop: 0, color: 'var(--ns-n900)' }}>
-                  LIME narrative
-                </h3>
-                <div style={{ display: 'grid', gap: '12px' }}>
-                  {(explanation?.lime || []).map((item) => (
-                    <div
-                      key={`${item.feature}-${item.weight}`}
-                      style={{
-                        paddingBottom: '12px',
-                        borderBottom: '1px solid var(--ns-surface-2)',
-                      }}
-                    >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px' }}>
-                        <strong style={{ color: 'var(--ns-n800)' }}>{item.feature}</strong>
-                        <span style={{ color: 'var(--ns-n500)', fontFamily: 'var(--font-data)' }}>
-                          {item.weight > 0 ? '+' : ''}
-                          {item.weight.toFixed(2)}
-                        </span>
-                      </div>
-                      <p style={{ margin: '6px 0 0', color: 'var(--ns-n600)', lineHeight: 1.6 }}>
-                        {item.plainEnglish}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Gaze report box */}
-                {gazeInterpretation && (
-                  <div
-                    style={{
-                      padding: '14px 16px',
-                      background: '#E8F4EC',
-                      borderRadius: '10px',
-                      border: '1px solid rgba(124,154,133,0.35)',
-                      marginTop: '16px',
-                    }}
-                  >
-                    <div
-                      style={{
-                        fontSize: '0.6875rem',
-                        fontWeight: 700,
-                        letterSpacing: '0.05em',
-                        color: 'var(--ns-instrument)',
-                        marginBottom: '6px',
-                        textTransform: 'uppercase',
-                      }}
-                    >
-                      Eye Gaze Analysis
-                    </div>
-                    <p
-                      style={{
-                        fontSize: '0.8125rem',
-                        color: 'var(--ns-n700)',
-                        lineHeight: 1.6,
-                        margin: 0,
-                      }}
-                    >
-                      {gazeInterpretation}
-                    </p>
+          {/* ── Signal by signal ───────────────────────────────── */}
+          <section aria-labelledby="signals-title">
+            <h2 id="signals-title" style={{ fontSize: '1.15rem', marginBottom: 14 }}>Signals behind the result</h2>
+            <div className="ns-signal-grid">
+              {insightItems.map((it) => (
+                <article key={it.id} className="ns-card" style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 12, opacity: it.available ? 1 : 0.92 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+                    <h3 style={{ fontSize: '0.98rem' }}>{it.label}</h3>
+                    <StatusBadge tone={it.tone}>{it.stateLabel}</StatusBadge>
                   </div>
-                )}
-
-                {/* Speech report box */}
-                {speechInterpretation && (
-                  <div
-                    style={{
-                      padding: '14px 16px',
-                      background: '#FDF3E7',
-                      borderRadius: '10px',
-                      border: '1px solid #C98B2E',
-                      marginTop: '12px',
-                    }}
-                  >
-                    <div
-                      style={{
-                        fontSize: '0.6875rem',
-                        fontWeight: 700,
-                        letterSpacing: '0.05em',
-                        color: '#8A5A0A',
-                        marginBottom: '6px',
-                        textTransform: 'uppercase',
-                      }}
-                    >
-                      Speech Analysis
-                    </div>
-                    <p
-                      style={{
-                        fontSize: '0.8125rem',
-                        color: 'var(--ns-n700)',
-                        lineHeight: 1.6,
-                        margin: 0,
-                      }}
-                    >
-                      {speechInterpretation}
-                    </p>
-                    {speechFlags && speechFlags.length > 0 && (
-                      <div style={{ marginTop: '8px', display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                        {speechFlags.map((flag, i) => (
-                          <span
-                            key={i}
-                            style={{
-                              fontSize: '0.6875rem',
-                              padding: '3px 8px',
-                              background: '#FEF3C7',
-                              color: '#92400E',
-                              borderRadius: '20px',
-                              fontWeight: 500,
-                            }}
-                          >
-                            {flag}
-                          </span>
-                        ))}
-                      </div>
+                  <div style={{ minHeight: 44, display: 'flex', alignItems: 'baseline', gap: 6 }}>
+                    {it.probability !== null && it.probability !== undefined ? (
+                      <><span style={{ fontFamily: 'var(--font-heading)', fontSize: '1.9rem', fontWeight: 600, letterSpacing: '-0.03em' }}>{Math.round(it.probability * 100)}</span><span style={{ color: 'var(--ns-n500)' }}>%</span></>
+                    ) : (
+                      <span style={{ color: 'var(--ns-n400)', fontWeight: 500 }}>Unavailable</span>
                     )}
                   </div>
-                )}
-              </section>
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.74rem', color: 'var(--ns-n500)', marginBottom: 5 }}>
+                      <span>Share of final result</span>
+                      <span style={{ fontFamily: 'var(--font-data)' }}>{it.used ? (pct(it.contribution) ?? '—') : 'none'}</span>
+                    </div>
+                    <div style={{ height: 6, borderRadius: 6, background: 'var(--ns-n150)', overflow: 'hidden' }} aria-hidden="true">
+                      <div style={{ width: it.used && typeof it.contribution === 'number' ? `${it.contribution * 100}%` : 0, height: '100%', background: 'var(--ns-instrument)', transition: 'width 600ms ease' }} />
+                    </div>
+                  </div>
+                  <p style={{ fontSize: '0.78rem', color: 'var(--ns-n500)', maxWidth: 'none', lineHeight: 1.5 }}>
+                    <strong style={{ color: 'var(--ns-n700)' }}>Data quality:</strong> {it.quality || 'not applicable'}
+                  </p>
+                </article>
+              ))}
             </div>
+          </section>
+
+          {/* ── Fusion ─────────────────────────────────────────── */}
+          <section className="ns-dark" style={{ borderRadius: 'var(--r-lg)', padding: 'clamp(20px, 3vw, 32px)' }} aria-labelledby="fusion-title">
+            <p className="ns-eyebrow ns-eyebrow--dark">Multimodal fusion</p>
+            <h2 id="fusion-title" style={{ fontSize: '1.25rem', marginTop: 8, marginBottom: 18 }}>How the signals combined</h2>
+            <FusionVisualization
+              items={insightItems.map((i) => ({ ...i, contribution: typeof i.contribution === 'number' ? i.contribution : 0 }))}
+              finalValue={finalValue}
+              level={selectedCase.riskLevel}
+            />
+          </section>
+
+          {/* ── Why (SHAP / LIME) + context ────────────────────── */}
+          <section className="ns-why-grid">
+            <ExplanationPanel
+              features={features}
+              lime={explanation?.lime}
+              summary={explanation?.summary}
+              loading={loadingDetail || explanationLoading[selectedCaseId]}
+              error={errors[selectedCaseId]}
+              modelUsed={selectedCase.modelUsed}
+              isMock={explanation?.isMock}
+              category={selectedCase.category}
+            />
+            <aside className="ns-card" style={{ padding: 24, alignSelf: 'start' }}>
+              <h3 style={{ fontSize: '1rem', marginBottom: 14 }}>Respondent context</h3>
+              <dl style={{ display: 'grid', gap: 12, margin: 0 }}>
+                {[
+                  ['Subject', selectedCase.subjectName || 'No name provided'],
+                  ['Respondent', selectedCase.respondentName || 'No name provided'],
+                  ['Relationship', selectedCase.respondentRelationship || content.trackSummary],
+                  ['Age', selectedCase.age],
+                  ['Gender', selectedCase.gender],
+                  ['Clinician', selectedCase.clinician || 'Awaiting assignment'],
+                ].map(([label, value]) => (
+                  <div key={label} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, fontSize: '0.86rem' }}>
+                    <dt style={{ color: 'var(--ns-n500)' }}>{label}</dt>
+                    <dd style={{ margin: 0, fontWeight: 600, color: 'var(--ns-n900)', textAlign: 'right' }}>{value}</dd>
+                  </div>
+                ))}
+              </dl>
+            </aside>
           </section>
 
           <section className="panel">
@@ -694,7 +581,7 @@ export default function Results() {
                     fontWeight: 600,
                   }}
                 >
-                  Not captured
+                  {gazeBadgeText}
                 </span>
               )}
             </div>
@@ -810,6 +697,13 @@ export default function Results() {
                   ))}
                 </div>
 
+                {gazeStatus === 'success' && (
+                  <p style={{ marginTop: '12px', fontSize: '0.85rem', fontWeight: 600, color: gazeUsedInFusion ? 'var(--ns-instrument)' : 'var(--ns-risk-mod)' }}>
+                    {gazeUsedInFusion
+                      ? 'Included in the final probability.'
+                      : 'Recorded and scored, but NOT included in the final probability: this gaze model has not reached the validation threshold required to influence the result.'}
+                  </p>
+                )}
                 {gazeStatus && (
                   <p style={{ marginTop: '12px', color: 'var(--ns-n500)', fontSize: '0.8rem', fontFamily: 'var(--font-data)' }}>
                     Model {gazeModelVersion || 'n/a'}
@@ -1073,85 +967,6 @@ export default function Results() {
             )}
           </section>
 
-          {/* ── Late Fusion Formula ──────────────────────────────── */}
-          <section className="panel">
-            <h3 style={{ marginTop: 0, color: 'var(--ns-n900)' }}>
-              Late fusion formula
-            </h3>
-            <p style={{ margin: '6px 0 14px', color: 'var(--ns-n500)', fontSize: '0.85rem' }}>
-              Multimodal risk is computed as a weighted average of available modality scores.
-            </p>
-            <div
-              style={{
-                padding: '16px',
-                borderRadius: '12px',
-                backgroundColor: 'var(--ns-n900)',
-                color: 'var(--border-color)',
-                fontFamily: 'var(--font-data)',
-                fontSize: '0.82rem',
-                lineHeight: 1.8,
-                overflowX: 'auto',
-              }}
-            >
-              <div>
-                <span style={{ color: 'var(--ns-n400)' }}>P</span>
-                <sub style={{ color: 'var(--ns-n500)' }}>final</sub>
-                {' = '}
-                <span style={{ color: '#FFD97D' }}>0.40</span>{' × '}
-                <span style={{ color: '#A8D8EA' }}>
-                  {selectedCase.riskScore != null ? selectedCase.riskScore.toFixed(4) : '?'}
-                </span>
-                {' + '}
-                <span style={{ color: '#FFD97D' }}>0.25</span>{' × '}
-                <span style={{ color: 'var(--ns-n500)' }}>N/A</span>
-                {' + '}
-                <span style={{ color: '#FFD97D' }}>0.20</span>{' × '}
-                <span style={{ color: hasGazeData ? '#B5EAD7' : 'var(--ns-n500)' }}>
-                  {hasGazeData && gazeScore != null ? gazeScore.toFixed(4) : 'N/A'}
-                </span>
-                {' + '}
-                <span style={{ color: '#FFD97D' }}>0.15</span>{' × '}
-                <span style={{ color: hasSpeechData ? '#FBBF24' : 'var(--ns-n500)' }}>
-                  {hasSpeechData && selectedCase.riskScore != null
-                    ? selectedCase.riskScore.toFixed(4)
-                    : 'N/A'}
-                </span>
-              </div>
-              <div style={{ marginTop: '4px' }}>
-                {'  = '}
-                <strong style={{ color: '#fff' }}>
-                  {selectedCase.fusionScore != null
-                    ? selectedCase.fusionScore.toFixed(4)
-                    : selectedCase.riskScore?.toFixed(4) ?? '?'}
-                </strong>
-              </div>
-            </div>
-            {!hasGazeData && !hasSpeechData && !isToddler && (
-              <p
-                style={{
-                  marginTop: '10px',
-                  fontSize: '0.8rem',
-                  color: 'var(--ns-risk-mod)',
-                  fontStyle: 'italic',
-                }}
-              >
-                Gaze and speech weights redistributed to questionnaire (weights renormalised).
-              </p>
-            )}
-            {(!hasGazeData || !hasSpeechData) && (hasGazeData || hasSpeechData) && !isToddler && (
-              <p
-                style={{
-                  marginTop: '10px',
-                  fontSize: '0.8rem',
-                  color: 'var(--ns-risk-mod)',
-                  fontStyle: 'italic',
-                }}
-              >
-                Unavailable modality weights redistributed to available modalities (weights renormalised).
-              </p>
-            )}
-          </section>
-
           <section className="panel">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
               <div>
@@ -1201,6 +1016,20 @@ export default function Results() {
           </section>
         </>
       )}
+      <style>{`
+        .ns-insight{display:grid;grid-template-columns:auto minmax(0,1fr);gap:clamp(20px,4vw,52px);align-items:center;border-radius:var(--r-lg);padding:clamp(22px,4vw,44px);position:relative;overflow:hidden;border:1px solid rgba(148,163,184,.16)}
+        .ns-insight::before{content:"";position:absolute;inset:0;background:radial-gradient(520px 320px at 12% 40%,rgba(34,211,238,.12),transparent 70%);pointer-events:none}
+        .ns-insight>*{position:relative}
+        .ns-insight__gauge{display:flex;flex-direction:column;align-items:center;gap:10px}
+        .ns-insight__meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px 22px;margin:22px 0 0;padding-top:20px;border-top:1px solid rgba(148,163,184,.18)}
+        .ns-insight__meta dt{font-family:var(--font-data);font-size:.66rem;letter-spacing:.12em;text-transform:uppercase;color:#7F92AF}
+        .ns-insight__meta dd{margin:3px 0 0;font-size:.88rem;font-weight:600;color:#E6ECF5;word-break:break-word}
+        .ns-signal-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
+        .ns-why-grid{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(0,1fr);gap:20px;align-items:start}
+        @media (max-width:1100px){.ns-signal-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.ns-why-grid{grid-template-columns:1fr}}
+        @media (max-width:760px){.ns-insight{grid-template-columns:1fr;text-align:left}.ns-insight__gauge{align-items:center}}
+        @media (max-width:520px){.ns-signal-grid{grid-template-columns:1fr}}
+      `}</style>
     </main>
   );
 }

@@ -17,11 +17,11 @@ import pytest
 import torch
 from fastapi.testclient import TestClient
 
-from backend.main import app
 from backend.ml.fusion_engine import fuse
 from backend.ml.gaze import config as C
+from backend.ml.gaze import gaze_model_service as gms
 from backend.ml.gaze.gaze_model_service import (
-    BROWSER_CKPT, CheckpointError, GazeModelService, validate_checkpoint,
+    BROWSER_CKPT, LEGACY_CKPT, CheckpointError, GazeModelService, legacy_checkpoint_report, validate_checkpoint,
 )
 from backend.ml.gaze.model import GazeLSTM
 from backend.ml.gaze.preprocess import (
@@ -78,6 +78,7 @@ def make_checkpoint(path: Path, **overrides) -> dict:
         "std": [0.2, 0.2, 0.3, 0.4],
         "preprocess_config": C.preprocess_config(),
         "model_version": "gaze-test-v0",
+        "cv_auc": 0.8, "domain_validated": False,
     }
     ckpt.update(overrides)
     torch.save(ckpt, path)
@@ -147,8 +148,10 @@ def test_invalid_samples_rejected_with_counts():
     assert c.n_valid == 1 and c.n_total == 8
     assert c.rejected == {
         "non_finite": 2, "negative_timestamp": 1, "non_monotonic": 1,
-        "face_not_detected": 1, "out_of_bounds": 2,
+        "face_not_detected": 1, "out_of_bounds": 2, "tracker_placeholder": 0,
     }
+    ph = validate_samples([{"timestamp": 1.0, "x": 0.0, "y": 0.0}, {"timestamp": 2.0, "x": 0.0, "y": 5.0}], W, H)
+    assert ph.rejected["tracker_placeholder"] == 1 and ph.n_valid == 1     # only exact (0,0) is a no-data code
 
 
 # ── 5. dt is derived from timestamps ─────────────────────────────────────────
@@ -329,7 +332,11 @@ def test_corrupt_checkpoint_is_unavailable(tmp_path):
 
 # ── 15. API: malformed payloads + shape of valid responses ───────────────────
 
-client = TestClient(app)
+@pytest.fixture()
+def client(app_client):
+    c = app_client()
+    c.post("/auth/register", json={"name": "G", "email": "gaze@example.com", "password": "correct-horse-9"})
+    return c
 
 
 @pytest.mark.parametrize("mutate", [
@@ -342,13 +349,13 @@ client = TestClient(app)
     lambda b: b.update(surprise=1),
     lambda b: b["calibration"].update(quality_score=7),
 ])
-def test_malformed_payload_is_422(mutate):
+def test_malformed_payload_is_422(client, mutate):
     body = make_session(120)
     mutate(body)
     assert client.post("/gaze/analyze", json=body).status_code == 422
 
 
-def test_api_response_schema_and_no_fabrication():
+def test_api_response_schema_and_no_fabrication(client):
     r = client.post("/gaze/analyze", json=make_session(30))
     assert r.status_code == 200
     d = r.json()
@@ -396,8 +403,8 @@ def test_frontend_payload_keys_match_backend_schema():
             cur += ch if d == 0 else ""
         return set(re.findall(r"(?:^|,)\s*(\w+)\s*(?::|(?=,|$))", cur))
 
-    sample_keys = keys("samplesRef.current.push({")
-    cal_keys = keys("calibrationRef.current = {")
+    sample_keys = keys("task.samples.push({")
+    cal_keys = keys("calibration: {")
     session_keys = keys("sessionRef.current = {")
 
     assert sample_keys <= set(GazeAnalyzeRequest.model_fields["samples"].annotation.__args__[0].model_fields)
@@ -428,3 +435,233 @@ def test_real_checkpoint_loads_and_scores():
     out = svc.analyze(make_session(600))
     assert out["status"] == "success" and 0.0 <= out["probability"] <= 1.0
     assert out["model_version"] == svc.meta["model_version"]
+
+
+# ── compatibility of the ORIGINAL checkpoint (gaze_lstm.pt) ──────────────────
+
+def test_original_checkpoint_is_reported_incompatible_with_reasons():
+    rep = legacy_checkpoint_report()
+    assert rep["present"] and rep["compatible"] is False
+    assert "pupil_diam" in rep["features"] and rep["sequence_length"] == 2000
+    blocking = " ".join(rep["blocking"])
+    assert "pupil_diam" in blocking and "is_fixation" in blocking and "dt_ms" in blocking
+
+
+def test_service_refuses_original_checkpoint_with_explicit_error_code():
+    svc = GazeModelService(ckpt_path=LEGACY_CKPT)
+    assert not svc.available and svc.model_status == "incompatible"
+    out = svc.analyze(make_session(600))
+    assert out["status"] == "unavailable" and out["model_status"] == "incompatible"
+    assert out["probability"] is None and out["score"] is None
+    assert out["error_code"] == C.ERR_INPUT_INCOMPATIBLE
+    assert out["preprocessing_version"] == C.GAZE_PREPROCESSING_VERSION
+
+
+def test_preprocessing_version_mismatch_is_refused(tmp_path):
+    p = tmp_path / "old.pt"
+    make_checkpoint(p, preprocess_config={**C.preprocess_config(), "version": "1.0.0"})
+    svc = GazeModelService(ckpt_path=p)
+    assert svc.model_status == "incompatible"
+    assert svc.analyze(make_session(600))["error_code"] == C.ERR_PREPROCESS_MISMATCH
+
+
+def test_missing_checkpoint_error_code(tmp_path):
+    out = GazeModelService(ckpt_path=tmp_path / "none.pt").analyze(make_session(600))
+    assert out["model_status"] == "unavailable" and out["error_code"] == C.ERR_MODEL_MISSING
+
+
+def test_health_and_model_info_expose_contract_but_no_paths(service):
+    h = service.health()
+    assert h["loaded"] and h["expected_features"] == 4 and h["sequence_length"] == 300
+    assert h["model_version"] == "gaze-test-v0" and h["preprocessing_version"] == C.GAZE_PREPROCESSING_VERSION
+    assert "/" not in str(h) or "gaze-test" in str(h)
+    assert not any(str(ROOT) in str(v) for v in h.values())
+    assert service.get_model_info()["legacy_checkpoint"]["compatible"] is False
+
+
+# ── warnings are non-fatal ───────────────────────────────────────────────────
+
+def test_marginal_calibration_warns_but_still_scores(service):
+    out = service.analyze(make_session(600, cal=0.5))
+    assert out["status"] == "success" and "marginal_calibration" in out["quality"]["warnings"]
+    assert out["quality"]["duration_ms"] > 15000
+
+
+def test_clean_session_has_no_warnings(service):
+    assert service.analyze(make_session(600, cal=0.9))["quality"]["warnings"] == []
+
+
+def test_tracker_placeholder_points_are_not_gaze():
+    s = make_samples(50)
+    s[10].update(x=0.0, y=0.0)
+    c = validate_samples(s, W, H)
+    assert c.rejected["tracker_placeholder"] == 1 and c.n_valid == 49
+
+
+# ── fusion eligibility from validation performance ───────────────────────────
+
+def test_model_below_validation_threshold_is_shown_but_not_fused(tmp_path):
+    p = tmp_path / "weak.pt"
+    make_checkpoint(p, cv_auc=0.60)
+    out = GazeModelService(ckpt_path=p).analyze(make_session(600))
+    assert out["status"] == "success" and out["probability"] is not None
+    assert out["fusion_eligible"] is False and out["is_trained_model"] is False
+    r = fuse(0.6, gaze_result=out, category="child")
+    assert r.final_probability == 0.6                       # gaze did not move the result
+    assert r.gaze_score == out["probability"] and r.heuristic_signal == out["probability"]
+
+
+def test_validated_model_is_fused(tmp_path):
+    p = tmp_path / "ok.pt"
+    make_checkpoint(p, cv_auc=0.85)
+    out = GazeModelService(ckpt_path=p).analyze(make_session(600))
+    assert out["fusion_eligible"] is True and out["is_trained_model"] is True
+    assert fuse(0.6, gaze_result=out, category="child").final_probability != 0.6
+
+
+# ── API + storage ────────────────────────────────────────────────────────────
+
+def test_api_reports_incompatible_model(client, monkeypatch):
+    monkeypatch.setattr(gms, "_service", GazeModelService(ckpt_path=LEGACY_CKPT))
+    d = client.post("/gaze/analyze", json=make_session(600)).json()
+    assert d["status"] == "unavailable" and d["model_status"] == "incompatible"
+    assert d["probability"] is None and d["error_code"] == "GAZE_MODEL_INPUT_INCOMPATIBLE"
+
+
+def test_api_success_response_fields(client, monkeypatch, tmp_path):
+    p = tmp_path / "g.pt"; make_checkpoint(p)
+    monkeypatch.setattr(gms, "_service", GazeModelService(ckpt_path=p))
+    d = client.post("/gaze/analyze", json=make_session(600)).json()
+    assert d["status"] == "success" and d["model_status"] == "trained"
+    assert d["model_version"] == "gaze-test-v0" and d["preprocessing_version"] == C.GAZE_PREPROCESSING_VERSION
+    assert {"valid", "sample_count", "valid_ratio", "calibration_score", "duration_ms", "warnings"} <= set(d["quality"])
+
+
+def test_case_stores_backend_gaze_object_and_unavailable_is_not_zero(client, monkeypatch, tmp_path):
+    from backend.tests.conftest import screening_body
+    p = tmp_path / "g.pt"; make_checkpoint(p, cv_auc=0.9)
+    monkeypatch.setattr(gms, "_service", GazeModelService(ckpt_path=p))
+    ok = client.post("/screening/screen", json=screening_body(gazeSession=make_session(600), gazeSkipped=False)).json()
+    g = client.get(f"/cases/{ok['caseId']}").json()["gaze"]
+    assert g["available"] is True and g["model_status"] == "trained" and g["fusion_eligible"] is True
+    assert g["probability"] == ok["gazeResult"]["probability"]          # what the UI shows == what the backend computed
+    assert g["model_version"] == "gaze-test-v0" and g["quality"]["valid"] is True
+
+    monkeypatch.setattr(gms, "_service", GazeModelService(ckpt_path=LEGACY_CKPT))
+    bad = client.post("/screening/screen", json=screening_body(gazeSession=make_session(600), gazeSkipped=False)).json()
+    g2 = client.get(f"/cases/{bad['caseId']}").json()["gaze"]
+    assert g2["available"] is False and g2["probability"] is None and g2["error_code"] == "GAZE_MODEL_INPUT_INCOMPATIBLE"
+    comp = {c["modality"]: c for c in bad["modalityBreakdown"]["components"]}["gaze"]
+    assert comp["available"] is False
+
+
+def test_skipped_gaze_is_recorded_as_unavailable_not_zero(client):
+    from backend.tests.conftest import screening_body
+    cid = client.post("/screening/screen", json=screening_body()).json()["caseId"]
+    g = client.get(f"/cases/{cid}").json()["gaze"]
+    assert g["available"] is False and g["status"] == "skipped" and g["probability"] is None
+
+
+# ── end-to-end contract with the REAL trained checkpoint ─────────────────────
+
+@real
+def test_integration_payload_to_tensor_to_real_lstm_to_api(client, monkeypatch):
+    """frontend-shaped payload -> API -> preprocessing -> tensor -> gaze_lstm_browser.pt -> probability."""
+    monkeypatch.setattr(gms, "_service", None)                 # load the real checkpoint fresh
+    svc = gms.get_gaze_service()
+    assert svc.available, svc.status()
+    ckpt = torch.load(BROWSER_CKPT, map_location="cpu", weights_only=True)
+
+    seen = {}
+    real_model = svc.model
+
+    class Spy(torch.nn.Module):
+        def forward(self, x, lengths):
+            seen["x"], seen["l"] = x.detach().clone(), lengths.clone()
+            return real_model(x, lengths)
+
+    svc.model = Spy()
+    session = make_session(700, cal=0.85)                       # identical shape to GazeSession.jsx's payload
+    api = client.post("/gaze/analyze", json=session).json()
+    assert api["status"] == "success" and api["model_version"] == ckpt["model_version"]
+
+    # tensor contract (training == inference)
+    x, n = seen["x"], int(seen["l"].item())
+    assert tuple(x.shape) == (1, ckpt["preprocess_config"]["seq_len"], len(ckpt["feature_names"])) == (1, 300, 4)
+    assert x.dtype == torch.float32
+    assert ckpt["feature_names"] == list(C.FEATURE_NAMES) == ["x", "y", "speed", "is_fixation"]
+    assert ckpt["preprocess_config"] == C.preprocess_config()
+    raw = build_feature_matrix(validate_samples(session["samples"], W, H))
+    expected = (raw - np.asarray(ckpt["mean"], np.float32)) / np.asarray(ckpt["std"], np.float32)
+    np.testing.assert_allclose(x[0, :n].numpy(), expected, rtol=1e-5, atol=1e-6)
+    assert torch.all(x[0, n:] == 0)
+    assert 0 <= raw[:, 0].min() and raw[:, 0].max() <= 1 and set(np.unique(raw[:, 3])) <= {0.0, 1.0}
+
+    # the API probability is exactly what the checkpoint's weights produce on that tensor
+    m = GazeLSTM(**{k: ckpt[k] for k in ("input_size", "hidden_size", "num_layers", "lstm_dropout", "fc_dropout")})
+    m.load_state_dict(ckpt["model_state_dict"]); m.eval()
+    with torch.no_grad():
+        independent = float(torch.sigmoid(m(x, seen["l"]))[0])
+    assert api["probability"] == pytest.approx(independent, abs=1e-4)
+
+    # the model is below the fusion threshold -> shown but not fused
+    assert api["fusion_eligible"] == (ckpt["cv_auc"] >= C.MIN_FUSION_CV_AUC)
+    assert api["validation"]["domain_validated"] is False
+
+
+def test_transient_load_failure_recovers_without_restart(tmp_path):
+    p = tmp_path / "late.pt"
+    svc = GazeModelService(ckpt_path=p)                      # file not there yet
+    assert svc.analyze(make_session(600))["error_code"] == C.ERR_MODEL_MISSING
+    make_checkpoint(p)                                       # ...then it appears
+    svc.RELOAD_INTERVAL_S = 0.0
+    assert svc.analyze(make_session(600))["status"] == "success"
+
+
+def test_deliberate_incompatibility_is_not_retried(tmp_path):
+    p = tmp_path / "pupil.pt"
+    make_checkpoint(p, feature_names=["x", "y", "speed", "pupil_diam"])
+    svc = GazeModelService(ckpt_path=p); svc.RELOAD_INTERVAL_S = 0.0
+    make_checkpoint(p)                                       # even if replaced, only a restart re-validates
+    assert svc.analyze(make_session(600))["model_status"] == "incompatible"
+
+
+def test_skip_reason_is_stored_and_reported(client):
+    from backend.tests.conftest import screening_body
+    cid = client.post("/screening/screen", json=screening_body(gazeSkipReason="calibration_poor")).json()["caseId"]
+    g = client.get(f"/cases/{cid}").json()["gaze"]
+    assert g["status"] == "skipped" and g["reason"] == "calibration_poor" and g["probability"] is None
+    bad = screening_body(gazeSkipReason="Robert'); DROP")
+    assert client.post("/screening/screen", json=bad).status_code == 422       # constrained to a-z_
+
+
+def test_breakdown_reports_weight_and_realised_contribution():
+    from backend.ml.fusion_engine import modality_breakdown_as_dicts
+    r = fuse(0.6, gaze_result={"score": 0.2, "is_trained_model": True, "method": "lstm_trained"}, category="child")
+    d = {c["modality"]: c for c in modality_breakdown_as_dicts(r.modality_breakdown)}
+    assert d["questionnaire"]["weight"] == 0.4 and d["gaze"]["weight"] == 0.2
+    assert d["questionnaire"]["contribution"] + d["gaze"]["contribution"] == pytest.approx(1.0, abs=1e-3)
+    assert d["speech"]["contribution"] == 0 and d["facial"]["contribution"] == 0
+    # supplemental (not fused) gaze contributes nothing
+    r2 = fuse(0.6, gaze_result={"score": 0.2, "is_trained_model": False}, category="child")
+    d2 = {c["modality"]: c for c in modality_breakdown_as_dicts(r2.modality_breakdown)}
+    assert d2["gaze"]["contribution"] == 0 and d2["questionnaire"]["contribution"] == 1.0
+
+
+def test_dashboard_modality_status_is_computed_from_real_cases(client):
+    from backend.tests.conftest import screening_body
+    client.post("/screening/screen", json=screening_body())
+    d = client.get("/cases/dashboard/summary").json()
+    ms = {m["id"]: m for m in d["modalityStatus"]}
+    assert ms["questionnaire"]["available"] == 1 and ms["questionnaire"]["total"] == 1
+    assert ms["gaze"]["available"] == 0 and ms["gaze"]["used_in_fusion"] == 0
+    assert "modalityConfidence" not in d           # the old hard-coded percentages are gone
+
+
+def test_quality_reports_sampling_rate_and_tracking_continuity(service):
+    q = service.analyze(make_session(600, hz=30.0))["quality"]
+    assert q["sampling_rate_hz"] == pytest.approx(30.0, abs=1.0)
+    assert q["tracking_continuity"] == pytest.approx(1.0, abs=1e-6)
+    holed = make_samples(200, hz=30, start=0) + make_samples(200, hz=30, start=20_000)   # 13 s hole
+    s = make_session(600); s["samples"] = holed
+    assert service.analyze(s)["quality"]["tracking_continuity"] < 0.7

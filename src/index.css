@@ -31,6 +31,10 @@ body {
   line-height: var(--lh-body);
   color: var(--ns-n800);
   background-color: var(--ns-surface);
+  background-image:
+    radial-gradient(1200px 600px at 85% -10%, rgba(34, 211, 238, 0.06), transparent 60%),
+    radial-gradient(900px 500px at -5% 105%, rgba(11, 122, 133, 0.05), transparent 60%);
+  background-attachment: fixed;
   min-height: 100dvh;
   min-height: 100vh;
   overflow-x: hidden;
@@ -52,10 +56,10 @@ body {
 
 /* ── 4. Typography baseline ─────────────────────────────── */
 h1, h2, h3, h4, h5, h6 {
-  font-family: var(--font-body);
+  font-family: var(--font-heading);
   font-weight: var(--fw-semibold);
   line-height: var(--lh-tight);
-  letter-spacing: var(--ls-snug);
+  letter-spacing: -0.02em;
   color: var(--ns-n900);
 }
 
@@ -162,11 +166,17 @@ code, kbd, samp, pre {
   height: 100vh;
   overflow-y: auto;
   overflow-x: hidden;
-  background-color: var(--ns-surface-2);
-  border-right: var(--border);
+  background: linear-gradient(180deg, var(--ns-navy-900), var(--ns-navy-950));
+  border-right: 1px solid rgba(148, 163, 184, 0.12);
   display: flex;
   flex-direction: column;
   z-index: var(--z-sticky);
+  /* Re-scope the neutral scale so every var(--ns-n*) used inside the sidebar reads on navy. */
+  --ns-n900: #F4F7FB; --ns-n800: #E6ECF5; --ns-n700: #C9D5E8; --ns-n600: #A9B8CF;
+  --ns-n500: #8FA3C0; --ns-n400: #6F82A0; --ns-n300: #3B4C6B; --ns-n200: #26365A;
+  --ns-n150: rgba(148, 163, 184, 0.14); --ns-n100: rgba(148, 163, 184, 0.10);
+  --ns-surface: #111B30; --ns-instrument: var(--ns-signal); --ns-instrument-dim: rgba(34, 211, 238, 0.12);
+  --border: 1px solid rgba(148, 163, 184, 0.14);
 }
 
 /* Main scrollable column */
@@ -255,10 +265,10 @@ code, kbd, samp, pre {
   border-radius: var(--r-md);
   font-family: var(--font-body);
   font-size: var(--ts-body);
-  font-weight: var(--fw-medium);
+  font-weight: var(--fw-semibold);
   line-height: var(--lh-tight);
   cursor: pointer;
-  transition: background-color var(--ease-fast), box-shadow var(--ease-fast), opacity var(--ease-fast);
+  transition: background-color var(--ease-fast), box-shadow var(--ease-fast), opacity var(--ease-fast), transform var(--ease-fast);
   border: 1px solid transparent;
   white-space: nowrap;
 }
@@ -272,7 +282,7 @@ code, kbd, samp, pre {
 .btn-primary:hover:not(:disabled) {
   background-color: var(--ns-instrument-light);
   border-color: var(--ns-instrument-light);
-  box-shadow: 0 2px 8px rgba(37, 99, 176, 0.22);
+  box-shadow: 0 4px 14px rgba(11, 122, 133, 0.28);
 }
 
 .btn-secondary {
@@ -302,9 +312,10 @@ code, kbd, samp, pre {
 /* ── Panel / card primitive ─────────────────────────────── */
 .panel {
   background-color: var(--ns-panel);
-  border: var(--border);
-  border-radius: var(--r-md);
+  border: 1px solid var(--ns-n200);
+  border-radius: var(--r-lg);
   padding: var(--panel-pad);
+  box-shadow: var(--sh-xs);
 }
 
 /* ── Form elements ──────────────────────────────────────── */
@@ -450,8 +461,9 @@ code, kbd, samp, pre {
 }
 
 .ns-sb-link--active:hover {
-  background-color: rgba(37, 99, 176, 0.14);
+  background-color: rgba(34, 211, 238, 0.18);
 }
+.ns-sb-link--active { box-shadow: inset 2px 0 0 var(--ns-signal); }
 
 .ns-sb-link-icon {
   display: flex;
@@ -522,4 +534,113 @@ code, kbd, samp, pre {
 }
 .wizard-step-enter {
   animation: step-in var(--ease-base) both;
+}
+
+
+/* ============================================================
+   NeuroSense design system additions (v2)
+   ============================================================ */
+
+/* ── Layout helpers ─────────────────────────────────────── */
+.ns-container { width: 100%; max-width: 1180px; margin: 0 auto; padding: 0 clamp(16px, 4vw, 32px); }
+.ns-eyebrow {
+  font-family: var(--font-data);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ns-instrument);
+}
+.ns-eyebrow--dark { color: var(--ns-signal); }
+.ns-display {
+  font-family: var(--font-heading);
+  font-weight: 600;
+  letter-spacing: -0.035em;
+  line-height: 1.04;
+  font-size: clamp(2.25rem, 5.4vw, 4rem);
+  color: var(--ns-n900);
+}
+.ns-lede { font-size: clamp(1rem, 1.6vw, 1.125rem); line-height: 1.65; color: var(--ns-n600); max-width: 56ch; }
+
+/* ── Surfaces ───────────────────────────────────────────── */
+.ns-card {
+  background: var(--ns-panel);
+  border: 1px solid var(--ns-n200);
+  border-radius: var(--r-lg);
+  box-shadow: var(--sh-xs);
+  transition: box-shadow var(--ease-base), transform var(--ease-base), border-color var(--ease-base);
+}
+.ns-card--interactive:hover { box-shadow: var(--sh-md); transform: translateY(-2px); border-color: var(--ns-n300); }
+.ns-card--inset { background: var(--ns-n100); box-shadow: none; }
+.ns-glass {
+  background: rgba(255, 255, 255, 0.62);
+  backdrop-filter: blur(14px) saturate(1.2);
+  -webkit-backdrop-filter: blur(14px) saturate(1.2);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  box-shadow: var(--sh-sm);
+}
+.ns-dark {
+  background: linear-gradient(160deg, var(--ns-navy-900), var(--ns-navy-950));
+  color: #E6ECF5;
+}
+.ns-dark h1, .ns-dark h2, .ns-dark h3, .ns-dark h4 { color: #F4F7FB; }
+.ns-dark p { color: #9FB0C8; }
+
+/* ── Focus: teal ring that is visible on light and dark ─── */
+:focus-visible { outline: 2px solid var(--ns-instrument-light); outline-offset: 3px; }
+.ns-dark :focus-visible { outline-color: var(--ns-signal); }
+
+/* ── Buttons v2 (use with .btn) ─────────────────────────── */
+.btn:active:not(:disabled) { transform: translateY(1px); }
+.btn-primary { background-image: linear-gradient(180deg, var(--ns-instrument-light), var(--ns-instrument)); }
+.btn-primary:hover:not(:disabled) { background-image: linear-gradient(180deg, #14A4B2, var(--ns-instrument-light)); }
+.btn-signal {
+  background: var(--ns-signal); color: var(--ns-navy-900); border-color: var(--ns-signal); font-weight: 600;
+}
+.btn-signal:hover:not(:disabled) { background: var(--ns-signal-light); box-shadow: 0 0 24px rgba(34, 211, 238, 0.35); }
+.btn-outline-dark { color: #E6ECF5; border-color: rgba(230, 236, 245, 0.28); background: transparent; }
+.btn-outline-dark:hover:not(:disabled) { background: rgba(230, 236, 245, 0.08); border-color: rgba(230, 236, 245, 0.5); }
+
+/* ── Status badge ───────────────────────────────────────── */
+.ns-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 3px 10px; border-radius: var(--r-pill);
+  font-size: 0.72rem; font-weight: 600; letter-spacing: 0.01em; line-height: 1.5;
+  border: 1px solid var(--ns-n200); background: var(--ns-n100); color: var(--ns-n600);
+  white-space: nowrap;
+}
+.ns-badge__dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.ns-badge--ok   { color: var(--ns-risk-low-text);  background: var(--ns-risk-low-bg);  border-color: var(--ns-risk-low-border); }
+.ns-badge--warn { color: var(--ns-risk-mod-text);  background: var(--ns-risk-mod-bg);  border-color: var(--ns-risk-mod-border); }
+.ns-badge--bad  { color: var(--ns-risk-high-text); background: var(--ns-risk-high-bg); border-color: var(--ns-risk-high-border); }
+.ns-badge--info { color: var(--ns-instrument);     background: var(--ns-instrument-dim); border-color: rgba(11, 122, 133, 0.25); }
+.ns-badge--muted { color: var(--ns-n500); }
+
+/* ── Motion ─────────────────────────────────────────────── */
+@keyframes ns-fade-up { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+@keyframes ns-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes ns-pulse   { 0%, 100% { opacity: 0.55; transform: scale(1); } 50% { opacity: 1; transform: scale(1.18); } }
+@keyframes ns-flow    { to { stroke-dashoffset: -48; } }
+@keyframes ns-rotate  { to { transform: rotate(360deg); } }
+@keyframes ns-scan    { 0% { transform: translateX(-30%); } 100% { transform: translateX(130%); } }
+@keyframes ns-shimmer { from { background-position: -200% 0; } to { background-position: 200% 0; } }
+@keyframes ns-bar     { 0%, 100% { transform: scaleY(0.25); } 50% { transform: scaleY(1); } }
+
+.ns-reveal { animation: ns-fade-up 520ms cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+.ns-reveal[data-delay="1"] { animation-delay: 80ms; }
+.ns-reveal[data-delay="2"] { animation-delay: 160ms; }
+.ns-reveal[data-delay="3"] { animation-delay: 240ms; }
+.ns-page-enter { animation: ns-fade-up 380ms cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+
+.ns-skeleton {
+  background: linear-gradient(90deg, var(--ns-n150) 25%, var(--ns-n200) 37%, var(--ns-n150) 63%);
+  background-size: 400% 100%; animation: ns-shimmer 1.6s ease infinite; border-radius: var(--r-md);
+}
+
+.ns-signal-path { stroke-dasharray: 4 8; animation: ns-flow 1.6s linear infinite; }
+.ns-node-pulse  { transform-box: fill-box; transform-origin: center; animation: ns-pulse 3s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ns-reveal, .ns-page-enter { animation: none !important; opacity: 1 !important; transform: none !important; }
+  .ns-signal-path, .ns-node-pulse, .ns-skeleton { animation: none !important; }
 }

@@ -41,11 +41,22 @@ MAX_SCREEN_PX = 10000
 FIXATION_DISPERSION = 0.08
 FIXATION_MIN_MS = 100
 
-# ── Dataset screen (training only) ───────────────────────────────────────────
-# Cilia et al. export has no screen-size field.  This is a lower bound inferred
-# from the largest observed point-of-regard (x<=1407.2, y<=1126.3).
-DATASET_SCREEN_W = 1408
-DATASET_SCREEN_H = 1127
+# ── Dataset coordinate frame (training only) ────────────────────────────────
+# The Cilia export has no screen/stimulus-size field.  After removing the (0, 0) no-data
+# placeholders, 92.5% of x fall in [0, 1024] and 95.8% of y in [0, 768] (p95: x=1071, y=735),
+# so the stimulus frame is taken to be 1024x768 -- the same frame the original training
+# script and gaze_lstm_metadata.json use.  This is an inference, not a documented fact.
+DATASET_SCREEN_W = 1024
+DATASET_SCREEN_H = 768
+
+# ── Machine-readable error codes returned by /gaze/analyze ───────────────────
+ERR_INPUT_INCOMPATIBLE = "GAZE_MODEL_INPUT_INCOMPATIBLE"
+ERR_MODEL_MISSING = "GAZE_MODEL_MISSING"
+ERR_MODEL_LOAD_FAILED = "GAZE_MODEL_LOAD_FAILED"
+ERR_PREPROCESS_MISMATCH = "GAZE_PREPROCESSING_VERSION_MISMATCH"
+ERR_INFERENCE_FAILED = "GAZE_INFERENCE_FAILED"
+ERR_CATEGORY = "GAZE_CATEGORY_NOT_SUPPORTED"
+ERR_QUALITY = "GAZE_SESSION_QUALITY_INSUFFICIENT"
 
 # ── Session quality gate (applied before any model call) ─────────────────────
 MIN_TOTAL_SAMPLES = 100
@@ -54,12 +65,25 @@ MIN_VALID_RATIO = 0.60
 MIN_DURATION_S = 15.0
 MAX_NONMONOTONIC_RATIO = 0.05
 MIN_FACE_RATIO = 0.70
-MIN_CALIBRATION_SCORE = 0.40
+MIN_CALIBRATION_SCORE = 0.30            # fatal below this (technical session quality, not clinical)
+WARN_CALIBRATION_SCORE = 0.60           # warning below this
+WARN_VALID_RATIO = 0.80
+WARN_GAP_RATIO = 0.10                   # share of session time inside gaps > MAX_GAP_MS
+WARN_MIN_FIXATION_RATIO = 0.05
 MAX_SESSION_S = 120.0
+
+# A model whose participant-level cross-validated AUC is below this is still run and shown
+# (research signal) but is NOT allowed to move the final fusion probability.
+MIN_FUSION_CV_AUC = 0.70
 
 SUPPORTED_CATEGORIES = frozenset({"child"})   # model was trained on children (2-13 y)
 
-PREPROCESS_VERSION = "gaze-pre-1"
+# Bump on ANY change that alters the tensor fed to the model; checkpoints record the version
+# they were trained with and the service refuses a mismatch.
+#   2.0.0  exact (0, 0) points are the eye tracker's "no data/blink" placeholder (21% of the
+#          Cilia rows, 95% of them Blink) and are rejected instead of treated as top-left gaze.
+GAZE_PREPROCESSING_VERSION = "2.0.0"
+PREPROCESS_VERSION = GAZE_PREPROCESSING_VERSION
 
 
 def preprocess_config() -> dict:

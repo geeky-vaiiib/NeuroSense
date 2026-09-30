@@ -9,9 +9,11 @@ scored, ``probability`` is ``None`` and a machine-readable reason is returned.
 from __future__ import annotations
 
 import json
+import sys
 import logging
 import math
 import threading
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
@@ -77,6 +79,31 @@ def _legacy_incompatibility() -> Optional[str]:
     return f"gaze_lstm.pt requires {','.join(missing)} which the browser cannot measure" if missing else None
 
 
+def legacy_checkpoint_report() -> dict:
+    """Why backend/models/gaze_lstm.pt (5 features incl. pupil) is not used for browser sessions."""
+    if not LEGACY_CKPT.exists():
+        return {"present": False}
+    try:
+        meta = json.loads(LEGACY_META.read_text())
+    except Exception:
+        return {"present": True, "compatible": False, "blocking": ["metadata_unreadable"]}
+    feats = list(meta.get("input_features") or [])
+    blocking = []
+    if "pupil_diam" in feats:
+        blocking.append("pupil_diam: measured only by the eye-tracking hardware; WebGazer/FaceMesh expose no pupil diameter")
+    if "is_fixation" in feats:
+        blocking.append("is_fixation: hardware event label (SMI); browser data only allows a derived I-DT approximation")
+    if "dt_ms" in feats:
+        blocking.append("dt_ms: trained on ~50-60 Hz hardware timing over 2000-step sequences; browser sessions are ~30 Hz and shorter")
+    return {
+        "present": True,
+        "compatible": False,
+        "features": feats,
+        "sequence_length": meta.get("max_seq_len"),
+        "blocking": blocking,
+    }
+
+
 class GazeModelService:
     def __init__(self, ckpt_path: Path = BROWSER_CKPT):
         self.ckpt_path = Path(ckpt_path)
@@ -88,11 +115,16 @@ class GazeModelService:
 
     # ── loading ──────────────────────────────────────────────────────────────
     def _load(self) -> None:
+        self._last_load_attempt = time.monotonic()
         try:
             import torch  # noqa: F401
             from .model import load_gaze_lstm
-        except ImportError:
-            self._set_unavailable("torch_not_installed")
+        except ImportError as exc:
+            # Keep the real cause: a missing torch and a broken import look identical otherwise.
+            self._set_unavailable(
+                "torch_not_installed",
+                f"{type(exc).__name__}: {exc} (interpreter: {sys.executable}) -- install backend/requirements.txt into this environment",
+            )
             return
         if not self.ckpt_path.exists():
             self._set_unavailable("no_compatible_checkpoint", _legacy_incompatibility())
@@ -118,6 +150,17 @@ class GazeModelService:
         self.unavailable_detail = detail
         logger.warning("[NeuroSense] Gaze model unavailable: %s %s", reason, detail or "")
 
+    _TRANSIENT_REASONS = ("torch_not_installed", "checkpoint_load_failed", "no_compatible_checkpoint")
+    RELOAD_INTERVAL_S = 30.0
+
+    def _retry_load_if_transient(self) -> None:
+        """A failed load (import hiccup, file still being written) must not stick until restart.
+        Deliberate refusals (incompatible/version mismatch) are never retried."""
+        if (not self.available and self.unavailable_reason in self._TRANSIENT_REASONS
+                and time.monotonic() - getattr(self, "_last_load_attempt", 0.0) > self.RELOAD_INTERVAL_S):
+            self.unavailable_reason = self.unavailable_detail = None
+            self._load()
+
     # ── introspection ────────────────────────────────────────────────────────
     @property
     def available(self) -> bool:
@@ -126,6 +169,51 @@ class GazeModelService:
     @property
     def model_version(self) -> Optional[str]:
         return self.meta.get("model_version")
+
+    _INCOMPATIBLE_REASONS = (
+        "requires_unavailable_feature", "feature_order_mismatch", "input_size_mismatch",
+        "normalization_mismatch", "preprocess_config_mismatch", "checkpoint_incomplete",
+    )
+
+    @property
+    def model_status(self) -> str:
+        """trained | incompatible (a checkpoint exists but cannot accept browser input) | unavailable"""
+        if self.available:
+            return "trained"
+        return "incompatible" if self.unavailable_reason in self._INCOMPATIBLE_REASONS else "unavailable"
+
+    def _error_code(self) -> str:
+        r = self.unavailable_reason
+        if r == "preprocess_config_mismatch":
+            return C.ERR_PREPROCESS_MISMATCH
+        if r in self._INCOMPATIBLE_REASONS:
+            return C.ERR_INPUT_INCOMPATIBLE
+        if r == "no_compatible_checkpoint":
+            return C.ERR_MODEL_MISSING
+        return C.ERR_MODEL_LOAD_FAILED
+
+    def health(self) -> dict:
+        """Safe for the public health endpoint: no paths, no internals."""
+        return {
+            "available": self.available,
+            "loaded": self.available,
+            "model_status": self.model_status,
+            "model_version": self.model_version,
+            "preprocessing_version": C.GAZE_PREPROCESSING_VERSION,
+            "expected_features": len(C.FEATURE_NAMES),
+            "sequence_length": C.SEQ_LEN,
+            "error_code": None if self.available else self._error_code(),
+        }
+
+    def get_model_info(self) -> dict:
+        """Authenticated detail: contract, provenance and evaluation of the loaded checkpoint."""
+        info = {**self.health(), "feature_names": list(C.FEATURE_NAMES),
+                "resample_hz": C.RESAMPLE_HZ, "legacy_checkpoint": legacy_checkpoint_report()}
+        if self.available:
+            info.update({k: self.meta.get(k) for k in (
+                "trained_at", "dataset", "n_participants", "n_windows", "epochs",
+                "cv_protocol", "cv_auc", "domain_validated")})
+        return info
 
     def status(self) -> dict:
         return {
@@ -160,6 +248,7 @@ class GazeModelService:
     # ── public entry point ───────────────────────────────────────────────────
     def analyze(self, session: dict) -> dict:
         """Score one canonical gaze session (see schemas/gaze.py). Never raises for bad data."""
+        self._retry_load_if_transient()
         category = session.get("category", "child")
         cleaned = validate_samples(
             session.get("samples") or [],
@@ -167,52 +256,69 @@ class GazeModelService:
             float(session["screen_height"]),
         )
         feats = build_feature_matrix(cleaned)
-        quality = assess(cleaned, session.get("calibration"), len(feats))
         summary = summarize(cleaned)
+        quality = assess(cleaned, session.get("calibration"), len(feats), summary.get("fixation_ratio"))
 
         if category not in C.SUPPORTED_CATEGORIES:
             return self._result(session, "unavailable", None, quality, summary,
-                                reason="category_not_supported")
+                                reason="category_not_supported", error_code=C.ERR_CATEGORY)
         if not self.available:
             return self._result(session, "unavailable", None, quality, summary,
-                                reason=self.unavailable_reason, detail=self.unavailable_detail)
+                                reason=self.unavailable_reason, detail=self.unavailable_detail,
+                                error_code=self._error_code())
         if not quality.valid:
             return self._result(session, "insufficient_quality", None, quality, summary,
-                                reason=quality.reason)
+                                reason=quality.reason, error_code=C.ERR_QUALITY)
         try:
             prob = self.predict_features(feats)
         except Exception as exc:
             logger.exception("Gaze inference failed")
             return self._result(session, "unavailable", None, quality, summary,
-                                reason="inference_failed", detail=f"{type(exc).__name__}: {exc}")
+                                reason="inference_failed", detail=f"{type(exc).__name__}: {exc}",
+                                error_code=C.ERR_INFERENCE_FAILED)
         return self._result(session, "success", round(prob, 4), quality, summary)
 
     def _result(self, session: dict, status: str, prob: Optional[float],
                 quality: QualityReport, summary: dict,
-                reason: Optional[str] = None, detail: Optional[str] = None) -> dict:
+                reason: Optional[str] = None, detail: Optional[str] = None,
+                error_code: Optional[str] = None) -> dict:
         ok = status == "success"
+        cv_auc = self.meta.get("cv_auc") if self.available else None
+        fusion_eligible = bool(ok and cv_auc is not None and cv_auc >= C.MIN_FUSION_CV_AUC)
         return {
             "modality": "gaze",
             "status": status,
             "probability": prob,
-            "model_status": "trained" if self.available else "unavailable",
+            "model_status": self.model_status,
             "model_version": self.model_version,
+            "preprocessing_version": C.GAZE_PREPROCESSING_VERSION,
+            "error_code": error_code,
             "reason": reason,
             "detail": detail,
             "session_id": session.get("session_id"),
             "analyzed_at": datetime.now(timezone.utc).isoformat(),
             "quality": quality.to_dict(),
             "features": summary,
+            "fusion_eligible": fusion_eligible,
+            "validation": None if not self.available else {
+                "cv_auc": cv_auc, "cv_protocol": self.meta.get("cv_protocol"),
+                "domain_validated": self.meta.get("domain_validated", False),
+                "min_cv_auc_for_fusion": C.MIN_FUSION_CV_AUC,
+            },
             "interpretation": (
                 "Gaze model output (screening signal) from a research model trained on "
                 "hardware eye-tracking data; it is not a diagnosis and has not been "
                 "validated on webcam-based gaze."
+                + ("" if fusion_eligible else " Its cross-validated performance is below the threshold "
+                   "required to influence the final screening probability, so it is shown for research "
+                   "context only.")
                 if ok else ""
             ),
             # ── fusion_engine.fuse() compatibility ──
             "score": prob,
             "isMock": False,
-            "is_trained_model": ok,
+            # fusion_engine treats is_trained_model=False scores as supplemental only
+            "is_trained_model": fusion_eligible,
             "method": "lstm_trained",
             "modality_label": "Gaze Analysis (BiLSTM — Cilia et al. 2022 dataset, browser features)",
         }

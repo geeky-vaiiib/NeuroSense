@@ -56,6 +56,8 @@ class ModalityComponent:
     is_trained_model: bool  # True only when a real trained checkpoint is in use
     modality_label: str     # Human-readable label
     available: bool = True  # False when step was skipped / data insufficient
+    weight: float = 0.0     # fixed fusion weight of this modality
+    contribution: float = 0.0  # share of the final probability (0 when supplemental/unavailable)
 
 
 @dataclass
@@ -294,6 +296,17 @@ def fuse(
         total_w = sum(w for w, _ in trained_parts)
         final_probability = round(sum(w * s for w, s in trained_parts) / total_w, 4)
 
+    # Record each modality's weight and its realised share of the final probability (for display).
+    total_used_w = sum(w for w, _ in trained_parts) or 1.0
+    weights = {"questionnaire": _WEIGHT_Q, "gaze": _WEIGHT_G, "speech": _WEIGHT_S, "facial": _WEIGHT_F}
+    used_ids = {"questionnaire"}
+    if gaze_score is not None and gaze_is_trained: used_ids.add("gaze")
+    if speech_score is not None and speech_is_trained: used_ids.add("speech")
+    if facial_score is not None and facial_is_trained: used_ids.add("facial")
+    for comp in breakdown:
+        comp.weight = weights.get(comp.modality, 0.0)
+        comp.contribution = round(comp.weight / total_used_w, 4) if comp.modality in used_ids else 0.0
+
     risk_level = _classify_risk(final_probability, category)
     
     has_trained_aux = len(trained_parts) > 1
@@ -335,6 +348,8 @@ def modality_breakdown_as_dicts(breakdown: list) -> list[dict]:
             "isTrainedModel": c.is_trained_model,
             "modalityLabel": c.modality_label,
             "available": c.available,
+            "weight": c.weight,
+            "contribution": c.contribution,
         }
         for c in breakdown
     ]
@@ -389,9 +404,8 @@ def _build_confidence_note(
         )
     if gaze_score is not None and not gaze_is_trained:
         parts.append(
-            "Eye-gaze analysis uses a clinical research heuristic "
-            "(Jones & Klin 2013) — not a trained ML model. "
-            "No labeled gaze+ASD training data is available in this system."
+            "Eye-gaze model output is shown as a supplemental research signal only: the gaze "
+            "model has not met the validation threshold required to influence the final probability."
         )
     if speech_score is not None and not speech_is_trained:
         parts.append(

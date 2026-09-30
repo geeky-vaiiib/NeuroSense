@@ -63,6 +63,9 @@ class ModalityComponentResult(BaseModel):
         description="False when the step was skipped or data was insufficient",
     )
 
+    weight: Optional[float] = Field(None, description="Fixed fusion weight of this modality")
+    contribution: Optional[float] = Field(None, description="Share of the final probability (0 when supplemental/unavailable)")
+
     model_config = ConfigDict(populate_by_name=True)
 
 
@@ -151,6 +154,12 @@ class ScreeningRequest(BaseModel):
         default=None,
         alias="gazeSession",
         description="Canonical gaze session; scored server-side by the gaze model service",
+    )
+    gaze_skip_reason: Optional[str] = Field(
+        default=None,
+        alias="gazeSkipReason",
+        pattern=r"^[a-z_]{1,48}$",
+        description="Why the gaze step ended without a session (e.g. calibration_poor, camera_denied, user_skipped)",
     )
     gaze_skipped: Optional[bool] = Field(
         default=False,
@@ -301,6 +310,11 @@ class CaseDetailResponse(CaseSummaryResponse):
     interpretation: str
     demo: Demographics
     answers: AQ10Answers
+    modality_breakdown: list[dict] = Field(default_factory=list)
+    modalities_used: Optional[int] = None
+    confidence_note: Optional[str] = None
+    fusion_score: Optional[float] = None
+    questionnaire_probability: Optional[float] = None
     # Gaze analysis (snake_case keys; all optional so pre-gaze-model cases still load)
     gaze_score: Optional[float] = None
     gaze_status: Optional[str] = None
@@ -310,6 +324,10 @@ class CaseDetailResponse(CaseSummaryResponse):
     gaze_features: Optional[dict] = None
     gaze_interpretation: Optional[str] = None
     gaze_analyzed_at: Optional[str] = None
+    gaze_preprocessing_version: Optional[str] = None
+    gaze_error_code: Optional[str] = None
+    gaze_fusion_eligible: Optional[bool] = None
+    gaze: Optional[dict] = None
     gaze_skipped: Optional[bool] = None
     gaze_mock: Optional[bool] = None
 
@@ -385,10 +403,7 @@ class DashboardSummaryResponse(BaseModel):
         default_factory=list,
         alias="categoryBreakdown",
     )
-    modality_confidence: list[ModalityConfidenceResponse] = Field(
-        default_factory=list,
-        alias="modalityConfidence",
-    )
+    modality_status: list[dict] = Field(default_factory=list, alias="modalityStatus")
 
     model_config = ConfigDict(populate_by_name=True)
 

@@ -1,216 +1,124 @@
 /**
  * AuthContext.jsx
- * Global authentication state via React Context + useReducer.
- * Mock auth — no real backend required; stores session in localStorage.
+ * Global authentication state backed by the FastAPI server.
+ *
+ * - The server verifies credentials and issues the session as an HttpOnly cookie; this code
+ *   never sees, generates or stores a token.
+ * - `isAuthenticated` is true only after GET /auth/me succeeded (or login/register returned a user).
+ * - Any 401 from the API client (expired/revoked session) emits SESSION_EXPIRED_EVENT, which
+ *   clears the user here so ProtectedRoute redirects to /auth.
  */
 
 /* eslint-disable react-refresh/only-export-components */
 
-import { createContext, useCallback, useContext, useEffect, useReducer } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useReducer } from 'react';
+import { SESSION_EXPIRED_EVENT, authApi } from '../services/api';
 
-/* ── Types ───────────────────────────────────────────────── */
-const AUTH_ACTIONS = {
-  INIT:     'INIT',
-  LOGIN:    'LOGIN',
-  LOGOUT:   'LOGOUT',
-  REGISTER: 'REGISTER',
-  SET_LOADING: 'SET_LOADING',
-  SET_ERROR:   'SET_ERROR',
-};
+const ROLE_LABELS = { clinician: 'Clinician', user: 'User' };
+
+export function toSessionUser(apiUser) {
+  const name = apiUser.name || '';
+  return {
+    ...apiUser,
+    roleLabel: ROLE_LABELS[apiUser.role] || apiUser.role,
+    initials: name.split(' ').filter(Boolean).map((w) => w[0]).join('').toUpperCase().slice(0, 2) || 'U',
+    joinedAt: apiUser.created_at ? apiUser.created_at.slice(0, 10) : null,
+  };
+}
 
 const initialState = {
-  user:            null,
-  token:           null,
+  user: null,
   isAuthenticated: false,
-  isLoading:       true,   // true on first mount while checking localStorage
-  error:           null,
+  isLoading: true, // true until the first session check completes
+  error: null,
+  expired: false,
 };
 
-/* ── Reducer ─────────────────────────────────────────────── */
 function authReducer(state, action) {
   switch (action.type) {
-    case AUTH_ACTIONS.INIT:
-      return { ...state, ...action.payload, isLoading: false };
-
-    case AUTH_ACTIONS.LOGIN:
-    case AUTH_ACTIONS.REGISTER:
-      return {
-        ...state,
-        user:            action.payload.user,
-        token:           action.payload.token,
-        isAuthenticated: true,
-        isLoading:       false,
-        error:           null,
-      };
-
-    case AUTH_ACTIONS.LOGOUT:
-      return { ...initialState, isLoading: false };
-
-    case AUTH_ACTIONS.SET_LOADING:
-      return { ...state, isLoading: action.payload };
-
-    case AUTH_ACTIONS.SET_ERROR:
-      return { ...state, error: action.payload, isLoading: false };
-
+    case 'SESSION':
+      return { user: action.user, isAuthenticated: true, isLoading: false, error: null, expired: false };
+    case 'ANONYMOUS':
+      return { ...initialState, isLoading: false, expired: Boolean(action.expired), error: action.error ?? null };
+    case 'LOADING':
+      return { ...state, isLoading: true, error: null };
+    case 'ERROR':
+      return { ...state, isLoading: false, error: action.error };
     default:
       return state;
   }
 }
 
-/* ── Mock user database ──────────────────────────────────── */
-const MOCK_USERS = [
-  {
-    id:        'usr-001',
-    name:      'Dr. Priya Mehta',
-    email:     'priya@neurosense.health',
-    password:  'demo1234',
-    role:      'Senior Clinician',
-    specialty: 'Autism Spectrum',
-    initials:  'PM',
-    joinedAt:  '2024-01-15',
-  },
-  {
-    id:        'usr-002',
-    name:      'Dr. Lena Torres',
-    email:     'lena@neurosense.health',
-    password:  'demo1234',
-    role:      'Clinical Psychologist',
-    specialty: 'ADHD & Executive Function',
-    initials:  'LT',
-    joinedAt:  '2024-03-02',
-  },
-];
-
-function generateToken() {
-  return `ns_${Math.random().toString(36).slice(2)}_${Date.now()}`;
-}
-
-function sanitizeUser(user) {
-  const safe = { ...user };
-  delete safe.password;
-  return safe;
-}
-
-/* ── Context ─────────────────────────────────────────────── */
 const AuthContext = createContext(null);
 
-/* ── Provider ────────────────────────────────────────────── */
 export function AuthProvider({ children }) {
   const [state, dispatch] = useReducer(authReducer, initialState);
 
-  // Rehydrate from localStorage on mount
+  // Session restoration: ask the server who we are.
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem('ns_session');
-      if (stored) {
-        const { user, token } = JSON.parse(stored);
+    let cancelled = false;
+    authApi
+      .me()
+      .then((u) => !cancelled && dispatch({ type: 'SESSION', user: toSessionUser(u) }))
+      .catch((err) => {
+        if (cancelled) return;
         dispatch({
-          type:    AUTH_ACTIONS.INIT,
-          payload: { user, token, isAuthenticated: true },
+          type: 'ANONYMOUS',
+          error: err.status === 401 ? null : 'Could not reach the server to verify your session.',
         });
-      } else {
-        dispatch({ type: AUTH_ACTIONS.INIT, payload: { isAuthenticated: false } });
-      }
-    } catch {
-      dispatch({ type: AUTH_ACTIONS.INIT, payload: { isAuthenticated: false } });
-    }
+      });
+    return () => { cancelled = true; };
   }, []);
 
-  /* ── login ───────────────────────────────────────────── */
+  // The API client reports a dead session (expired, revoked, deactivated).
+  useEffect(() => {
+    const onExpired = () => dispatch({ type: 'ANONYMOUS', expired: true });
+    window.addEventListener(SESSION_EXPIRED_EVENT, onExpired);
+    return () => window.removeEventListener(SESSION_EXPIRED_EVENT, onExpired);
+  }, []);
+
   const login = useCallback(async (email, password) => {
-    dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: true });
-    dispatch({ type: AUTH_ACTIONS.SET_ERROR,   payload: null });
-
-    // Simulate network latency
-    await new Promise((r) => setTimeout(r, 700));
-
-    const found = MOCK_USERS.find(
-      (u) => u.email.toLowerCase() === email.toLowerCase() && u.password === password
-    );
-
-    if (!found) {
-      dispatch({
-        type:    AUTH_ACTIONS.SET_ERROR,
-        payload: 'Invalid email or password.',
-      });
+    dispatch({ type: 'LOADING' });
+    try {
+      const { user } = await authApi.login({ email, password });
+      dispatch({ type: 'SESSION', user: toSessionUser(user) });
+      return true;
+    } catch (err) {
+      dispatch({ type: 'ERROR', error: err.message });
       return false;
     }
-
-    const token = generateToken();
-    const user  = sanitizeUser(found);
-
-    localStorage.setItem('ns_session', JSON.stringify({ user, token }));
-    dispatch({ type: AUTH_ACTIONS.LOGIN, payload: { user, token } });
-    return true;
   }, []);
 
-  /* ── register ────────────────────────────────────────── */
-  const register = useCallback(async ({ name, email, password, role }) => {
-    dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: true });
-    dispatch({ type: AUTH_ACTIONS.SET_ERROR,   payload: null });
-
-    await new Promise((r) => setTimeout(r, 800));
-
-    // Check duplicate
-    if (MOCK_USERS.find((u) => u.email.toLowerCase() === email.toLowerCase())) {
-      dispatch({
-        type:    AUTH_ACTIONS.SET_ERROR,
-        payload: 'An account with this email already exists.',
-      });
+  const register = useCallback(async ({ name, email, password }) => {
+    dispatch({ type: 'LOADING' });
+    try {
+      const { user } = await authApi.register({ name, email, password });
+      dispatch({ type: 'SESSION', user: toSessionUser(user) });
+      return true;
+    } catch (err) {
+      dispatch({ type: 'ERROR', error: err.message });
       return false;
     }
-
-    const token = generateToken();
-    const rawUser = {
-      id:        `usr-${Date.now()}`,
-      name,
-      email,
-      password,
-      role:      role || 'Clinician',
-      specialty: 'General',
-      initials:  name.split(' ').map((w) => w[0]).join('').toUpperCase().slice(0, 2),
-      joinedAt:  new Date().toISOString().split('T')[0],
-    };
-    const user = sanitizeUser(rawUser);
-
-    localStorage.setItem('ns_session', JSON.stringify({ user, token }));
-    dispatch({ type: AUTH_ACTIONS.REGISTER, payload: { user, token } });
-    return true;
   }, []);
 
-  /* ── demo login ──────────────────────────────────────── */
-  const loginAsDemo = useCallback(async () => {
-    await new Promise((r) => setTimeout(r, 400));
-    const token = generateToken();
-    const user  = sanitizeUser(MOCK_USERS[0]);
-    localStorage.setItem('ns_session', JSON.stringify({ user, token }));
-    dispatch({ type: AUTH_ACTIONS.LOGIN, payload: { user, token } });
+  const logout = useCallback(async () => {
+    try {
+      await authApi.logout(); // server revokes the token and clears the cookie
+    } catch {
+      // Already expired/unreachable: the local session is cleared regardless.
+    }
+    dispatch({ type: 'ANONYMOUS' });
   }, []);
 
-  /* ── logout ──────────────────────────────────────────── */
-  const logout = useCallback(() => {
-    localStorage.removeItem('ns_session');
-    dispatch({ type: AUTH_ACTIONS.LOGOUT });
-  }, []);
+  const clearError = useCallback(() => dispatch({ type: 'ERROR', error: null }), []);
 
-  /* ── clear error ─────────────────────────────────────── */
-  const clearError = useCallback(() => {
-    dispatch({ type: AUTH_ACTIONS.SET_ERROR, payload: null });
-  }, []);
-
-  const value = {
-    ...state,
-    login,
-    register,
-    loginAsDemo,
-    logout,
-    clearError,
-  };
-
+  const value = useMemo(
+    () => ({ ...state, login, register, logout, clearError }),
+    [state, login, register, logout, clearError]
+  );
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
-/* ── Consumer hook ───────────────────────────────────────── */
 export function useAuth() {
   const ctx = useContext(AuthContext);
   if (!ctx) throw new Error('useAuth must be used within <AuthProvider>');

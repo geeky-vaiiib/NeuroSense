@@ -1,165 +1,153 @@
 import axios from 'axios';
-import {
-  getMockCaseDetail,
-  getMockCaseSummaries,
-  getMockDashboardSummary,
-  getMockExplanation,
-  submitMockScreening,
-} from '../data/mockData';
+export const API_BASE_URL = import.meta.env?.VITE_API_URL || 'http://localhost:8000';
+const CSRF_HEADERS = { 'X-Requested-With': 'NeuroSense' };
 
+/** Fired when the backend says the session is gone; AuthContext listens and logs out. */
+export const SESSION_EXPIRED_EVENT = 'ns:session-expired';
+const AUTH_PATHS = ['/auth/login', '/auth/register', '/auth/me'];
+
+function notifySessionExpired(path) {
+  if (!AUTH_PATHS.some((p) => path.startsWith(p))) {
+    window.dispatchEvent(new Event(SESSION_EXPIRED_EVENT));
+  }
+}
+
+// Session = HttpOnly cookie set by the backend; JavaScript never sees or stores the token.
 const api = axios.create({
-  baseURL: 'http://localhost:8000',
+  baseURL: API_BASE_URL,
   timeout: 30000,
+  withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
     Accept: 'application/json',
+    ...CSRF_HEADERS,
   },
 });
 
-function getAuthToken() {
-  const directToken = localStorage.getItem('neurosense_token');
-  if (directToken) return directToken;
+/** fetch() with the same credentials/CSRF/401 handling as the axios client. */
+export async function authFetch(path, options = {}) {
+  const res = await fetch(`${API_BASE_URL}${path}`, {
+    ...options,
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+      ...CSRF_HEADERS,
+      ...(options.headers || {}),
+    },
+  });
+  if (res.status === 401) notifySessionExpired(path);
+  return res;
+}
 
-  try {
-    const session = localStorage.getItem('ns_session');
-    if (session) {
-      const parsed = JSON.parse(session);
-      return parsed.token || null;
-    }
-  } catch {
-    // ignore json parse error
+/**
+ * Every API failure surfaces as an ApiError; nothing is ever converted into success-looking data.
+ * kind: unauthenticated(401) | forbidden(403) | not_found(404) | validation(422) | conflict(409)
+ *       | rate_limited(429) | server(5xx) | network | timeout | invalid_response | http(other)
+ */
+export class ApiError extends Error {
+  constructor(kind, message, status = null) {
+    super(message);
+    this.name = 'ApiError';
+    this.kind = kind;
+    this.status = status;
   }
-  return null;
 }
 
-function clearAuthSession() {
-  localStorage.removeItem('neurosense_token');
-  localStorage.removeItem('ns_session');
+const FALLBACK_MESSAGES = {
+  unauthenticated: 'Your session has expired or you are not signed in. Please sign in again.',
+  forbidden: 'You do not have permission to do that.',
+  not_found: 'The requested item was not found.',
+  validation: 'The submitted data was not valid.',
+  conflict: 'That conflicts with existing data.',
+  rate_limited: 'Too many attempts. Please wait a few minutes and try again.',
+  server: 'The NeuroSense server hit an error. Please try again later.',
+  network: 'Unable to connect to the NeuroSense server. Check that the backend is running.',
+  timeout: 'The request timed out. Please try again.',
+  invalid_response: 'The server returned an unexpected response.',
+  http: 'The request failed.',
+};
+
+const KIND_BY_STATUS = { 401: 'unauthenticated', 403: 'forbidden', 404: 'not_found', 409: 'conflict', 422: 'validation', 429: 'rate_limited' };
+
+function detailText(detail) {
+  if (typeof detail === 'string') return detail;
+  if (Array.isArray(detail)) return detail.map((d) => d?.msg).filter(Boolean).join('; ');
+  return '';
 }
 
-api.interceptors.request.use(
-  (config) => {
-    const token = getAuthToken();
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
+/** Build an ApiError from an HTTP status + parsed body (server-provided detail wins when safe to show). */
+export function apiErrorFromStatus(status, body) {
+  const kind = KIND_BY_STATUS[status] || (status >= 500 ? 'server' : 'http');
+  const detail = detailText(body?.detail);
+  // Show server text for client errors (validation/conflict/login failures); generic text for 5xx.
+  const message = kind !== 'server' && detail ? detail : FALLBACK_MESSAGES[kind];
+  return new ApiError(kind, message, status);
+}
+
+export function networkError(err) {
+  return err?.name === 'AbortError' || err?.code === 'ECONNABORTED'
+    ? new ApiError('timeout', FALLBACK_MESSAGES.timeout)
+    : new ApiError('network', FALLBACK_MESSAGES.network);
+}
 
 api.interceptors.response.use(
   (response) => response.data,
   (error) => {
     if (error.response) {
       const { status, data } = error.response;
-
-      if (status === 401) {
-        clearAuthSession();
-        window.location.href = '/';
-      }
-
-      const normalized = new Error(
-        data?.detail || data?.message || `Request failed with status ${status}`
-      );
-      normalized.status = status;
-      normalized.isNetworkError = false;
-      return Promise.reject(normalized);
+      if (status === 401) notifySessionExpired(error.config?.url || '');
+      return Promise.reject(apiErrorFromStatus(status, data));
     }
-
-    if (error.request) {
-      const normalized = new Error('No response from server. Is the backend running?');
-      normalized.isNetworkError = true;
-      return Promise.reject(normalized);
-    }
-
-    const normalized = new Error(error.message || 'Unexpected request failure');
-    normalized.isNetworkError = false;
-    return Promise.reject(normalized);
+    return Promise.reject(networkError(error));
   }
 );
 
-function shouldFallback(error) {
-  return Boolean(error?.isNetworkError);
-}
+export const authApi = {
+  register: ({ name, email, password }) => api.post('/auth/register', { name, email, password }),
+  login: ({ email, password }) => api.post('/auth/login', { email, password }),
+  logout: () => api.post('/auth/logout'),
+  me: () => api.get('/auth/me'),
+};
 
 export const casesApi = {
-  async list(params = {}) {
-    try {
-      return await api.get('/cases/', { params });
-    } catch (error) {
-      if (shouldFallback(error)) {
-        return getMockCaseSummaries(params?.category);
-      }
-      throw error;
-    }
-  },
-
-  async get(id) {
-    try {
-      return await api.get(`/cases/${id}`);
-    } catch (error) {
-      if (shouldFallback(error)) {
-        return getMockCaseDetail(id);
-      }
-      throw error;
-    }
-  },
-
-  async dashboard(params = {}) {
-    try {
-      return await api.get('/cases/dashboard/summary', { params });
-    } catch (error) {
-      if (shouldFallback(error)) {
-        return getMockDashboardSummary(params?.category);
-      }
-      throw error;
-    }
-  },
+  list: (params = {}) => api.get('/cases/', { params }),
+  get: (id) => api.get(`/cases/${encodeURIComponent(id)}`),
+  dashboard: (params = {}) => api.get('/cases/dashboard/summary', { params }),
 };
 
 const GAZE_TIMEOUT_MS = 20_000;
 
 export const gazeApi = {
-  /**
-   * POST /gaze/analyze. Never falls back to mock data. Rejects with an Error whose
-   * `.kind` is 'backend_unavailable' | 'backend_timeout' | 'invalid_payload' |
-   * 'server_error' | 'invalid_response'.
-   */
+  /** GET /gaze/status: is the gaze model loaded and usable? */
+  status: () => api.get('/gaze/status'),
+
+  /** POST /gaze/analyze. Rejects with ApiError (never mock data). */
   async analyze(session) {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), GAZE_TIMEOUT_MS);
-    const fail = (kind, message) => Object.assign(new Error(message), { kind });
     let res;
     try {
-      res = await fetch(`${api.defaults.baseURL}/gaze/analyze`, {
+      res = await authFetch('/gaze/analyze', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-          ...(getAuthToken() ? { Authorization: `Bearer ${getAuthToken()}` } : {}),
-        },
         body: JSON.stringify(session),
         signal: controller.signal,
       });
     } catch (err) {
-      throw err?.name === 'AbortError'
-        ? fail('backend_timeout', 'The analysis server took too long to respond.')
-        : fail('backend_unavailable', 'Could not reach the analysis server.');
+      throw networkError(err);
     } finally {
       clearTimeout(timer);
     }
-    if (res.status === 422) throw fail('invalid_payload', 'The gaze session data was rejected as malformed.');
-    if (!res.ok) throw fail('server_error', `The analysis server returned an error (${res.status}).`);
+    if (!res.ok) throw apiErrorFromStatus(res.status, await res.json().catch(() => ({})));
     let body;
     try {
       body = await res.json();
     } catch {
-      throw fail('invalid_response', 'The analysis server returned an unreadable response.');
+      throw new ApiError('invalid_response', FALLBACK_MESSAGES.invalid_response);
     }
     const okStatus = ['success', 'insufficient_quality', 'unavailable'].includes(body?.status);
     if (body?.modality !== 'gaze' || !okStatus || typeof body?.quality?.valid !== 'boolean') {
-      throw fail('invalid_response', 'The analysis server returned an unexpected response.');
+      throw new ApiError('invalid_response', FALLBACK_MESSAGES.invalid_response);
     }
     return body;
   },
@@ -175,6 +163,7 @@ export const screeningApi = {
       aq10Score: formData.aq10Score,
       gazeSession: formData.gazeSession || null,
       gazeSkipped: formData.gazeSkipped || false,
+      gazeSkipReason: formData.gazeSkipReason || null,
       audioBase64: formData.audioBase64 || null,
       audioMimeType: formData.audioMimeType || null,
       transcriptHint: formData.transcriptHint || '',
@@ -195,65 +184,28 @@ export const screeningApi = {
     const timeoutId = setTimeout(() => controller.abort(), 30_000);
 
     try {
-      const res = await fetch(`${api.defaults.baseURL}/screening/screen`, {
+      const res = await authFetch('/screening/screen', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-          ...(getAuthToken()
-            ? { Authorization: `Bearer ${getAuthToken()}` }
-            : {}),
-        },
         body: payloadStr,
         signal: controller.signal,
       });
-
-      clearTimeout(timeoutId);
-
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body?.detail || `API_ERROR: ${res.status}`);
+      if (!res.ok) throw apiErrorFromStatus(res.status, await res.json().catch(() => ({})));
+      try {
+        return await res.json();
+      } catch {
+        throw new ApiError('invalid_response', FALLBACK_MESSAGES.invalid_response);
       }
-
-      return res.json();
     } catch (err) {
+      // No fallback: a failed screening must never turn into a synthetic result.
+      throw err instanceof ApiError ? err : networkError(err);
+    } finally {
       clearTimeout(timeoutId);
-
-      // Network / abort → fall back to mock
-      if (err.name === 'AbortError') {
-        const timeoutErr = new Error('Request timed out after 30 seconds');
-        timeoutErr.isNetworkError = true;
-        if (shouldFallback(timeoutErr)) {
-          return submitMockScreening(formData);
-        }
-        throw timeoutErr;
-      }
-
-      if (err.name === 'TypeError' || err.message?.includes('fetch')) {
-        // Network error (server not reachable) → mock fallback
-        const netErr = new Error(err.message);
-        netErr.isNetworkError = true;
-        if (shouldFallback(netErr)) {
-          return submitMockScreening(formData);
-        }
-      }
-
-      throw err;
     }
   },
 };
 
 export const explainApi = {
-  async get(caseId) {
-    try {
-      return await api.get(`/explain/${caseId}`);
-    } catch (error) {
-      if (shouldFallback(error)) {
-        return getMockExplanation(caseId);
-      }
-      throw error;
-    }
-  },
+  get: (caseId) => api.get(`/explain/${encodeURIComponent(caseId)}`),
 };
 
 export const healthApi = {

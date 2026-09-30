@@ -61,7 +61,15 @@ def _get_uri() -> str:
 
 def _get_db_name() -> str:
     """Read MONGODB_DB_NAME from environment, default to 'neurosense'."""
-    return os.environ.get("MONGODB_DB_NAME", "neurosense").strip() or "neurosense"
+    name = os.environ.get("MONGODB_DB_NAME") or os.environ.get("DATABASE_NAME") or "neurosense"
+    return name.strip() or "neurosense"
+
+
+def _tls_options(uri: str) -> dict:
+    """Atlas (mongodb+srv / tls=true) needs the certifi CA bundle; a plain local mongod does not."""
+    if uri.startswith("mongodb+srv://") or "tls=true" in uri.lower() or "ssl=true" in uri.lower():
+        return {"tlsCAFile": certifi.where()}
+    return {}
 
 
 def init_db() -> None:
@@ -78,24 +86,29 @@ def init_db() -> None:
     uri = _get_uri()
     db_name = _get_db_name()
 
-    logger.info("[NeuroSense] Connecting to MongoDB Atlas (db=%s)...", db_name)
-
-    _client = MongoClient(
-        uri,
-        # Connection-pool settings appropriate for a single-worker FastAPI process
-        maxPoolSize=10,
-        minPoolSize=1,
-        serverSelectionTimeoutMS=10_000,   # 10 s — fail fast at startup
-        connectTimeoutMS=10_000,
-        socketTimeoutMS=30_000,
-            tlsCAFile=certifi.where(),
-    )
+    if uri.startswith("mongomock://"):
+        import mongomock
+        logger.info("[NeuroSense] Connecting to Mock MongoDB...")
+        _client = mongomock.MongoClient()
+    else:
+        logger.info("[NeuroSense] Connecting to MongoDB Atlas (db=%s)...", db_name)
+    
+        _client = MongoClient(
+            uri,
+            # Connection-pool settings appropriate for a single-worker FastAPI process
+            maxPoolSize=10,
+            minPoolSize=1,
+            serverSelectionTimeoutMS=10_000,   # 10 s — fail fast at startup
+            connectTimeoutMS=10_000,
+            socketTimeoutMS=30_000,
+            **_tls_options(uri),
+        )
     _db = _client[db_name]
 
     # Verify connectivity with a cheap command
     try:
         _client.admin.command("ping")
-        logger.info("[NeuroSense] MongoDB Atlas connection verified ✓")
+        logger.info("[NeuroSense] MongoDB connection verified ✓")
     except (ConnectionFailure, OperationFailure) as exc:
         _client = None
         _db = None
@@ -108,8 +121,12 @@ def init_db() -> None:
 
 
 def _ensure_indexes() -> None:
-    """Create indexes on the cases collection if they do not already exist."""
-    col = get_cases_collection()
+    """Create indexes if they do not already exist (cases, users, revoked_tokens)."""
+    ensure_indexes_on(get_db())
+
+
+def ensure_indexes_on(db: Database) -> None:
+    col = db["cases"]
     # Unique index on the application-level `id` field (e.g. "NS-A-20260421-AB12")
     col.create_index([("id", ASCENDING)], unique=True, name="idx_case_id_unique")
     # Compound index for the common list-and-filter query pattern
@@ -119,6 +136,15 @@ def _ensure_indexes() -> None:
     )
     # Index for dashboard aggregation sorts
     col.create_index([("status", ASCENDING)], name="idx_status")
+    # Ownership: every list/detail query is scoped by user_id
+    col.create_index([("user_id", ASCENDING), ("screening_date", ASCENDING)], name="idx_case_user_id")
+    users = db["users"]
+    users.create_index([("email", ASCENDING)], unique=True, name="idx_user_email_unique")
+    users.create_index([("user_id", ASCENDING)], unique=True, name="idx_user_id_unique")
+    # Logged-out tokens are remembered until they would have expired anyway (TTL cleans them up)
+    revoked = db["revoked_tokens"]
+    revoked.create_index([("jti", ASCENDING)], unique=True, name="idx_revoked_jti_unique")
+    revoked.create_index([("expires_at", ASCENDING)], expireAfterSeconds=0, name="idx_revoked_ttl")
     logger.info("[NeuroSense] MongoDB indexes verified ✓")
 
 
@@ -142,6 +168,14 @@ def get_db() -> Database:
             "Database not initialised. Ensure init_db() is called during app startup."
         )
     return _db
+
+
+def get_users_collection() -> Collection:
+    return get_db()["users"]
+
+
+def get_revoked_tokens_collection() -> Collection:
+    return get_db()["revoked_tokens"]
 
 
 def get_cases_collection() -> Collection:

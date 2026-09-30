@@ -2,10 +2,11 @@
  * App.jsx — Root with AuthProvider, protected routes, landing + auth pages.
  */
 import { Component, useState } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, Link, useLocation } from 'react-router-dom';
 
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Sidebar from './components/Sidebar';
+import { NeuroSenseLogo, NeuroSenseMark } from './components/branding/NeuroSenseLogo';
 
 import Landing   from './pages/Landing';
 import Auth      from './pages/Auth';
@@ -34,91 +35,22 @@ class ErrorBoundary extends Component {
   render() {
     if (this.state.hasError) {
       return (
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            height: '100vh',
-            padding: '32px',
-            textAlign: 'center',
-            backgroundColor: 'var(--color-bg)',
-          }}
-        >
-          <div
-            style={{
-              maxWidth: '480px',
-              padding: '32px',
-              borderRadius: '22px',
-              border: '1px solid var(--color-neutral-200)',
-              backgroundColor: 'var(--color-bg-card)',
-              boxShadow: 'var(--shadow-xs)',
-            }}
-          >
-            <div
-              style={{
-                fontSize: '2.5rem',
-                marginBottom: '12px',
-              }}
-            >
-              ⚠️
+        <div role="alert" style={{ minHeight: '70vh', display: 'grid', placeItems: 'center', padding: 32 }}>
+          <div className="ns-card" style={{ maxWidth: 480, padding: 36, textAlign: 'center' }}>
+            <div style={{ width: 56, height: 56, margin: '0 auto 16px', borderRadius: 16, display: 'grid', placeItems: 'center', background: 'var(--ns-risk-high-bg)', color: 'var(--ns-risk-high)' }}>
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 8v5M12 16.5v.01" /></svg>
             </div>
-            <h2
-              style={{
-                margin: '0 0 8px',
-                color: 'var(--color-neutral-900)',
-              }}
-            >
-              Something went wrong
-            </h2>
-            <p
-              style={{
-                color: 'var(--color-neutral-600)',
-                lineHeight: 1.7,
-                marginBottom: '20px',
-              }}
-            >
-              An unexpected error occurred. You can try reloading the page.
+            <h2 style={{ fontSize: '1.25rem' }}>We couldn&apos;t complete this action</h2>
+            <p style={{ margin: '10px auto 22px', color: 'var(--ns-n600)', fontSize: '0.92rem', lineHeight: 1.6 }}>
+              Something unexpected happened while displaying this page. Your saved cases are not affected.
             </p>
-            <pre
-              style={{
-                padding: '12px 16px',
-                borderRadius: '12px',
-                backgroundColor: 'var(--color-bg)',
-                border: '1px solid var(--color-neutral-200)',
-                color: 'var(--color-risk-high)',
-                fontSize: '0.78rem',
-                fontFamily: 'var(--font-mono)',
-                textAlign: 'left',
-                whiteSpace: 'pre-wrap',
-                wordBreak: 'break-word',
-                maxHeight: '120px',
-                overflow: 'auto',
-                marginBottom: '20px',
-              }}
-            >
-              {this.state.error?.message || 'Unknown error'}
-            </pre>
-            <button
-              type="button"
-              onClick={() => window.location.reload()}
-              style={{
-                minHeight: '44px',
-                padding: '0 24px',
-                borderRadius: '12px',
-                border: 'none',
-                background:
-                  'linear-gradient(135deg, var(--color-primary), var(--color-primary-dark))',
-                color: '#fff',
-                fontSize: '0.95rem',
-                fontWeight: 700,
-                cursor: 'pointer',
-                boxShadow: '0 10px 24px rgba(26,26,24,0.10)',
-              }}
-            >
-              Reload page
-            </button>
+            <button type="button" className="btn btn-primary" onClick={() => window.location.reload()}>Reload page</button>
+            <details style={{ marginTop: 18, textAlign: 'left' }}>
+              <summary style={{ cursor: 'pointer', fontSize: '0.78rem', color: 'var(--ns-n500)' }}>Technical details</summary>
+              <pre style={{ marginTop: 8, padding: 12, borderRadius: 10, background: 'var(--ns-n100)', fontSize: '0.74rem', whiteSpace: 'pre-wrap', wordBreak: 'break-word', color: 'var(--ns-n700)' }}>
+                {this.state.error?.message || 'Unknown error'}
+              </pre>
+            </details>
           </div>
         </div>
       );
@@ -131,12 +63,13 @@ class ErrorBoundary extends Component {
 /* ── 404 ─────────────────────────────────────────────────── */
 function NotFound() {
   return (
-    <div style={{
-      display: 'flex', flexDirection: 'column', alignItems: 'center',
-      justifyContent: 'center', height: '60vh', gap: '12px', textAlign: 'center',
-    }}>
-      <span style={{ fontFamily: 'var(--font-mono)', fontSize: '3rem', fontWeight: 700, color: 'var(--color-neutral-200)', lineHeight: 1 }}>404</span>
-      <p style={{ fontSize: 'var(--font-size-base)', color: 'var(--color-neutral-400)' }}>Page not found</p>
+    <div style={{ minHeight: '60vh', display: 'grid', placeItems: 'center', textAlign: 'center' }}>
+      <div>
+        <NeuroSenseMark size={56} animated />
+        <h2 style={{ marginTop: 20, fontSize: '1.4rem' }}>This page doesn&apos;t exist</h2>
+        <p style={{ margin: '8px auto 20px', color: 'var(--ns-n500)', maxWidth: 360 }}>The link may be out of date. Head back to your dashboard.</p>
+        <Link to="/app" className="btn btn-primary btn-sm">Go to dashboard</Link>
+      </div>
     </div>
   );
 }
@@ -148,17 +81,11 @@ function ProtectedRoute({ children }) {
 
   if (isLoading) {
     return (
-      <div style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        height: '100vh', backgroundColor: 'var(--color-bg)',
-      }}>
-        <div style={{
-          width: '36px', height: '36px', borderRadius: '50%',
-          border: '3px solid var(--color-neutral-200)',
-          borderTopColor: 'var(--color-primary)',
-          animation: 'spin 0.7s linear infinite',
-        }} />
-        <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
+      <div role="status" aria-live="polite" style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', background: 'var(--ns-navy-900)' }}>
+        <div style={{ textAlign: 'center' }}>
+          <NeuroSenseMark size={56} tone="dark" animated />
+          <p style={{ marginTop: 18, fontFamily: 'var(--font-data)', fontSize: '0.72rem', letterSpacing: '0.16em', textTransform: 'uppercase', color: '#8FA3C0' }}>Restoring your session</p>
+        </div>
       </div>
     );
   }
@@ -173,6 +100,7 @@ function ProtectedRoute({ children }) {
 /* ── App shell (sidebar + main) ─────────────────────────── */
 function AppShell() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const location = useLocation();
 
   return (
     <div className="ns-layout">
@@ -195,7 +123,7 @@ function AppShell() {
             <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
           </svg>
         </button>
-        <span style={{ fontWeight: 700, color: 'var(--color-neutral-900)' }}>NeuroSense</span>
+        <NeuroSenseLogo size={24} />
       </div>
 
       {/* Overlay backdrop for mobile sidebar */}
@@ -205,7 +133,7 @@ function AppShell() {
 
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <main className="ns-main" id="main-content" tabIndex={-1}>
-        <div className="ns-page">
+        <div className="ns-page ns-page-enter" key={location.pathname.split('/').slice(0, 3).join('/')}>
           <Routes>
             <Route path="/"                element={<Dashboard />} />
             <Route path="/screening"       element={<Screening />} />

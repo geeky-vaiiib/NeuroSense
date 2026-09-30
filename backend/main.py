@@ -14,13 +14,15 @@ try:
     from .core import database
     from .ml.gaze.gaze_model_service import get_gaze_service
     from .ml.model import load_models
-    from .routers import cases, explainability, gaze, screening
+    from .core.config import get_settings
+    from .routers import auth, cases, explainability, gaze, screening
     from .schemas.screening import HealthResponse
 except ImportError:  # pragma: no cover - fallback for backend cwd execution
     from .core import database
     from ml.gaze.gaze_model_service import get_gaze_service
     from ml.model import load_models
-    from routers import cases, explainability, gaze, screening
+    from core.config import get_settings
+    from routers import auth, cases, explainability, gaze, screening
     from schemas.screening import HealthResponse
 
 logger = logging.getLogger("neurosense")
@@ -61,6 +63,7 @@ class LimitBodySizeMiddleware(BaseHTTPMiddleware):
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Load ML models and initialise MongoDB at startup; close both on shutdown."""
+    get_settings()   # fail fast with a clear message if security config is missing
     logger.info("[NeuroSense] Starting up — loading category-aware model registry...")
     app.state.model_registry = load_models()
 
@@ -108,16 +111,14 @@ app.add_middleware(LimitBodySizeMiddleware, max_body_size=10 * 1024 * 1024)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://localhost:4173",
-        "http://localhost:3000",
-    ],
+    # Explicit origins from CORS_ALLOWED_ORIGINS ("*" is rejected by config: cookies are used)
+    allow_origins=list(get_settings().cors_origins),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+app.include_router(auth.router)
 app.include_router(gaze.router)
 app.include_router(screening.router)
 app.include_router(cases.router)
@@ -142,6 +143,7 @@ async def health():
             "gaze": True,
             "gaze_method": "lstm_trained" if get_gaze_service().available else None,
             "gaze_is_trained": get_gaze_service().available,
+            "gaze_detail": get_gaze_service().health(),
             "speech": True,
             "speech_method": "cnn_trained" if _SPEECH_CNN_PATH.exists() else "rule_based_heuristic",
             "speech_is_trained": _SPEECH_CNN_PATH.exists(),

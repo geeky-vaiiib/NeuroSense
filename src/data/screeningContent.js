@@ -113,9 +113,6 @@ const AGREE_MAP = {
 
 const ASD_TRAIT_IDS = new Set(['A1', 'A5', 'A7', 'A10']);
 
-// Q-CHAT-10 (toddler): only A10 is ASD-trait direction
-const QCHAT_TRAIT_IDS = new Set(['A10']);
-
 export function categoryLabel(category) {
   return CATEGORY_CONTENT[category]?.label ?? CATEGORY_CONTENT.child.label;
 }
@@ -124,7 +121,7 @@ export function getCategoryContent(category) {
   return CATEGORY_CONTENT[category] ?? CATEGORY_CONTENT.child;
 }
 
-export function deriveCategoryFromAge(age) {
+export function deriveCategoryFromAge() {
   return 'child';
 }
 
@@ -134,7 +131,7 @@ export function validateCategoryAge(category, age) {
   return { valid: true, message: '' };
 }
 
-export function buildAq10Score(answers, category = 'child') {
+export function buildAq10Score(answers) {
   const traitIds = ASD_TRAIT_IDS;
   return Object.entries(answers ?? {}).reduce((total, [questionId, answer]) => {
     const agreeScore = AGREE_MAP[answer] ?? 0;

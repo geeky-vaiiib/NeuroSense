@@ -4,67 +4,76 @@
    ============================================================ */
 
 /* ── Fonts ────────────────────────────────── */
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,700;1,400&family=Syne:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
 :root {
   /* ── Core Palette ──────────────────────────────────────────────────────
-     Dark-mode-first approach with teal (#0ECFC8) and violet (#7B61FF).
+     Warm-white surfaces, deep-navy ink, teal/cyan signal accents.
      ────────────────────────────────────────────────────────────────────── */
 
-  /* Base surfaces — Light mode first */
-  --ns-surface:       #FAFAFA;   /* page bg (light) */
-  --ns-surface-2:     #F4F4F5;   /* inset zones, table rows, step bg */
-  --ns-panel:         #FFFFFF;   /* content panels, form fields */
-  --ns-ink:           #18181B;   /* primary text (dark) */
-  --ns-panel-dark:    #FFFFFF;
-  --ns-surface-dark:  #FAFAFA;
+  /* Base surfaces — warm white, layered */
+  --ns-surface:       #F7F6F3;   /* page background (warm off-white) */
+  --ns-surface-2:     #EFEDE8;   /* inset zones, sidebar */
+  --ns-panel:         #FFFFFF;   /* cards, form fields */
+  --ns-ink:           #0B1220;   /* primary text (deep navy) */
+  --ns-panel-dark:    #0B1220;
+  --ns-surface-dark:  #070C18;
 
-  /* Primary action — Violet (#7B61FF) */
-  --ns-instrument:      #7B61FF;
-  --ns-instrument-light: #947EFF;
-  --ns-instrument-dim:   rgba(123, 97, 255, 0.15);
-  --ns-instrument-focus: rgba(123, 97, 255, 0.35);
+  /* Deep navy family — hero, auth, overlays */
+  --ns-navy-950: #050912;
+  --ns-navy-900: #0B1220;
+  --ns-navy-800: #111B30;
+  --ns-navy-700: #1A2740;
+  --ns-navy-600: #26365A;
 
-  /* Signal — Clinical Teal (#0ECFC8) */
-  --ns-signal:        #0ECFC8;
-  --ns-signal-light:  #3EEBE5;
-  --ns-signal-dim:    rgba(14, 207, 200, 0.15);
+  /* Primary action — deep teal (white text = 5.1:1) */
+  --ns-instrument:       #0B7A85;
+  --ns-instrument-light: #0E93A0;
+  --ns-instrument-dim:   rgba(11, 122, 133, 0.10);
+  --ns-instrument-focus: rgba(14, 147, 160, 0.30);
 
-  /* ── Risk Semantic Colors ────────────────────────────────────────────── */
-  --ns-risk-high:         #FF4C6A;
-  --ns-risk-high-bg:      rgba(255, 76, 106, 0.12);
-  --ns-risk-high-border:  rgba(255, 76, 106, 0.30);
-  --ns-risk-high-text:    #FF4C6A;
+  /* Signal — cyan, for luminous accents on dark surfaces */
+  --ns-signal:        #22D3EE;
+  --ns-signal-light:  #67E8F9;
+  --ns-signal-dim:    rgba(34, 211, 238, 0.14);
+  --ns-signal-2:      #5EEAD4;   /* teal-mint secondary signal */
+  --ns-signal-3:      #A5B4FC;   /* soft periwinkle: third stream, used sparingly */
 
-  --ns-risk-mod:          #FFAE43;
-  --ns-risk-mod-bg:       rgba(255, 174, 67, 0.12);
-  --ns-risk-mod-border:   rgba(255, 174, 67, 0.30);
-  --ns-risk-mod-text:     #FFAE43;
+  /* ── Risk Semantic Colors (red only for genuinely high risk / errors) ── */
+  --ns-risk-high:         #D93A3A;
+  --ns-risk-high-bg:      rgba(217, 58, 58, 0.08);
+  --ns-risk-high-border:  rgba(217, 58, 58, 0.28);
+  --ns-risk-high-text:    #B42323;
 
-  --ns-risk-low:          #0ECFC8;
-  --ns-risk-low-bg:       rgba(14, 207, 200, 0.12);
-  --ns-risk-low-border:   rgba(14, 207, 200, 0.30);
-  --ns-risk-low-text:     #0ECFC8;
+  --ns-risk-mod:          #D9861A;
+  --ns-risk-mod-bg:       rgba(217, 134, 26, 0.10);
+  --ns-risk-mod-border:   rgba(217, 134, 26, 0.32);
+  --ns-risk-mod-text:     #9A5B08;
 
-  /* ── Neutral Scale ───────────────────────────────────────────────────── */
-  --ns-n900:  #18181B;
-  --ns-n800:  #27272A;
-  --ns-n700:  #3F3F46;
-  --ns-n600:  #52525B;
-  --ns-n500:  #71717A;
-  --ns-n400:  #A1A1AA;
-  --ns-n300:  #E4E4E7;
-  --ns-n200:  #F4F4F5;
-  --ns-n150:  #FAFAFA;
-  --ns-n100:  #FFFFFF;
+  --ns-risk-low:          #1F9D6B;
+  --ns-risk-low-bg:       rgba(31, 157, 107, 0.09);
+  --ns-risk-low-border:   rgba(31, 157, 107, 0.30);
+  --ns-risk-low-text:     #12744D;
+
+  /* ── Neutral Scale (slate with a navy cast) ──────────────────────────── */
+  --ns-n900:  #0B1220;
+  --ns-n800:  #1B2740;
+  --ns-n700:  #334155;
+  --ns-n600:  #475569;
+  --ns-n500:  #64748B;
+  --ns-n400:  #94A3B8;
+  --ns-n300:  #D5DBE3;
+  --ns-n200:  #E7EBF0;
+  --ns-n150:  #F1F3F6;
+  --ns-n100:  #F8F9FB;
   --ns-n50:   #FFFFFF;
 
   /* ── Typography ────────────────────────────────────────────────────────
      Syne for headings, DM Sans for prose, IBM Plex Mono for numeric data.
      ────────────────────────────────────────────────────────────────────── */
-  --font-heading: 'Syne', sans-serif;
-  --font-body:    'DM Sans', system-ui, -apple-system, sans-serif;
-  --font-data:    'IBM Plex Mono', 'Cascadia Code', 'Fira Mono', monospace;
+  --font-heading: 'Sora', 'Inter', system-ui, sans-serif;
+  --font-body:    'Inter', system-ui, -apple-system, sans-serif;
+  --font-data:    'JetBrains Mono', 'IBM Plex Mono', 'Cascadia Code', monospace;
   --font-mono:    var(--font-data);
 
   /* Scale */
@@ -124,11 +133,11 @@
   --border-strong: 1px solid var(--ns-n400);
 
   /* ── Shadows ─────────────────────────────────────────────────────────── */
-  --sh-xs:  0 1px 2px rgba(0, 0, 0, 0.40);
-  --sh-sm:  0 2px 8px rgba(0, 0, 0, 0.40);
-  --sh-md:  0 8px 24px rgba(0, 0, 0, 0.50);
-  --sh-lg:  0 16px 48px rgba(0, 0, 0, 0.60);
-  --sh-glow: 0 0 20px var(--ns-instrument-dim);
+  --sh-xs:  0 1px 2px rgba(11, 18, 32, 0.05);
+  --sh-sm:  0 1px 3px rgba(11, 18, 32, 0.06), 0 1px 2px rgba(11, 18, 32, 0.04);
+  --sh-md:  0 6px 20px rgba(11, 18, 32, 0.07), 0 2px 6px rgba(11, 18, 32, 0.04);
+  --sh-lg:  0 18px 48px rgba(11, 18, 32, 0.12), 0 4px 12px rgba(11, 18, 32, 0.05);
+  --sh-glow: 0 0 0 1px rgba(34, 211, 238, 0.25), 0 0 28px rgba(34, 211, 238, 0.18);
 
   /* ── Transitions ───────────────────────────────────────────────────────*/
   --ease-fast:   150ms cubic-bezier(0.4, 0, 0.2, 1);
@@ -161,7 +170,7 @@
   --color-bg-card:        var(--ns-panel);
   --color-bg-elevated:    var(--ns-n100);
   --color-bg-sidebar:     var(--ns-surface-2);
-  --color-bg-overlay:     rgba(10, 10, 11, 0.94);
+  --color-bg-overlay:     rgba(7, 12, 24, 0.94);
   --color-neutral-50:     var(--ns-n50);
   --color-neutral-100:    var(--ns-n100);
   --color-neutral-200:    var(--ns-n200);
@@ -219,26 +228,26 @@
   --border-width: 1px;
   --border-color: var(--ns-n200);
   --border-color-alt: var(--ns-n300);
-  --border-primary: rgba(123, 97, 255, 0.35);
+  --border-primary: rgba(11, 122, 133, 0.35);
   --shadow-primary: var(--sh-glow);
   --shadow-inset: inset 0 1px 0 rgba(255,255,255,0.05);
   --z-dropdown: 100;
   --z-toast: 400; --z-tooltip: 500;
   --color-secondary-light: var(--ns-n400);
   --color-secondary-dark: var(--ns-n300);
-  --color-secondary-muted: rgba(161, 161, 170, 0.15);
+  --color-secondary-muted: rgba(148, 163, 184, 0.15);
   --color-risk-high-light: var(--ns-risk-high);
   --color-risk-high-bg: var(--ns-risk-high-bg);
   --color-risk-high-border: var(--ns-risk-high-border);
-  --color-risk-high-muted: rgba(255, 76, 106, 0.10);
+  --color-risk-high-muted: rgba(217, 58, 58, 0.10);
   --color-risk-moderate: var(--ns-risk-mod);
   --color-risk-moderate-light: var(--ns-risk-mod);
   --color-risk-moderate-bg: var(--ns-risk-mod-bg);
   --color-risk-moderate-border: var(--ns-risk-mod-border);
-  --color-risk-moderate-muted: rgba(255, 174, 67, 0.10);
+  --color-risk-moderate-muted: rgba(217, 134, 26, 0.10);
   --color-risk-low-light: var(--ns-risk-low);
   --color-risk-low-bg: var(--ns-risk-low-bg);
   --color-risk-low-border: var(--ns-risk-low-border);
-  --color-risk-low-muted: rgba(14, 207, 200, 0.10);
+  --color-risk-low-muted: rgba(31, 157, 107, 0.10);
 }
 

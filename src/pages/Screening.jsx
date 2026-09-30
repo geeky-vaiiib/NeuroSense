@@ -1,14 +1,15 @@
 import { useMemo, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import CategoryBadge from '../components/CategoryBadge';
+import ProgressIndicator from '../components/ui/ProgressIndicator';
+import QuestionFlow from '../components/screening/QuestionFlow';
+import AnalysisState from '../components/screening/AnalysisState';
 import GazeSession from '../components/GazeSession';
 import SpeechSession from '../components/SpeechSession';
 import FacialSession from '../components/FacialSession';
 import { useScreening } from '../hooks/useScreening';
 import {
   ANSWER_OPTIONS,
-  CATEGORY_CONTENT,
-  CATEGORY_ORDER,
   ETHNICITY_OPTIONS,
   GENDER_OPTIONS,
   QUESTION_BANK,
@@ -18,8 +19,6 @@ import {
   validateCategoryAge,
 } from '../data/screeningContent';
 
-const STEP_LABELS_FULL = ['Track', 'Consent', 'Demographics', 'AQ-10', 'Gaze', 'Speech', 'Facial', 'Review'];
-const STEP_LABELS_TODDLER = ['Track', 'Consent', 'Demographics', 'Q-CHAT-10', 'Review'];
 
 const BASE_DEMO = {
   subjectName: '',
@@ -34,94 +33,15 @@ const BASE_DEMO = {
 
 const BASE_CONSENTS = [false, false, false, false];
 
-function StepIndicator({ current, isToddler }) {
-  const labels = isToddler ? STEP_LABELS_TODDLER : STEP_LABELS_FULL;
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-2)' }}>
-      {labels.map((label, index) => {
-        const active = current === index;
-        const completed = current > index;
-        return (
-          <div
-            key={label}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 'var(--sp-3)',
-              padding: 'var(--sp-2)',
-              borderRadius: 'var(--r-md)',
-              backgroundColor: active ? 'var(--ns-instrument-dim)' : 'transparent',
-              color: active ? 'var(--ns-instrument)' : completed ? 'var(--ns-n900)' : 'var(--ns-n500)',
-              fontWeight: active ? 'var(--fw-semibold)' : 'var(--fw-medium)',
-              transition: 'all var(--ease-fast)',
-            }}
-          >
-            <span
-              style={{
-                width: '24px',
-                height: '24px',
-                borderRadius: '50%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                backgroundColor: completed ? 'var(--ns-instrument)' : active ? 'transparent' : 'var(--ns-surface-2)',
-                color: completed ? '#fff' : active ? 'var(--ns-instrument)' : 'var(--ns-n500)',
-                border: `1px solid ${completed ? 'var(--ns-instrument)' : active ? 'var(--ns-instrument)' : 'var(--border-color)'}`,
-                fontFamily: 'var(--font-data)',
-                fontSize: 'var(--ts-caption)',
-              }}
-            >
-              {completed ? '✓' : index + 1}
-            </span>
-            <span style={{ fontSize: 'var(--ts-small)' }}>{label}</span>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-function TrackCard({ id, active, onSelect }) {
-  const content = CATEGORY_CONTENT[id];
-  return (
-    <button
-      type="button"
-      onClick={() => onSelect(id)}
-      className="panel"
-      style={{
-        textAlign: 'left',
-        padding: 'var(--sp-6)',
-        border: `1px solid ${active ? 'var(--ns-instrument)' : 'var(--border-color)'}`,
-        boxShadow: active ? '0 0 0 1px var(--ns-instrument)' : 'none',
-        backgroundColor: active ? 'var(--ns-instrument-dim)' : 'var(--ns-panel)',
-        cursor: 'pointer',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 'var(--sp-4)',
-        transition: 'all var(--ease-fast)',
-      }}
-      onMouseOver={(e) => {
-        if (!active) e.currentTarget.style.borderColor = 'var(--ns-n400)';
-      }}
-      onMouseOut={(e) => {
-        if (!active) e.currentTarget.style.borderColor = 'var(--border-color)';
-      }}
-    >
-      <CategoryBadge category={id} size="lg" />
-      <div>
-        <h3 style={{ margin: '0 0 var(--sp-1)', fontSize: 'var(--ts-h3)', color: 'var(--ns-n900)' }}>
-          {content.entryTitle}
-        </h3>
-        <p style={{ margin: 0, fontSize: 'var(--ts-body)', color: 'var(--ns-n600)', lineHeight: 'var(--lh-body)' }}>
-          {content.entryDescription}
-        </p>
-      </div>
-      <div style={{ paddingTop: 'var(--sp-3)', borderTop: 'var(--border)', fontSize: 'var(--ts-small)', color: 'var(--ns-instrument)', fontWeight: 'var(--fw-semibold)' }}>
-        {content.trackSummary}
-      </div>
-    </button>
-  );
-}
+// Five stages shown to the user; internal wizard steps map onto them.
+const STAGES = [
+  { id: 'questionnaire', label: 'Questionnaire' },
+  { id: 'gaze', label: 'Gaze' },
+  { id: 'speech', label: 'Speech' },
+  { id: 'analysis', label: 'Analysis' },
+  { id: 'results', label: 'Results' },
+];
+const SUBSTEPS = { 1: 'Consent', 2: 'About the child', 3: 'Questions', 6: 'Facial snapshot', 7: 'Review' };
 
 function FormField({ label, children }) {
   return (
@@ -129,47 +49,6 @@ function FormField({ label, children }) {
       <span className="field-label">{label}</span>
       {children}
     </label>
-  );
-}
-
-function QuestionBlock({ question, value, onChange }) {
-  return (
-    <div className="panel" style={{ padding: 'var(--sp-5)' }}>
-      <p style={{ margin: '0 0 var(--sp-4)', fontWeight: 'var(--fw-medium)', color: 'var(--ns-n900)', lineHeight: 'var(--lh-snug)' }}>
-        {question.prompt}
-      </p>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 'var(--sp-2)' }}>
-        {ANSWER_OPTIONS.map((option) => {
-          const active = value === option;
-          return (
-            <button
-              key={option}
-              type="button"
-              onClick={() => onChange(question.id, option)}
-              style={{
-                minHeight: '40px',
-                padding: '0 var(--sp-3)',
-                borderRadius: 'var(--r-sm)',
-                border: `1px solid ${active ? 'var(--ns-instrument)' : 'var(--border-color)'}`,
-                backgroundColor: active ? 'var(--ns-instrument-dim)' : 'var(--ns-panel)',
-                color: active ? 'var(--ns-instrument)' : 'var(--ns-n700)',
-                fontWeight: active ? 'var(--fw-semibold)' : 'var(--fw-medium)',
-                cursor: 'pointer',
-                transition: 'all var(--ease-fast)',
-              }}
-              onMouseOver={(e) => {
-                if (!active) e.currentTarget.style.backgroundColor = 'var(--ns-surface-2)';
-              }}
-              onMouseOut={(e) => {
-                if (!active) e.currentTarget.style.backgroundColor = 'var(--ns-panel)';
-              }}
-            >
-              {option}
-            </button>
-          );
-        })}
-      </div>
-    </div>
   );
 }
 
@@ -184,6 +63,7 @@ export default function Screening() {
   const [gazeSession, setGazeSession] = useState(null);
   const [gazeAnalysis, setGazeAnalysis] = useState(null);
   const [gazeSkipped, setGazeSkipped] = useState(false);
+  const [gazeSkipReason, setGazeSkipReason] = useState(null);
   const [audioBlob, setAudioBlob] = useState(null);
   const [transcriptHint, setTranscriptHint] = useState('');
   const [speechSkipped, setSpeechSkipped] = useState(false);
@@ -203,6 +83,8 @@ export default function Screening() {
   const SPEECH_STEP = 5;
   const FACIAL_STEP = 6;
   const REVIEW_STEP = 7;
+  // internal step -> displayed stage (0 questionnaire, 1 gaze, 2 speech, 3 analysis)
+  const stageIndex = step <= 3 ? 0 : step === GAZE_STEP ? 1 : step === SPEECH_STEP ? 2 : 3;
 
   
 
@@ -300,6 +182,7 @@ export default function Screening() {
           // A recorded-but-unusable session is still sent so its quality reason is stored.
           gazeSession,
           gazeSkipped,
+          gazeSkipReason: gazeSkipped ? gazeSkipReason : null,
           audioBase64: audioBase64,
           audioMimeType: audioBlob?.type || null,
           transcriptHint: transcriptHint,
@@ -309,7 +192,9 @@ export default function Screening() {
         };
         const result = await submit(payload);
         navigate(`/app/results/${result.caseId}`);
-      } catch {}
+      } catch {
+        // The error is stored and rendered by useScreening; nothing is faked on failure.
+      }
     }
   }
 
@@ -323,37 +208,29 @@ export default function Screening() {
   }
 
   return (
-    <main id="screening-page" style={{ display: 'flex', gap: 'var(--sp-12)', alignItems: 'flex-start', maxWidth: '960px', margin: '0' }}>
-      
-      {/* Wizard Step Indicator Sidebar */}
+    <main id="screening-page" style={{ maxWidth: 760, margin: '0 auto', width: '100%' }}>
       {step > 0 && (
-        <aside style={{ width: '200px', flexShrink: 0, position: 'sticky', top: 'calc(var(--navbar-height) + var(--sp-8))' }}>
-          <StepIndicator current={step} isToddler={isToddler} />
-        </aside>
+        <div style={{ marginBottom: 32 }}>
+          <ProgressIndicator steps={STAGES} current={stageIndex} />
+          {SUBSTEPS[step] && (
+            <p style={{ marginTop: 10, fontSize: '0.78rem', color: 'var(--ns-n500)' }}>{SUBSTEPS[step]}</p>
+          )}
+        </div>
       )}
 
-      {/* Main Content Area */}
-      <div style={{ flex: 1, maxWidth: '640px', display: 'flex', flexDirection: 'column', gap: 'var(--sp-6)' }}>
-        
-
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-6)' }}>
         {content && (
-          <div className="wizard-step-enter" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-6)' }}>
+          <div className="ns-reveal" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-6)' }}>
             
-            {/* Top track summary banner */}
-            <section className="panel" style={{ backgroundColor: 'var(--ns-surface-2)', border: 'none' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--sp-2)' }}>
+            {step <= 3 && (
+              <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+                <div>
+                  <p className="ns-eyebrow" style={{ marginBottom: 6 }}>{content.screeningTool}</p>
+                  <h1 style={{ fontSize: 'clamp(1.4rem, 3vw, 1.9rem)', letterSpacing: '-0.03em' }}>{content.introTitle}</h1>
+                </div>
                 <CategoryBadge category={category} size="md" />
-                <span style={{ fontSize: 'var(--ts-caption)', color: 'var(--ns-n500)', fontFamily: 'var(--font-data)' }}>
-                  Model: {category}_pipeline
-                </span>
-              </div>
-              <h1 style={{ margin: '0 0 var(--sp-1)', fontSize: 'var(--ts-h2)', color: 'var(--ns-n900)' }}>
-                {content.introTitle}
-              </h1>
-              <p style={{ margin: 0, color: 'var(--ns-n600)', fontSize: 'var(--ts-small)' }}>
-                {content.screeningTool} · {content.trackSummary}
-              </p>
-            </section>
+              </header>
+            )}
 
             {step === 1 && (
               <section className="panel">
@@ -436,16 +313,9 @@ export default function Screening() {
             )}
 
             {step === 3 && (
-              <section>
-                <div className="panel" style={{ marginBottom: 'var(--sp-4)', border: 'none', backgroundColor: 'transparent', padding: 0 }}>
-                  <h2 style={{ marginTop: 0, color: 'var(--ns-n900)', fontSize: 'var(--ts-h3)' }}>{content.questionnaireTitle}</h2>
-                  <p style={{ color: 'var(--ns-n600)', lineHeight: 'var(--lh-body)' }}>{content.questionnaireDescription}</p>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-4)' }}>
-                  {questions.map((question) => (
-                    <QuestionBlock key={question.id} question={question} value={answers[question.id]} onChange={updateAnswer} />
-                  ))}
-                </div>
+              <section className="ns-card" style={{ padding: 'clamp(20px, 4vw, 36px)' }}>
+                <p style={{ color: 'var(--ns-n600)', lineHeight: 1.6, marginBottom: 24, fontSize: '0.92rem', maxWidth: 'none' }}>{content.questionnaireDescription}</p>
+                <QuestionFlow questions={questions} answers={answers} onAnswer={updateAnswer} options={ANSWER_OPTIONS} />
               </section>
             )}
 
@@ -453,7 +323,7 @@ export default function Screening() {
               <GazeSession
                 category={category}
                 onComplete={(session, analysis) => { setGazeSession(session); setGazeAnalysis(analysis); setGazeSkipped(false); setStep(SPEECH_STEP); }}
-                onSkip={() => { setGazeSession(null); setGazeAnalysis(null); setGazeSkipped(true); setStep(SPEECH_STEP); }}
+                onSkip={(reason) => { setGazeSession(null); setGazeAnalysis(null); setGazeSkipped(true); setGazeSkipReason(reason || 'user_skipped'); setStep(SPEECH_STEP); }}
               />
             )}
 
@@ -473,7 +343,9 @@ export default function Screening() {
               />
             )}
 
-            {step === REVIEW_STEP && (
+            {step === REVIEW_STEP && loading && <AnalysisState />}
+
+            {step === REVIEW_STEP && !loading && (
               <section className="panel">
                 <h2 style={{ marginTop: 0, color: 'var(--ns-n900)', fontSize: 'var(--ts-h3)' }}>{content.reviewTitle}</h2>
                 <p style={{ color: 'var(--ns-n600)', lineHeight: 'var(--lh-body)', marginBottom: 'var(--sp-5)' }}>{content.reviewDescription}</p>
@@ -520,6 +392,7 @@ export default function Screening() {
               </div>
             )}
 
+            {!(step === REVIEW_STEP && loading) && (
             <div style={{ display: 'flex', justifyContent: 'space-between', gap: 'var(--sp-3)', flexWrap: 'wrap', alignItems: 'center', marginTop: 'var(--sp-4)' }}>
               <button type="button" onClick={handleBack} className="btn btn-secondary">
                 {step === 1 ? 'Change track' : 'Back'}
@@ -530,9 +403,10 @@ export default function Screening() {
                 disabled={loading}
                 className="btn btn-primary"
               >
-                {step === REVIEW_STEP ? (loading ? 'Submitting…' : `Submit ${content.label.toLowerCase()} screening`) : 'Continue'}
+                {step === REVIEW_STEP ? `Submit ${content.label.toLowerCase()} screening` : 'Continue'}
               </button>
             </div>
+            )}
 
           </div>
         )}

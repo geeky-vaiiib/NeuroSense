@@ -50,10 +50,12 @@ def validate_samples(
       non_monotonic       timestamp <= the largest timestamp seen so far
       face_not_detected   face_detected is False
       out_of_bounds       x or y outside [0, screen] (predictions off the screen)
+      tracker_placeholder x == y == 0 exactly (the eye tracker's no-data/blink code in the
+                          training data; also never a real WebGazer prediction)
     """
     rejected = {k: 0 for k in (
         "non_finite", "negative_timestamp", "non_monotonic",
-        "face_not_detected", "out_of_bounds",
+        "face_not_detected", "out_of_bounds", "tracker_placeholder",
     )}
     t_out: list[float] = []
     x_out: list[float] = []
@@ -90,6 +92,9 @@ def validate_samples(
             continue
         if not (math.isfinite(x) and math.isfinite(y)):
             rejected["non_finite"] += 1
+            continue
+        if x == 0.0 and y == 0.0:
+            rejected["tracker_placeholder"] += 1
             continue
         if not (0.0 <= x <= screen_w and 0.0 <= y <= screen_h):
             rejected["out_of_bounds"] += 1

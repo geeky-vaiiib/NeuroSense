@@ -102,24 +102,26 @@ def participant_windows() -> tuple[dict[str, list[np.ndarray]], dict[str, int]]:
 
 
 def _cut_windows(cleaned) -> list[np.ndarray]:
-    """Cut contiguous WINDOW_MS chunks of valid samples; keep those >= MIN_SEQ_STEPS."""
-    from backend.ml.gaze.preprocess import CleanedSamples, segment_bounds
+    """Wall-clock WINDOW_MS windows over the participant's valid samples.
+
+    Mirrors a browser session: a window may contain gaps (blinks, off-screen gaze, trial changes);
+    build_feature_matrix drops the gaps exactly as it does at inference.  Windows with fewer than
+    MIN_SEQ_STEPS usable steps are discarded (the same rule the quality gate applies).
+    """
+    from backend.ml.gaze.preprocess import CleanedSamples
     out: list[np.ndarray] = []
-    for lo, hi in segment_bounds(cleaned.t_ms):
-        t0 = cleaned.t_ms[lo]
-        start = lo
-        while start < hi:
-            end = start
-            while end < hi and cleaned.t_ms[end] - cleaned.t_ms[start] < WINDOW_MS:
-                end += 1
-            chunk = CleanedSamples(
-                t_ms=cleaned.t_ms[start:end], x=cleaned.x[start:end], y=cleaned.y[start:end],
-                stimulus=[None] * (end - start), n_total=end - start,
-            )
-            feats = build_feature_matrix(chunk)
-            if len(feats) >= C.MIN_SEQ_STEPS:
-                out.append(feats)
-            start = end
+    t, n, start = cleaned.t_ms, len(cleaned.t_ms), 0
+    while start < n:
+        end = int(np.searchsorted(t, t[start] + WINDOW_MS, side="left"))
+        end = max(end, start + 1)
+        chunk = CleanedSamples(
+            t_ms=t[start:end], x=cleaned.x[start:end], y=cleaned.y[start:end],
+            stimulus=[None] * (end - start), n_total=end - start,
+        )
+        feats = build_feature_matrix(chunk)
+        if len(feats) >= C.MIN_SEQ_STEPS:
+            out.append(feats)
+        start = end
     return out
 
 

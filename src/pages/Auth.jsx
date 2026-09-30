@@ -1,355 +1,221 @@
 /**
- * Auth.jsx — Login / Register. No demo mode. Inclusive language.
- * Professional logo. Better padding and field UX.
+ * Auth.jsx — sign in / create account. Split layout: brand + signal visual on the left,
+ * form on the right. Authentication itself is unchanged (see context/AuthContext.jsx).
  */
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { NeuroLogo } from './Landing';
+import { NeuroSenseLogo } from '../components/branding/NeuroSenseLogo';
+import SignalVisualization from '../components/ui/SignalVisualization';
 
-const ROLES = [
-  'Clinician / Doctor', 'Clinical Psychologist', 'Neuropsychologist',
-  'Psychiatrist', 'Paediatrician', 'Teacher / Educator',
-  'Parent / Caregiver', 'Individual (self-referral)', 'Research Fellow', 'Other',
-];
+const svg = { fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true };
+const EyeIcon = ({ open }) => open ? (
+  <svg width="17" height="17" viewBox="0 0 24 24" {...svg}><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
+) : (
+  <svg width="17" height="17" viewBox="0 0 24 24" {...svg}><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24" /><line x1="1" y1="1" x2="23" y2="23" /></svg>
+);
+const MailIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" {...svg}><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" /></svg>;
+const LockIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" {...svg}><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0110 0v4" /></svg>;
+const UserIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" {...svg}><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>;
 
-/* ── Eye toggle ──────────────────────────────────────────── */
-function Eye({ open }) {
-  return open ? (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" />
-    </svg>
-  ) : (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24" />
-      <line x1="1" y1="1" x2="23" y2="23" />
-    </svg>
-  );
-}
-
-/* ── Input field ─────────────────────────────────────────── */
-function Field({ id, label, type = 'text', value, onChange, placeholder, required, icon, rightEl, hint, autoComplete }) {
-  const [foc, setFoc] = useState(false);
+function Field({ id, label, type = 'text', value, onChange, placeholder, required, icon, toggle, hint, autoComplete, invalid }) {
+  const [shown, setShown] = useState(false);
+  const isPwd = type === 'password';
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-      <label htmlFor={id} style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-neutral-700)' }}>
-        {label}{required && <span style={{ color: '#C0555A', marginLeft: '3px' }}>*</span>}
-      </label>
-      <div style={{ position: 'relative' }}>
-        {icon && (
-          <span style={{
-            position: 'absolute', left: '13px', top: '50%', transform: 'translateY(-50%)',
-            color: foc ? '#7C9A85' : 'var(--color-neutral-400)',
-            display: 'flex', alignItems: 'center', pointerEvents: 'none',
-            transition: 'color 150ms',
-          }}>{icon}</span>
-        )}
+    <div className="ns-field">
+      <label htmlFor={id}>{label}{required && <span aria-hidden="true"> *</span>}</label>
+      <div className="ns-field__wrap">
+        <span className="ns-field__icon">{icon}</span>
         <input
-          id={id} type={type} value={value} onChange={onChange}
-          placeholder={placeholder} required={required}
-          autoComplete={autoComplete || (type === 'email' ? 'email' : type === 'password' ? 'current-password' : 'off')}
-          onFocus={() => setFoc(true)} onBlur={() => setFoc(false)}
-          style={{
-            width: '100%', height: '44px',
-            padding: `0 ${rightEl ? '46px' : '14px'} 0 ${icon ? '42px' : '14px'}`,
-            border: `1.5px solid ${foc ? '#7C9A85' : 'var(--color-neutral-200)'}`,
-            borderRadius: '10px',
-            backgroundColor: foc ? '#fff' : 'var(--color-bg)',
-            fontSize: '0.9375rem', color: 'var(--color-neutral-800)',
-            fontFamily: 'var(--font-body)', outline: 'none',
-            boxShadow: foc ? '0 0 0 3px rgba(124,154,133,0.12)' : 'none',
-            transition: 'all 150ms',
-          }}
+          id={id} type={isPwd && shown ? 'text' : type} value={value} onChange={onChange} placeholder={placeholder}
+          required={required} aria-invalid={invalid || undefined} aria-describedby={hint ? `${id}-hint` : undefined}
+          autoComplete={autoComplete || (type === 'email' ? 'email' : isPwd ? 'current-password' : 'off')}
+          style={{ paddingRight: toggle || isPwd ? 46 : 14 }}
         />
-        {rightEl && (
-          <span style={{ position: 'absolute', right: '13px', top: '50%', transform: 'translateY(-50%)', display: 'flex' }}>
-            {rightEl}
-          </span>
+        {isPwd && (
+          <button type="button" className="ns-field__toggle" onClick={() => setShown((s) => !s)} aria-label={shown ? 'Hide password' : 'Show password'} aria-pressed={shown}>
+            <EyeIcon open={shown} />
+          </button>
         )}
       </div>
-      {hint && <p style={{ fontSize: '0.75rem', color: 'var(--color-neutral-400)', margin: 0 }}>{hint}</p>}
+      {hint && <div id={`${id}-hint`} className="ns-field__hint">{hint}</div>}
     </div>
   );
 }
 
-const MailIcon = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" /></svg>;
-const LockIcon = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0110 0v4" /></svg>;
-const UserIcon = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>;
+function PasswordRules({ value }) {
+  const rules = [
+    ['At least 10 characters', value.length >= 10],
+    ['A letter', /[A-Za-z]/.test(value)],
+    ['A number', /\d/.test(value)],
+  ];
+  return (
+    <ul className="ns-rules" aria-label="Password requirements">
+      {rules.map(([t, ok]) => (
+        <li key={t} className={ok ? 'ok' : ''}>
+          <svg width="12" height="12" viewBox="0 0 24 24" {...svg} strokeWidth="3">{ok ? <polyline points="20 6 9 17 4 12" /> : <circle cx="12" cy="12" r="4" />}</svg>
+          {t}<span className="sr-only">{ok ? ' — met' : ' — not yet met'}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
 
 export default function Auth() {
-  const { login, register, isAuthenticated, isLoading, error, clearError } = useAuth();
+  const { login, register, isAuthenticated, isLoading, error, expired, clearError } = useAuth();
   const navigate = useNavigate();
   const [params] = useSearchParams();
 
-  const [tab, setTab]           = useState(params.get('mode') === 'register' ? 'register' : 'login');
-  const [showPwd, setShowPwd]   = useState(false);
-  const [showConf, setShowConf] = useState(false);
-  const [busy, setBusy]         = useState(false);
+  const [tab, setTab] = useState(params.get('mode') === 'register' ? 'register' : 'login');
+  const [busy, setBusy] = useState(false);
   const [localErr, setLocalErr] = useState('');
+  const [done, setDone] = useState('');
 
-  // Login
-  const [email, setEmail]       = useState('');
-  const [pwd, setPwd]           = useState('');
-
-  // Register
-  const [name, setName]         = useState('');
-  const [rEmail, setREmail]     = useState('');
-  const [rPwd, setRPwd]         = useState('');
-  const [conf, setConf]         = useState('');
-  const [role, setRole]         = useState('');
+  const [email, setEmail] = useState('');
+  const [pwd, setPwd] = useState('');
+  const [name, setName] = useState('');
+  const [rEmail, setREmail] = useState('');
+  const [rPwd, setRPwd] = useState('');
+  const [conf, setConf] = useState('');
 
   useEffect(() => { if (isAuthenticated) navigate('/app', { replace: true }); }, [isAuthenticated, navigate]);
 
-  const switchTab = (t) => { setTab(t); setLocalErr(''); clearError(); };
+  const switchTab = (t) => { setTab(t); setLocalErr(''); setDone(''); clearError(); };
 
   const handleLogin = async (e) => {
     e.preventDefault(); setLocalErr(''); setBusy(true);
     const ok = await login(email, pwd);
     setBusy(false);
-    if (ok) navigate('/app', { replace: true });
+    if (ok) { setDone('Signed in'); navigate('/app', { replace: true }); }
   };
 
   const handleRegister = async (e) => {
     e.preventDefault(); setLocalErr('');
-    if (!role) { setLocalErr('Please select your role.'); return; }
     if (rPwd !== conf) { setLocalErr('Passwords do not match.'); return; }
-    if (rPwd.length < 8) { setLocalErr('Password must be at least 8 characters.'); return; }
+    if (rPwd.length < 10 || !/[A-Za-z]/.test(rPwd) || !/\d/.test(rPwd)) { setLocalErr('Password must be at least 10 characters with a letter and a number.'); return; }
     setBusy(true);
-    const ok = await register({ name, email: rEmail, password: rPwd, role });
+    const ok = await register({ name, email: rEmail, password: rPwd });
     setBusy(false);
-    if (ok) navigate('/app', { replace: true });
+    if (ok) { setDone('Account created'); navigate('/app', { replace: true }); }
   };
 
-  const err = localErr || error;
+  const err = localErr || error || (expired ? 'Your session has expired. Please sign in again.' : '');
+  const submitting = busy || isLoading;
 
   return (
-    <div style={{
-      minHeight: '100vh', backgroundColor: 'var(--color-bg)',
-      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-      padding: '32px 20px',
-      backgroundImage: `
-        radial-gradient(ellipse 60% 40% at 30% 20%, rgba(124,154,133,0.07) 0%, transparent 60%),
-        radial-gradient(ellipse 50% 40% at 75% 80%, rgba(138,129,120,0.05) 0%, transparent 50%)
-      `,
-    }}>
+    <div className="ns-auth">
+      {/* ── Brand panel ─────────────────────────────── */}
+      <aside className="ns-auth__brand ns-dark" aria-hidden={false}>
+        <div className="ns-auth__grid" aria-hidden="true" />
+        <div style={{ position: 'relative' }}>
+          <Link to="/" aria-label="NeuroSense home" style={{ display: 'inline-flex' }}><NeuroSenseLogo tone="dark" size={34} descriptor animated /></Link>
+        </div>
+        <div style={{ position: 'relative' }}>
+          <h2 style={{ fontSize: 'clamp(1.6rem, 2.6vw, 2.25rem)', letterSpacing: '-0.03em', lineHeight: 1.12, maxWidth: 440 }}>
+            Screening support, grounded in <span style={{ color: 'var(--ns-signal)' }}>real signals.</span>
+          </h2>
+          <p style={{ marginTop: 14, fontSize: '0.95rem', maxWidth: 420, lineHeight: 1.65 }}>
+            Questionnaire, gaze and speech signals — combined, explained, and always labelled when unavailable.
+          </p>
+          <div style={{ maxWidth: 520, marginTop: 8 }}><SignalVisualization interactive={false} /></div>
+        </div>
+        <p style={{ position: 'relative', fontSize: '0.78rem', color: '#7F92AF', maxWidth: 420 }}>
+          Sessions use secure, HttpOnly cookies. Camera video is never recorded or stored.
+        </p>
+      </aside>
 
-      {/* Back link */}
-      <Link to="/" style={{
-        position: 'absolute', top: '24px', left: '32px',
-        display: 'flex', alignItems: 'center', gap: '6px',
-        fontSize: '0.8125rem', color: 'var(--color-neutral-500)',
-        textDecoration: 'none', fontWeight: 500,
-      }}>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="15 18 9 12 15 6" /></svg>
-        Back to home
-      </Link>
+      {/* ── Form panel ──────────────────────────────── */}
+      <main className="ns-auth__form">
+        <Link to="/" className="ns-auth__back">
+          <svg width="14" height="14" viewBox="0 0 24 24" {...svg} strokeWidth="2.5"><polyline points="15 18 9 12 15 6" /></svg>
+          Back to home
+        </Link>
+        <div className="ns-auth__mobile-logo"><NeuroSenseLogo size={30} /></div>
 
-      {/* Card */}
-      <div style={{
-        width: '100%', maxWidth: '448px',
-        backgroundColor: 'var(--color-bg-card)',
-        border: '1px solid var(--color-neutral-200)',
-        borderRadius: '20px', boxShadow: '0 8px 40px rgba(26,26,24,0.1)',
-        overflow: 'hidden',
-      }}>
+        <div className="ns-auth__card ns-page-enter">
+          <h1 style={{ fontSize: '1.65rem', letterSpacing: '-0.03em' }}>{tab === 'login' ? 'Welcome back' : 'Create your account'}</h1>
+          <p style={{ marginTop: 8, fontSize: '0.92rem', color: 'var(--ns-n500)' }}>
+            {tab === 'login' ? 'Sign in to continue your screenings.' : 'For clinicians, parents and caregivers.'}
+          </p>
 
-        {/* Header */}
-        <div style={{ padding: '36px 36px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '14px' }}>
-          {/* Logo */}
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-            <NeuroLogo size={52} />
-            <span style={{ fontSize: '1.125rem', fontWeight: 800, color: 'var(--color-neutral-900)', letterSpacing: '-0.025em' }}>NeuroSense</span>
-          </div>
-
-          <div style={{ textAlign: 'center' }}>
-            <h1 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--color-neutral-900)', margin: '0 0 6px', letterSpacing: '-0.02em' }}>
-              {tab === 'login' ? 'Welcome back' : 'Create your account'}
-            </h1>
-            <p style={{ fontSize: '0.875rem', color: 'var(--color-neutral-400)', margin: 0, lineHeight: 1.5 }}>
-              {tab === 'login'
-                ? 'Sign in to continue your assessments'
-                : 'For clinicians, parents, and individuals'}
-            </p>
-          </div>
-
-          {/* Tab toggle */}
-          <div style={{
-            display: 'flex', width: '100%',
-            backgroundColor: 'var(--color-bg)', borderRadius: '10px', padding: '3px', gap: '3px',
-          }}>
-            {[['login', 'Sign In'], ['register', 'Create Account']].map(([t, label]) => (
-              <button key={t} id={`auth-tab-${t}`} onClick={() => switchTab(t)} aria-selected={tab === t}
-                style={{
-                  flex: 1, height: '36px', borderRadius: '8px', border: 'none',
-                  backgroundColor: tab === t ? 'var(--color-bg-card)' : 'transparent',
-                  color: tab === t ? 'var(--color-neutral-900)' : 'var(--color-neutral-400)',
-                  fontSize: '0.8125rem', fontWeight: tab === t ? 700 : 400,
-                  cursor: 'pointer', fontFamily: 'var(--font-body)',
-                  boxShadow: tab === t ? '0 1px 4px rgba(26,26,24,0.08)' : 'none',
-                  transition: 'all 150ms',
-                }}>
-                {label}
-              </button>
+          <div role="tablist" aria-label="Sign in or create account" className="ns-auth__tabs">
+            {[['login', 'Sign in'], ['register', 'Create account']].map(([t, label]) => (
+              <button key={t} id={`auth-tab-${t}`} role="tab" aria-selected={tab === t} type="button" onClick={() => switchTab(t)}>{label}</button>
             ))}
           </div>
-        </div>
 
-        {/* Body */}
-        <div style={{ padding: '24px 36px 36px' }}>
-
-          {/* Error */}
           {err && (
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: '9px',
-              padding: '11px 14px', borderRadius: '9px',
-              backgroundColor: '#FFF0F0', border: '1px solid rgba(192,85,90,0.25)',
-              marginBottom: '18px',
-            }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C0555A" strokeWidth="2.5" strokeLinecap="round"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
-              <span style={{ fontSize: '0.8125rem', color: '#C0555A', fontWeight: 500 }}>{err}</span>
+            <div role="alert" className="ns-auth__alert">
+              <svg width="16" height="16" viewBox="0 0 24 24" {...svg}><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
+              <span>{err}</span>
             </div>
           )}
 
-          {/* ─── LOGIN ─── */}
-          {tab === 'login' && (
-            <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <Field id="login-email" label="Email address" type="email" required
-                value={email} onChange={(e) => setEmail(e.target.value)}
-                placeholder="your@email.com" icon={<MailIcon />} />
-              <Field id="login-password" label="Password" type={showPwd ? 'text' : 'password'} required
-                value={pwd} onChange={(e) => setPwd(e.target.value)}
-                placeholder="••••••••" icon={<LockIcon />}
-                rightEl={
-                  <button type="button" onClick={() => setShowPwd(!showPwd)}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-neutral-400)', display: 'flex', padding: 0 }}>
-                    <Eye open={showPwd} />
-                  </button>
-                } />
-
-              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '-4px' }}>
-                <a href="#" style={{ fontSize: '0.8125rem', color: '#7C9A85', fontWeight: 500, textDecoration: 'none' }}>Forgot password?</a>
-              </div>
-
-              <button id="login-submit-btn" type="submit" disabled={busy || isLoading}
-                style={{
-                  height: '46px', borderRadius: '10px', border: 'none',
-                  background: 'linear-gradient(135deg, #7C9A85, #4A7259)',
-                  color: '#fff', fontSize: '0.9375rem', fontWeight: 700,
-                  cursor: busy ? 'not-allowed' : 'pointer', fontFamily: 'var(--font-body)',
-                  boxShadow: '0 4px 14px rgba(94,122,103,0.35)', opacity: busy ? 0.75 : 1,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                  marginTop: '4px',
-                }}>
-                {busy ? (
-                  <>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" style={{ animation: 'spin 0.8s linear infinite' }}>
-                      <path d="M21 12a9 9 0 11-6.219-8.56" />
-                    </svg>
-                    Signing in…
-                  </>
-                ) : 'Sign In →'}
+          {tab === 'login' ? (
+            <form onSubmit={handleLogin} className="ns-auth__fields" noValidate={false}>
+              <Field id="login-email" label="Email address" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" icon={<MailIcon />} />
+              <Field id="login-password" label="Password" type="password" required value={pwd} onChange={(e) => setPwd(e.target.value)} placeholder="Your password" icon={<LockIcon />} />
+              <button id="login-submit-btn" type="submit" disabled={submitting} className="btn btn-primary btn-lg ns-auth__submit">
+                {submitting ? <><span className="ns-spinner" aria-hidden="true" /> Signing in…</> : done || 'Sign in'}
               </button>
-
-              <p style={{ fontSize: '0.8125rem', color: 'var(--color-neutral-500)', textAlign: 'center', margin: 0 }}>
-                Don't have an account?{' '}
-                <button type="button" onClick={() => switchTab('register')}
-                  style={{ background: 'none', border: 'none', color: '#7C9A85', fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-body)', fontSize: '0.8125rem', padding: 0 }}>
-                  Create one →
-                </button>
-              </p>
+              <p className="ns-auth__switch">New to NeuroSense? <button type="button" onClick={() => switchTab('register')}>Create an account</button></p>
             </form>
-          )}
-
-          {/* ─── REGISTER ─── */}
-          {tab === 'register' && (
-            <form onSubmit={handleRegister} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              <Field id="reg-name" label="Full name" required
-                value={name} onChange={(e) => setName(e.target.value)}
-                placeholder="Your full name" icon={<UserIcon />} autoComplete="name" />
-              <Field id="reg-email" label="Email address" type="email" required
-                value={rEmail} onChange={(e) => setREmail(e.target.value)}
-                placeholder="your@email.com" icon={<MailIcon />} />
-
-              {/* Role */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                <label htmlFor="reg-role" style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-neutral-700)' }}>
-                  I am a… <span style={{ color: '#C0555A' }}>*</span>
-                </label>
-                <select id="reg-role" value={role} onChange={(e) => setRole(e.target.value)}
-                  style={{
-                    height: '44px', padding: '0 14px',
-                    border: '1.5px solid var(--color-neutral-200)', borderRadius: '10px',
-                    backgroundColor: 'var(--color-bg)', fontSize: '0.9375rem',
-                    color: role ? 'var(--color-neutral-800)' : 'var(--color-neutral-400)',
-                    fontFamily: 'var(--font-body)', outline: 'none', cursor: 'pointer',
-                  }}>
-                  <option value="" disabled>Select your role</option>
-                  {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
-                </select>
-              </div>
-
-              <Field id="reg-password" label="Password" type={showPwd ? 'text' : 'password'} required
-                value={rPwd} onChange={(e) => setRPwd(e.target.value)}
-                placeholder="At least 8 characters" icon={<LockIcon />}
-                hint="Use letters, numbers, and symbols"
-                autoComplete="new-password"
-                rightEl={
-                  <button type="button" onClick={() => setShowPwd(!showPwd)}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-neutral-400)', display: 'flex', padding: 0 }}>
-                    <Eye open={showPwd} />
-                  </button>
-                } />
-
-              <Field id="reg-confirm" label="Confirm password" type={showConf ? 'text' : 'password'} required
-                value={conf} onChange={(e) => setConf(e.target.value)}
-                placeholder="Repeat password" icon={<LockIcon />}
-                autoComplete="new-password"
-                rightEl={
-                  <button type="button" onClick={() => setShowConf(!showConf)}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-neutral-400)', display: 'flex', padding: 0 }}>
-                    <Eye open={showConf} />
-                  </button>
-                } />
-
-              <button id="register-submit-btn" type="submit" disabled={busy}
-                style={{
-                  height: '46px', borderRadius: '10px', border: 'none',
-                  background: 'linear-gradient(135deg, #7C9A85, #4A7259)',
-                  color: '#fff', fontSize: '0.9375rem', fontWeight: 700,
-                  cursor: busy ? 'not-allowed' : 'pointer', fontFamily: 'var(--font-body)',
-                  boxShadow: '0 4px 14px rgba(94,122,103,0.35)', opacity: busy ? 0.75 : 1,
-                  marginTop: '4px',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}>
-                {busy ? 'Creating account…' : 'Create Account →'}
+          ) : (
+            <form onSubmit={handleRegister} className="ns-auth__fields">
+              <Field id="reg-name" label="Full name" required value={name} onChange={(e) => setName(e.target.value)} placeholder="Your full name" icon={<UserIcon />} autoComplete="name" />
+              <Field id="reg-email" label="Email address" type="email" required value={rEmail} onChange={(e) => setREmail(e.target.value)} placeholder="you@example.com" icon={<MailIcon />} />
+              <Field id="reg-password" label="Password" type="password" required value={rPwd} onChange={(e) => setRPwd(e.target.value)} placeholder="Create a password" icon={<LockIcon />} autoComplete="new-password" hint={<PasswordRules value={rPwd} />} />
+              <Field id="reg-confirm" label="Confirm password" type="password" required value={conf} onChange={(e) => setConf(e.target.value)} placeholder="Repeat password" icon={<LockIcon />} autoComplete="new-password" invalid={conf.length > 0 && conf !== rPwd} />
+              <button id="register-submit-btn" type="submit" disabled={submitting} className="btn btn-primary btn-lg ns-auth__submit">
+                {submitting ? <><span className="ns-spinner" aria-hidden="true" /> Creating account…</> : done || 'Create account'}
               </button>
-
-              <p style={{ fontSize: '0.75rem', color: 'var(--color-neutral-400)', textAlign: 'center', lineHeight: 1.5, margin: 0 }}>
-                By creating an account you agree to our{' '}
-                <a href="#" style={{ color: '#7C9A85', fontWeight: 500, textDecoration: 'none' }}>Terms</a>
-                {' '}and{' '}
-                <a href="#" style={{ color: '#7C9A85', fontWeight: 500, textDecoration: 'none' }}>Privacy Policy</a>.
+              <p style={{ fontSize: '0.76rem', color: 'var(--ns-n500)', textAlign: 'center', lineHeight: 1.5, maxWidth: 'none' }}>
+                NeuroSense provides screening support and is not a diagnostic device.
               </p>
-
-              <p style={{ fontSize: '0.8125rem', color: 'var(--color-neutral-500)', textAlign: 'center', margin: 0 }}>
-                Already have an account?{' '}
-                <button type="button" onClick={() => switchTab('login')}
-                  style={{ background: 'none', border: 'none', color: '#7C9A85', fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-body)', fontSize: '0.8125rem', padding: 0 }}>
-                  Sign in
-                </button>
-              </p>
+              <p className="ns-auth__switch">Already have an account? <button type="button" onClick={() => switchTab('login')}>Sign in</button></p>
             </form>
           )}
         </div>
-      </div>
+      </main>
 
-      {/* Compliance */}
-      <p style={{ marginTop: '24px', fontSize: '0.75rem', color: 'var(--color-neutral-400)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#7C9A85" strokeWidth="2.5" strokeLinecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>
-        Protected under DPDP Act 2023 · End-to-end encrypted
-      </p>
-
-      <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
+      <style>{`
+        .ns-auth{min-height:100vh;display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr)}
+        .ns-auth__brand{position:relative;overflow:hidden;padding:clamp(28px,4vw,52px);display:flex;flex-direction:column;justify-content:space-between;gap:24px}
+        .ns-auth__brand::before{content:"";position:absolute;inset:0;background:radial-gradient(600px 420px at 70% 60%,rgba(34,211,238,.13),transparent 65%),radial-gradient(500px 360px at 0% 0%,rgba(38,54,90,.6),transparent 70%)}
+        .ns-auth__grid{position:absolute;inset:0;opacity:.45;background-image:linear-gradient(rgba(148,163,184,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(148,163,184,.07) 1px,transparent 1px);background-size:52px 52px;-webkit-mask-image:radial-gradient(ellipse at 50% 50%,#000 25%,transparent 78%);mask-image:radial-gradient(ellipse at 50% 50%,#000 25%,transparent 78%)}
+        .ns-auth__form{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:clamp(24px,5vw,56px) clamp(16px,4vw,40px)}
+        .ns-auth__back{position:absolute;top:24px;left:clamp(16px,4vw,40px);display:flex;align-items:center;gap:6px;font-size:.82rem;color:var(--ns-n500);font-weight:500}
+        .ns-auth__back:hover{color:var(--ns-n900)}
+        .ns-auth__mobile-logo{display:none;margin-bottom:24px}
+        .ns-auth__card{width:100%;max-width:420px}
+        .ns-auth__tabs{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin:26px 0 22px;padding:4px;background:var(--ns-n150);border-radius:12px}
+        .ns-auth__tabs button{height:38px;border-radius:9px;font-size:.84rem;font-weight:500;color:var(--ns-n500);transition:all .15s}
+        .ns-auth__tabs button[aria-selected=true]{background:#fff;color:var(--ns-n900);font-weight:600;box-shadow:var(--sh-sm)}
+        .ns-auth__alert{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:12px;margin-bottom:18px;background:var(--ns-risk-high-bg);border:1px solid var(--ns-risk-high-border);color:var(--ns-risk-high-text);font-size:.85rem;font-weight:500;line-height:1.45}
+        .ns-auth__alert svg{flex-shrink:0;margin-top:1px}
+        .ns-auth__fields{display:flex;flex-direction:column;gap:16px}
+        .ns-auth__submit{width:100%;height:48px;margin-top:4px}
+        .ns-auth__switch{text-align:center;font-size:.84rem;color:var(--ns-n500);max-width:none}
+        .ns-auth__switch button{color:var(--ns-instrument);font-weight:600}
+        .ns-auth__switch button:hover{text-decoration:underline}
+        .ns-field label{display:block;font-size:.8rem;font-weight:600;color:var(--ns-n700);margin-bottom:7px}
+        .ns-field__wrap{position:relative}
+        .ns-field__icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--ns-n400);display:flex;pointer-events:none}
+        .ns-field__wrap:focus-within .ns-field__icon{color:var(--ns-instrument)}
+        .ns-field input{width:100%;height:46px;padding:0 14px 0 42px;border:1.5px solid var(--ns-n300);border-radius:12px;background:#fff;font-size:.94rem;color:var(--ns-n900);transition:border-color .15s,box-shadow .15s}
+        .ns-field input::placeholder{color:var(--ns-n400)}
+        .ns-field input:hover{border-color:var(--ns-n400)}
+        .ns-field input:focus{border-color:var(--ns-instrument-light);box-shadow:0 0 0 4px var(--ns-instrument-focus);outline:none}
+        .ns-field input[aria-invalid=true]{border-color:var(--ns-risk-high)}
+        .ns-field__toggle{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:36px;height:36px;border-radius:8px;color:var(--ns-n500);display:flex;align-items:center;justify-content:center}
+        .ns-field__toggle:hover{background:var(--ns-n150);color:var(--ns-n900)}
+        .ns-field__hint{margin-top:8px}
+        .ns-rules{list-style:none;display:flex;flex-wrap:wrap;gap:4px 14px;font-size:.75rem;color:var(--ns-n500)}
+        .ns-rules li{display:flex;align-items:center;gap:5px}
+        .ns-rules li.ok{color:var(--ns-risk-low-text)}
+        .ns-spinner{width:16px;height:16px;border-radius:50%;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;animation:ns-rotate .7s linear infinite}
+        @media (max-width:900px){.ns-auth{grid-template-columns:1fr}.ns-auth__brand{display:none}.ns-auth__mobile-logo{display:block}.ns-auth__back{position:static;align-self:flex-start;margin-bottom:20px}.ns-auth__form{justify-content:flex-start;padding-top:28px}}
+      `}</style>
     </div>
   );
 }

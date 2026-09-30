@@ -21,7 +21,6 @@ from .categories import (
     category_label,
     default_respondent_relationship,
     derive_category_from_age,
-    modality_confidence_for_category,
     screening_tool_for_category,
     validate_age_for_category,
 )
@@ -187,6 +186,10 @@ def normalize_case_record(record: dict[str, Any]) -> dict[str, Any]:
     gaze_quality = _first(record, "gaze_quality", default=None)
     gaze_session_id = _first(record, "gaze_session_id", default=None)
     gaze_analyzed_at = _first(record, "gaze_analyzed_at", default=None)
+    gaze_preprocessing_version = _first(record, "gaze_preprocessing_version", default=None)
+    gaze_error_code = _first(record, "gaze_error_code", default=None)
+    gaze_model_status = _first(record, "gaze_model_status", default=None)
+    gaze_fusion_eligible = record.get("gaze_fusion_eligible")
 
     speech_features = dict(_first(record, "speech_features", default={}) or {})
     speech_mock = bool(_first(record, "speech_mock", default=True))
@@ -198,6 +201,8 @@ def normalize_case_record(record: dict[str, Any]) -> dict[str, Any]:
 
     return {
         "id": str(record.get("id", "")),
+        # Owner (set only by the backend from the authenticated user). Legacy cases: None.
+        "user_id": record.get("user_id"),
         "category": category,
         "category_label": category_label(category),
         "subject_name": subject_name,
@@ -248,6 +253,10 @@ def normalize_case_record(record: dict[str, Any]) -> dict[str, Any]:
         "gaze_quality": gaze_quality,
         "gaze_session_id": gaze_session_id,
         "gaze_analyzed_at": gaze_analyzed_at,
+        "gaze_preprocessing_version": gaze_preprocessing_version,
+        "gaze_error_code": gaze_error_code,
+        "gaze_model_status": gaze_model_status,
+        "gaze_fusion_eligible": gaze_fusion_eligible,
         "speech_features": speech_features,
         "speech_mock": speech_mock,
         "speech_method": speech_method,
@@ -260,10 +269,17 @@ def normalize_case_record(record: dict[str, Any]) -> dict[str, Any]:
 
 # ── MongoDB CRUD operations ───────────────────────────────────────────────────
 
-def list_case_records(category: str | None = None) -> list[dict[str, Any]]:
-    """Return normalized case records from MongoDB, optionally filtered by category."""
+def _require_owner(user_id: str) -> str:
+    """Ownership is mandatory: an empty/None user_id must never turn into an unscoped query."""
+    if not user_id or not isinstance(user_id, str):
+        raise ValueError("user_id is required for case access")
+    return user_id
+
+
+def list_case_records(user_id: str, category: str | None = None) -> list[dict[str, Any]]:
+    """Return the caller's normalized case records (filtered in the database query)."""
     col = get_cases_collection()
-    query: dict[str, Any] = {}
+    query: dict[str, Any] = {"user_id": _require_owner(user_id)}
     if category:
         query["category"] = category
 
@@ -273,26 +289,29 @@ def list_case_records(category: str | None = None) -> list[dict[str, Any]]:
             [("screening_date", -1), ("updated_at", -1), ("id", -1)]
         )
     )
-    records = [normalize_case_record(_strip_mongo_id(doc)) for doc in raw_docs]
-    return records
+    return [normalize_case_record(_strip_mongo_id(doc)) for doc in raw_docs]
 
 
-def get_case_record(case_id: str) -> dict[str, Any] | None:
-    """Return a single normalized case record from MongoDB."""
+def get_case_record(case_id: str, user_id: str) -> dict[str, Any] | None:
+    """Return one case only if it belongs to ``user_id`` (else None — same as not found)."""
     col = get_cases_collection()
-    doc = col.find_one({"id": case_id})
+    doc = col.find_one({"id": case_id, "user_id": _require_owner(user_id)})
     if doc is None:
         return None
     return normalize_case_record(_strip_mongo_id(doc))
 
 
 def upsert_case_record(record: dict[str, Any]) -> dict[str, Any]:
-    """Insert or replace a case record in MongoDB and return the normalized form."""
+    """Insert or replace a case. The record must carry the owner's user_id.
+
+    The upsert filter includes user_id, so an id collision with another user's case can never
+    overwrite it (the unique index on ``id`` makes it fail instead).
+    """
+    _require_owner(record.get("user_id"))
     normalized = normalize_case_record(record)
     col = get_cases_collection()
-    # replace_one with upsert=True: atomic and safe for concurrent requests
     col.replace_one(
-        {"id": normalized["id"]},
+        {"id": normalized["id"], "user_id": normalized["user_id"]},
         normalized,
         upsert=True,
     )
@@ -326,6 +345,27 @@ def case_summary(record: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _gaze_object(n: dict[str, Any]) -> dict[str, Any] | None:
+    """{available, probability, model_status, ...} built only from stored backend output."""
+    status = n.get("gaze_status")
+    if not status:
+        return None
+    ok = status == "success"
+    return {
+        "available": ok,
+        "status": status,
+        "probability": n.get("gaze_score") if ok else None,   # unavailable is never 0.0
+        "model_status": n.get("gaze_model_status"),
+        "model_version": n.get("gaze_model_version"),
+        "preprocessing_version": n.get("gaze_preprocessing_version"),
+        "error_code": n.get("gaze_error_code"),
+        "fusion_eligible": n.get("gaze_fusion_eligible"),
+        "reason": n.get("gaze_reason"),
+        "quality": n.get("gaze_quality"),
+        "analyzed_at": n.get("gaze_analyzed_at"),
+    }
+
+
 def case_detail(record: dict[str, Any]) -> dict[str, Any]:
     """Build the detailed payload used by case and result pages."""
     normalized = normalize_case_record(record)
@@ -340,20 +380,51 @@ def case_detail(record: dict[str, Any]) -> dict[str, Any]:
             "interpretation": normalized["interpretation"],
             "demo": normalized["demo"],
             "answers": normalized["answers"],
+            "modality_breakdown": normalized["modality_breakdown"],
+            "modalities_used": normalized["modalities_used"],
+            "confidence_note": normalized["confidence_note"],
+            "fusion_score": normalized["fusion_score"],
+            "questionnaire_probability": normalized["questionnaire_probability"],
             # Gaze analysis fields (None on cases created before the gaze model)
             **{k: normalized.get(k) for k in (
                 "gaze_score", "gaze_status", "gaze_reason", "gaze_model_version",
                 "gaze_quality", "gaze_features", "gaze_interpretation",
                 "gaze_analyzed_at", "gaze_skipped", "gaze_mock",
+                "gaze_preprocessing_version", "gaze_error_code", "gaze_fusion_eligible",
             )},
+            # Consolidated, backend-produced gaze result (None for cases without gaze)
+            "gaze": _gaze_object(normalized),
         }
     )
     return detail
 
 
-def dashboard_summary(category: str | None = None) -> dict[str, Any]:
-    """Aggregate category-aware dashboard metrics from MongoDB."""
-    records = list_case_records(category)
+_MODALITIES = (
+    ("questionnaire", "Questionnaire"), ("gaze", "Gaze"), ("speech", "Speech"),
+)
+
+
+def _modality_status(records: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Real per-modality counts from stored breakdowns: how many sessions produced a usable
+    signal, and how many of those actually influenced the fused result."""
+    out = []
+    for mid, label in _MODALITIES:
+        available = used = 0
+        for r in records:
+            comp = next((c for c in (r.get("modality_breakdown") or []) if c.get("modality") == mid), None)
+            if mid == "questionnaire":
+                available += 1
+                used += 1
+            elif comp and comp.get("available"):
+                available += 1
+                used += 1 if comp.get("isTrainedModel") else 0
+        out.append({"id": mid, "label": label, "available": available, "used_in_fusion": used, "total": len(records)})
+    return out
+
+
+def dashboard_summary(user_id: str, category: str | None = None) -> dict[str, Any]:
+    """Aggregate dashboard metrics over the caller's own cases only."""
+    records = list_case_records(user_id, category)
     total_cases = len(records)
     adult_cases = len([r for r in records if r["category"] == "adult"])
     child_cases = len([r for r in records if r["category"] == "child"])
@@ -398,5 +469,5 @@ def dashboard_summary(category: str | None = None) -> dict[str, Any]:
             {"category": "child",   "label": "Child",   "count": child_cases},
             {"category": "toddler", "label": "Toddler", "count": toddler_cases},
         ],
-        "modality_confidence": modality_confidence_for_category(category),
+        "modality_status": _modality_status(records),
     }

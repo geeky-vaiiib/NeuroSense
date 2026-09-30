@@ -1,5 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import GazeVisualizer from './screening/GazeVisualizer';
 import { gazeApi } from '../services/api';
+import ProgressIndicator from './ui/ProgressIndicator';
+import { FaceTracker, TrackerError, LOW_LIGHT } from '../gaze/tracker';
+import { FACE_REASONS, FEATURE_NAMES, OVERLAY_INDICES } from '../gaze/landmarks';
+import { GazeSmoother } from '../gaze/filters';
+import { fit, predict } from '../gaze/mapper';
+import {
+  COLLECT_MAX_MS, COLLECT_MS, MAX_ATTEMPTS, MAX_MEAN_ERR_FRAC, SETTLE_MS, STABLE_FRAMES, TARGETS, TARGET_FRAMES, assessCalibration,
+} from '../gaze/calibration';
 
 /* ──────────────────────────────────────────────────────────────
    SVG Stimulus Faces — five simple variants
@@ -105,6 +115,11 @@ const ghostBtn = {
   cursor: 'pointer',
 };
 
+const skipText = {
+  background: 'none', border: 'none', padding: '10px 4px', cursor: 'pointer',
+  color: 'var(--color-neutral-500)', fontSize: '0.85rem', fontWeight: 600,
+  textDecoration: 'underline', fontFamily: 'var(--font-body)',
+};
 const skipLink = {
   position: 'absolute',
   top: '16px',
@@ -121,26 +136,32 @@ const skipLink = {
 };
 
 /* ──────────────────────────────────────────────────────────────
-   GazeSession Component
+   Task / UI constants
    ────────────────────────────────────────────────────────────── */
-/* ──────────────────────────────────────────────────────────────
-   Gaze capture parameters (mirrored by backend/ml/gaze/config.py)
-   ────────────────────────────────────────────────────────────── */
-const CLICKS_PER_POINT = 3;
-const TASK_SECONDS = 30;
+const TASK_MS = 30_000;
 const STIMULUS_MS = 6000;
-const MIN_SAMPLE_INTERVAL_MS = 20;     // cap at 50 Hz
-const VALIDATION_TARGETS = [           // viewport fractions
-  [0.5, 0.5], [0.15, 0.15], [0.85, 0.15], [0.15, 0.85], [0.85, 0.85],
+const MIN_TASK_SAMPLES = 60;             // below this the session is "insufficient data", never sent
+const OUT_OF_RANGE = 0.15;               // estimates may overshoot the screen edge by 15 % (then clamped); beyond that the sample is invalid
+const STEPS = [
+  { id: 'camera', label: 'Camera check' }, { id: 'face', label: 'Face detection' }, { id: 'calibration', label: 'Calibration' },
+  { id: 'task', label: 'Visual task' }, { id: 'analysis', label: 'Analysis' }, { id: 'result', label: 'Result' },
 ];
-const VALIDATION_DWELL_MS = 2000;      // first half settles, second half is measured
-const VALIDATION_MIN_PREDICTIONS = 5;
-const MAX_CALIBRATION_ERROR_DIAG = 0.2; // quality_score hits 0 at this error / screen diagonal
-const MIN_CALIBRATION_SCORE = 0.4;      // mirrors backend MIN_CALIBRATION_SCORE
 
-const median = (a) => {
-  const s = [...a].sort((p, q) => p - q);
-  return s.length ? s[Math.floor(s.length / 2)] : NaN;
+// Wrapped so time reads inside event handlers are not flagged as render-time impurity.
+const nowMs = () => performance.now();
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+const DEBUG_ENABLED = Boolean(import.meta.env?.DEV) && (() => {
+  try { return new URLSearchParams(window.location.search).get('gazeDebug') === '1' || localStorage.getItem('ns_gaze_debug') === '1'; } catch { return false; }
+})();
+
+const GUIDANCE = {
+  [FACE_REASONS.NO_LANDMARKS]: 'Make sure your face is visible and facing the screen.',
+  [FACE_REASONS.INCOMPLETE]: 'Tracking is incomplete. Face the camera directly.',
+  [FACE_REASONS.TOO_FAR]: 'Move closer to the camera.',
+  [FACE_REASONS.TOO_CLOSE]: 'Move back a little from the camera.',
+  [FACE_REASONS.OFF_CENTER]: 'Center your face in the frame.',
+  LOW_LIGHT: 'Increase the lighting: face a window or lamp.',
 };
 
 const REASON_TEXT = {
@@ -154,19 +175,32 @@ const REASON_TEXT = {
   session_too_long: 'The session ran longer than expected.',
   category_not_supported: 'The gaze model is only available for the child screening track.',
   no_compatible_checkpoint: 'The gaze model is not installed on the server.',
+  torch_not_installed: 'The server is missing the deep-learning library the gaze model needs (torch).',
   requires_unavailable_feature: 'The installed gaze model needs data a browser cannot provide.',
   preprocess_config_mismatch: 'The installed gaze model does not match the current pipeline.',
   inference_failed: 'The gaze model failed while analysing this session.',
 };
 const reasonText = (r) => REASON_TEXT[r] || (r ? `Reason: ${r}` : 'Unknown reason.');
 
+// ApiError.kind (services/api.js) -> fault key shown by this component
+const GAZE_FAULT_BY_API_KIND = {
+  network: 'backend_unavailable', timeout: 'backend_timeout', validation: 'invalid_payload',
+  server: 'server_error', invalid_response: 'invalid_response', unauthenticated: 'session_expired', forbidden: 'server_error',
+};
+
 const FAULT_TITLES = {
-  camera_denied: 'Camera access denied',
-  camera_unavailable: 'Camera unavailable',
-  engine_load_failed: 'Eye-tracking library unavailable',
-  engine_init_failed: 'Eye-tracking failed to start',
-  calibration_failed: 'Calibration failed',
-  calibration_poor: 'Calibration not accurate enough',
+  session_expired: 'Session expired',
+  camera_permission_denied: 'Camera permission denied',
+  no_camera: 'No camera found',
+  camera_in_use: 'Camera is in use',
+  camera_error: 'Camera problem',
+  insecure_context: 'Camera needs a secure connection',
+  video_not_ready: 'Camera is not producing video',
+  face_model_load_failed: 'Face-tracking model could not load',
+  face_not_detected: 'Face not detected',
+  calibration_failed: 'Calibration needs improvement',
+  insufficient_data: 'Insufficient gaze data',
+  model_unavailable: 'Gaze model unavailable',
   backend_unavailable: 'Analysis server unreachable',
   backend_timeout: 'Analysis timed out',
   invalid_payload: 'Session data rejected',
@@ -174,425 +208,546 @@ const FAULT_TITLES = {
   server_error: 'Analysis server error',
 };
 
+const CALIBRATION_ADVICE = {
+  LOW_ACCURACY: 'Tracking was not accurate enough. Sit about an arm\'s length away, keep your head still, and follow each dot with your eyes only.',
+  INSUFFICIENT_TRACKED_TARGETS: 'Your face was lost for too many of the dots. Keep your whole face in view and well lit.',
+  NO_FIT: 'There was not enough clean tracking data to build a calibration.',
+};
+
+/* Small pieces ─────────────────────────────────────────────── */
+function Check({ ok, label, hint }) {
+  const state = ok === null ? 'pending' : ok ? 'ok' : 'bad';
+  const color = state === 'ok' ? '#22D3EE' : state === 'bad' ? '#F8B4B4' : '#8FA3C0';
+  return (
+    <li style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: '0.88rem' }}>
+      <span aria-hidden="true" style={{ width: 18, height: 18, borderRadius: '50%', border: `1.5px solid ${color}`, color, display: 'grid', placeItems: 'center', fontSize: '0.7rem', flexShrink: 0 }}>
+        {state === 'ok' ? '✓' : state === 'bad' ? '!' : '·'}
+      </span>
+      <span style={{ color: state === 'bad' ? '#F8B4B4' : 'inherit', fontWeight: 600 }}>{label}</span>
+      {hint && state !== 'ok' && <span style={{ color: '#9FB0C8', fontWeight: 400 }}>— {hint}</span>}
+      <span className="sr-only">{state === 'ok' ? 'good' : state === 'bad' ? 'needs attention' : 'checking'}</span>
+    </li>
+  );
+}
+
+function DebugPanel({ info }) {
+  return (
+    <pre aria-label="Gaze debug" style={{
+      position: 'fixed', left: 12, bottom: 12, zIndex: 2000, margin: 0, padding: '10px 12px', borderRadius: 10,
+      background: 'rgba(5,9,18,0.88)', color: '#7DF9C6', fontFamily: 'var(--font-data)', fontSize: 11, lineHeight: 1.5, pointerEvents: 'none',
+    }}>
+      {Object.entries(info).map(([k, v]) => `${k.padEnd(16)} ${v}`).join('\n')}
+    </pre>
+  );
+}
+
 /* ──────────────────────────────────────────────────────────────
    GazeSession Component
    onComplete(gazeSession, analysis) — analysis is the backend /gaze/analyze result
+   onSkip(reason) — only from an explicit user choice; `reason` is a lowercase machine code
    ────────────────────────────────────────────────────────────── */
 export default function GazeSession({ onComplete, onSkip, category }) {
-  const [phase, setPhase] = useState('intro');
-  const [stream, setStream] = useState(null);
-  const [countdown, setCountdown] = useState(TASK_SECONDS);
-  const [fault, setFault] = useState(null); // { kind, message, retry: 'camera' | 'calibration' | 'analysis' }
-  const [calibrationClicks, setCalibrationClicks] = useState({});
-  const [currentStimulus, setCurrentStimulus] = useState(0);
-  const [validationIdx, setValidationIdx] = useState(0);
+  const [phase, setPhase] = useState('intro'); // intro|setup|calibration|calibrated|task|analyzing|result|error
+  const [modelStatus, setModelStatus] = useState({ checking: true });
+  const [camera, setCamera] = useState('idle'); // idle|initializing|ready
+  const [face, setFace] = useState({ ok: null, reason: null, fps: 0, luma: null, stable: 0, holdLost: false });
+  const [fault, setFault] = useState(null);     // { code, message, retry: 'setup'|'calibration'|'analysis'|'intro' }
+  const [attempts, setAttempts] = useState(0);
+  const [targetIdx, setTargetIdx] = useState(0);
+  const [targetStage, setTargetStage] = useState('waiting'); // waiting|settle|collect
+  const [calibration, setCalibration] = useState(null);
+  const [elapsed, setElapsed] = useState(0);
+  const [stimulus, setStimulus] = useState(0);
+  const [taskStats, setTaskStats] = useState({ valid: 0, invalid: 0, lost: 0 });
   const [analysis, setAnalysis] = useState(null);
-  const [sampleCount, setSampleCount] = useState(0);
-  const videoRef = useRef(null);
-  const streamRef = useRef(null);
-  const samplesRef = useRef([]);
-  const stimRef = useRef(0);
-  const lastSampleT = useRef(0);
-  const listenerMode = useRef('idle'); // 'idle' | 'validation' | 'task'
-  const validationBuf = useRef([]);
-  const calibrationRef = useRef(null);
+  const [modelReady, setModelReady] = useState(false);
+  const [debug, setDebug] = useState({});
+
+  const videoRef = useRef(null);       // hidden, ALWAYS-mounted element the tracker reads frames from
+  const previewRef = useRef(null);     // visible mirrored preview (mounted/unmounted with the phase)
+  const overlayRef = useRef(null);
+  const trackerRef = useRef(null);
+  const stableRef = useRef(0);
+  const collectorRef = useRef(null);
+  const modelRef = useRef(null);
+  const runIdRef = useRef(0);
+  const mountedRef = useRef(true);
+  const phaseRef = useRef('intro');
+  const taskRef = useRef(null);
   const sessionRef = useRef(null);
-  const timerRef = useRef(null);
-  const stimulusTimerRef = useRef(null);
-  const validationTimerRef = useRef(null);
+  const calibMetaRef = useRef(null);
+  const lastUiRef = useRef(0);
+  const lastFaceRef = useRef({ ok: null, reason: null });
+  const smootherRef = useRef(new GazeSmoother());
+  const viewportRef = useRef({ w: 1, h: 1 });
   const reduceMotion = typeof document !== 'undefined' && document.body.classList.contains('reduce-motion');
 
-  /* ── Load WebGazer script ───────────────────────────────── */
-  const loadWebGazer = () =>
-    new Promise((resolve, reject) => {
-      if (window.webgazer) { resolve(window.webgazer); return; }
-      const script = document.createElement('script');
-      script.src = 'https://webgazer.cs.brown.edu/webgazer.js';
-      script.async = true;
-      script.onload = () => resolve(window.webgazer);
-      script.onerror = () => reject(new Error('Failed to load WebGazer script'));
-      document.body.appendChild(script);
-    });
+  const go = useCallback((p) => { phaseRef.current = p; setPhase(p); }, []);
 
-  const clearTimers = useCallback(() => {
-    clearInterval(timerRef.current);
-    clearTimeout(stimulusTimerRef.current);
-    clearTimeout(validationTimerRef.current);
-  }, []);
-
-  /* ── Stop camera & WebGazer ─────────────────────────────── */
-  const stopStream = useCallback(() => {
-    listenerMode.current = 'idle';
-    const s = streamRef.current;
-    if (s) {
-      s.getTracks().forEach((t) => t.stop());
-      streamRef.current = null;
-      setStream(null);
-    }
-    if (window.webgazer) {
-      try {
-        window.webgazer.pause();
-        window.webgazer.clearData();
-        window.webgazer.showVideoPreview(false).showPredictionPoints(false);
-      } catch {
-        // webgazer may already be torn down
-      }
-    }
-  }, []);
-
-  useEffect(() => () => { stopStream(); clearTimers(); }, [stopStream, clearTimers]);
-
+  /* ── model status (fail early: no point calibrating for a model that cannot run) ── */
+  const loadModelStatus = () => gazeApi.status().then(
+    (st) => ({ checking: false, available: Boolean(st.available), reason: st.reason, version: st.model_version }),
+    (e) => ({ checking: false, available: null, error: e.message }),
+  );
+  const checkModel = () => { setModelStatus({ checking: true }); loadModelStatus().then((r) => mountedRef.current && setModelStatus(r)); };
   useEffect(() => {
-    if (videoRef.current && stream) videoRef.current.srcObject = stream;
-  }, [stream, phase]);
+    let alive = true;
+    gazeApi.status().then(
+      (st) => alive && setModelStatus({ checking: false, available: Boolean(st.available), reason: st.reason, version: st.model_version }),
+      (e) => alive && setModelStatus({ checking: false, available: null, error: e.message }),
+    );
+    return () => { alive = false; };
+  }, []);
 
-  const fail = (kind, message, retry) => {
-    clearTimers();
-    listenerMode.current = 'idle';
-    setFault({ kind, message, retry });
-    setPhase('error');
-  };
+  /* ── cleanup ── */
+  const stopTracker = useCallback(() => {
+    trackerRef.current?.stop();
+    trackerRef.current = null;
+    setCamera('idle');
+  }, []);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => { mountedRef.current = false; runIdRef.current += 1; stopTracker(); };
+  }, [stopTracker]);
 
-  /* ── Single WebGazer listener; behaviour depends on listenerMode ── */
-  function handleGaze(data) {
-    const now = performance.now();
-    if (listenerMode.current === 'validation') {
-      if (data) validationBuf.current.push({ x: data.x, y: data.y });
-    } else if (listenerMode.current === 'task') {
-      if (now - lastSampleT.current < MIN_SAMPLE_INTERVAL_MS) return;
-      lastSampleT.current = now;
-      samplesRef.current.push({
-        timestamp: Math.round(now * 100) / 100,
-        x: data ? data.x : null,
-        y: data ? data.y : null,
-        stimulus_id: STIMULI[stimRef.current].key,
-        face_detected: Boolean(data),
-      });
+  // Keep the visible preview attached to the shared stream after every commit (it remounts per phase).
+  useEffect(() => {
+    const v = previewRef.current;
+    const st = trackerRef.current?.stream;
+    if (!v || !st) return;
+    if (v.srcObject !== st) v.srcObject = st;
+    if (v.paused) { const p = v.play?.(); p?.catch?.(() => { /* muted autoplay normally allowed */ }); }
+  });
+
+  const fail = useCallback((code, message, retry) => {
+    runIdRef.current += 1;               // cancels any running calibration/task loop
+    collectorRef.current = null;
+    taskRef.current = null;
+    setFault({ code, message, retry });
+    go('error');
+  }, [go]);
+
+  /* ── landmark overlay (eye + iris points; every landmark in debug mode) ── */
+  const drawOverlay = useCallback((lm) => {
+    const c = overlayRef.current;
+    const v = videoRef.current;
+    if (!c || !v) return;
+    if (c.width !== c.clientWidth) { c.width = c.clientWidth; c.height = c.clientHeight; }
+    const ctx = c.getContext('2d');
+    ctx.clearRect(0, 0, c.width, c.height);
+    if (!lm) return;
+    // The <video> uses object-fit: cover, so map normalised coordinates through the cover transform.
+    const vw = v.videoWidth, vh = v.videoHeight;
+    const s = Math.max(c.width / vw, c.height / vh);
+    const ox = (c.width - vw * s) / 2, oy = (c.height - vh * s) / 2;
+    const idx = DEBUG_ENABLED ? lm.map((_, i) => i) : OVERLAY_INDICES;
+    ctx.fillStyle = 'rgba(34,211,238,0.9)';
+    for (const i of idx) {
+      if (!lm[i]) continue;
+      ctx.beginPath();
+      ctx.arc(lm[i].x * vw * s + ox, lm[i].y * vh * s + oy, DEBUG_ENABLED ? 1.2 : (i === 468 || i === 473 ? 3 : 2), 0, 6.283);
+      ctx.fill();
     }
-  }
+  }, []);
 
-  /* ── Camera → WebGazer ──────────────────────────────────── */
-  const requestCamera = async () => {
-    setFault(null);
-    setPhase('permission');
-    let mediaStream;
-    try {
-      mediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
-    } catch (camErr) {
-      if (camErr.name === 'NotAllowedError') {
-        fail('camera_denied', 'Camera permission was denied. Allow camera access in your browser settings, then try again.', 'camera');
-      } else {
-        fail('camera_unavailable', 'No usable camera was found (it may be in use by another app).', 'camera');
-      }
-      return;
-    }
-    streamRef.current = mediaStream;
-    setStream(mediaStream);
+  /* ── per-frame handler (runs at <= 30 Hz; React state is throttled) ── */
+  const handleFrame = useCallback((fr) => {
+    const p = phaseRef.current;
+    const okFace = fr.ok;
+    if (okFace) stableRef.current += 1;
+    else if (fr.reason !== FACE_REASONS.BLINK) stableRef.current = 0;   // blinks are neutral
+    lastFaceRef.current = { ok: okFace, reason: fr.reason };
+    if (p === 'setup' || p === 'calibration') drawOverlay(fr.landmarks);
 
-    let wg;
-    try {
-      wg = await loadWebGazer();
-    } catch {
-      fail('engine_load_failed', 'The eye-tracking library could not be loaded. Check your network connection.', 'camera');
-      return;
-    }
-    try {
-      wg.params.faceMeshSolutionPath = '/mediapipe/face_mesh';
-      wg.setGazeListener(handleGaze);
-      await wg
-        .setRegression('ridge')
-        .setTracker('TFFacemesh')
-        .showVideoPreview(false)
-        .showPredictionPoints(false)
-        .begin();
-      startCalibration();
-    } catch (wgErr) {
-      console.error('WebGazer Init Error:', wgErr);
-      fail('engine_init_failed', 'The eye-tracking engine failed to start.', 'camera');
-    }
-  };
+    // calibration collection
+    if (collectorRef.current && okFace) collectorRef.current.push(fr.features);
 
-  /* ── Calibration (9 points × CLICKS_PER_POINT clicks) ────── */
-  const startCalibration = () => {
-    setFault(null);
-    setCalibrationClicks({});
-    calibrationRef.current = null;
-    try { window.webgazer.clearData(); } catch { /* fresh engine */ }
-    setPhase('calibration');
-  };
-
-  const handleCalibrationClick = (index, e) => {
-    if (window.webgazer && e) {
-      window.webgazer.recordScreenPosition(e.clientX, e.clientY, 'click');
-    }
-    setCalibrationClicks((prev) => {
-      const count = (prev[index] || 0) + 1;
-      if (count > CLICKS_PER_POINT) return prev;
-      const next = { ...prev, [index]: count };
-      const done = Object.values(next).filter((c) => c >= CLICKS_PER_POINT).length;
-      if (done === 9) setTimeout(startValidation, 300);
-      return next;
-    });
-  };
-
-  /* ── Calibration validation: 5 fixed targets, measure pixel error ── */
-  const startValidation = () => {
-    setPhase('validation');
-    const errors = [];
-    let idx = 0;
-    const runTarget = () => {
-      validationBuf.current = [];
-      listenerMode.current = 'idle';
-      setValidationIdx(idx);
-      validationTimerRef.current = setTimeout(() => {   // settle
-        listenerMode.current = 'validation';
-        validationTimerRef.current = setTimeout(() => { // measure
-          listenerMode.current = 'idle';
-          const [fx, fy] = VALIDATION_TARGETS[idx];
-          const buf = validationBuf.current;
-          if (buf.length < VALIDATION_MIN_PREDICTIONS) {
-            errors.push({ err: NaN, n: buf.length });
-          } else {
-            const mx = median(buf.map((p) => p.x));
-            const my = median(buf.map((p) => p.y));
-            errors.push({ err: Math.hypot(mx - fx * window.innerWidth, my - fy * window.innerHeight), n: buf.length });
-          }
-          idx += 1;
-          if (idx < VALIDATION_TARGETS.length) runTarget();
-          else finishValidation(errors);
-        }, VALIDATION_DWELL_MS / 2);
-      }, VALIDATION_DWELL_MS / 2);
-    };
-    runTarget();
-  };
-
-  const finishValidation = (errors) => {
-    const good = errors.filter((e) => Number.isFinite(e.err));
-    if (good.length < 3) {
-      fail('calibration_failed', 'Your eyes could not be tracked reliably during calibration. Make sure your face is well lit and centred, then recalibrate.', 'calibration');
-      return;
-    }
-    const meanErr = good.reduce((a, e) => a + e.err, 0) / good.length;
-    const diag = Math.hypot(window.innerWidth, window.innerHeight);
-    const score = Math.max(0, Math.min(1, 1 - meanErr / diag / MAX_CALIBRATION_ERROR_DIAG));
-    calibrationRef.current = {
-      completed: true,
-      quality_score: Math.round(score * 1000) / 1000,
-      sample_count: good.reduce((a, e) => a + e.n, 0),
-      mean_error_px: Math.round(meanErr * 10) / 10,
-      method: 'webgazer_ridge_9pt_click_5pt_validation',
-    };
-    if (score < MIN_CALIBRATION_SCORE) {
-      fail('calibration_poor', `Calibration accuracy was too low (quality ${score.toFixed(2)}, needs ${MIN_CALIBRATION_SCORE}). Sit about an arm's length from the screen, keep your head still, and recalibrate.`, 'calibration');
-      return;
-    }
-    startTask();
-  };
-
-  /* ── 30-second task ─────────────────────────────────────── */
-  const startTask = () => {
-    setPhase('task');
-    setCountdown(TASK_SECONDS);
-    setCurrentStimulus(0);
-    stimRef.current = 0;
-    samplesRef.current = [];
-    lastSampleT.current = 0;
-    listenerMode.current = 'task';
-
-    timerRef.current = setInterval(() => {
-      setCountdown((prev) => {
-        if (prev <= 1) {
-          clearInterval(timerRef.current);
-          finishTask();
-          return 0;
+    // visual task sampling
+    const task = taskRef.current;
+    if (p === 'task' && task) {
+      const { w, h } = viewportRef.current;
+      if (okFace) {
+        const pred = predict(modelRef.current, fr.features);
+        const inRange = pred[0] > -OUT_OF_RANGE && pred[0] < 1 + OUT_OF_RANGE && pred[1] > -OUT_OF_RANGE && pred[1] < 1 + OUT_OF_RANGE;
+        const sm = inRange ? smootherRef.current.push([Math.min(Math.max(pred[0], 0), 1), Math.min(Math.max(pred[1], 0), 1)], w / h) : null;
+        if (sm && fr.t > task.lastT) {
+          task.samples.push({
+            timestamp: Math.round(fr.t * 100) / 100, x: sm[0] * w, y: sm[1] * h,
+            stimulus_id: STIMULI[task.stim()].key, face_detected: true,
+          });
+          task.lastT = fr.t;
+          task.valid += 1;
+        } else {
+          task.invalid += 1;
         }
-        return prev - 1;
-      });
-    }, 1000);
-
-    const rotate = () => {
-      if (stimRef.current < STIMULI.length - 1) {
-        stimRef.current += 1;
-        setCurrentStimulus(stimRef.current);
-        stimulusTimerRef.current = setTimeout(rotate, STIMULUS_MS);
+      } else if (fr.reason !== FACE_REASONS.BLINK && fr.t > task.lastT && fr.t - task.lastT > 100) {
+        task.samples.push({ timestamp: Math.round(fr.t * 100) / 100, x: null, y: null, stimulus_id: STIMULI[task.stim()].key, face_detected: false });
+        task.lastT = fr.t;
+        task.lost += 1;
       }
-    };
-    stimulusTimerRef.current = setTimeout(rotate, STIMULUS_MS);
-  };
+    }
 
-  const finishTask = () => {
-    clearTimers();
-    listenerMode.current = 'idle';
-    const samples = [...samplesRef.current];
-    setSampleCount(samples.length);
-    stopStream();
-    sessionRef.current = {
-      session_id: crypto.randomUUID(),
-      category,
-      screen_width: window.innerWidth,
-      screen_height: window.innerHeight,
-      calibration: calibrationRef.current,
-      samples,
-    };
-    runAnalysis();
-  };
+    // throttled UI state (5 Hz)
+    if (fr.t - lastUiRef.current > 200) {
+      lastUiRef.current = fr.t;
+      const lowLight = fr.luma !== null && fr.luma !== undefined && fr.luma < LOW_LIGHT;
+      setFace({ ok: okFace, reason: lowLight && okFace ? 'LOW_LIGHT' : fr.reason, fps: fr.fps, luma: fr.luma, stable: stableRef.current, holdLost: !okFace && fr.reason !== FACE_REASONS.BLINK });
+      if (DEBUG_ENABLED) {
+        setDebug({
+          fps: fr.fps, face: okFace ? 'yes' : `no (${fr.reason})`, landmarks: fr.landmarks ? fr.landmarks.length : 0,
+          features: okFace ? fr.features.map((v) => v.toFixed(2)).join(' ') : '-', featureOrder: FEATURE_NAMES.join(','),
+          validSamples: task ? task.valid : 0, calibration: calibMetaRef.current ? `${Math.round(calibMetaRef.current.quality * 100)}%` : '-',
+          model: modelStatus.available ? `ready ${modelStatus.version || ''}` : String(modelStatus.reason || modelStatus.available),
+          luma: fr.luma ? Math.round(fr.luma) : '-',
+        });
+      }
+      if (task) setTaskStats({ valid: task.valid, invalid: task.invalid, lost: task.lost });
+    }
+  }, [drawOverlay, modelStatus]);
 
-  /* ── Backend analysis (quality gate + model) ────────────── */
-  const runAnalysis = async () => {
+  /* ── camera + face setup ── */
+  const startSetup = useCallback(async () => {
     setFault(null);
-    setPhase('analyzing');
+    stableRef.current = 0;
+    setCamera('initializing');
+    go('setup');
+    stopTracker();
+    const tracker = new FaceTracker((fr) => handleFrame(fr));
+    trackerRef.current = tracker;
+    try {
+      // wait for the <video> element of the setup card to exist
+      for (let i = 0; i < 40 && !videoRef.current; i++) await sleep(25);
+      await tracker.start(videoRef.current);
+      if (!mountedRef.current) { tracker.stop(); return; }
+      setCamera('ready');
+    } catch (e) {
+      trackerRef.current = null;
+      if (!mountedRef.current) return;
+      const code = (e instanceof TrackerError ? e.code : 'CAMERA_ERROR').toLowerCase();
+      fail(code, e.message, 'setup');
+    }
+  }, [fail, go, handleFrame, stopTracker]);
+
+  /* ── calibration ── */
+  const runCalibration = useCallback(async () => {
+    const token = ++runIdRef.current;
+    const cancelled = () => runIdRef.current !== token || !mountedRef.current;
+    viewportRef.current = { w: window.innerWidth, h: window.innerHeight };
+    const started = nowMs();
+    go('calibration');
+    setFault(null);
+    const collected = [];
+    for (let i = 0; i < TARGETS.length; i++) {
+      setTargetIdx(i);
+      setTargetStage('waiting');
+      const frames = [];
+      let t0 = null;
+      const giveUp = nowMs() + 25_000;
+      while (!cancelled()) {
+        if (stableRef.current < STABLE_FRAMES) {            // face lost / unstable: HOLD (never fail the session)
+          t0 = null; frames.length = 0; collectorRef.current = null; setTargetStage('waiting');
+        } else {
+          if (t0 === null) t0 = nowMs();
+          const e = nowMs() - t0;
+          if (e < SETTLE_MS) setTargetStage('settle');
+          else {
+            collectorRef.current = frames;
+            setTargetStage('collect');
+            const done = (e >= SETTLE_MS + COLLECT_MS && frames.length >= TARGET_FRAMES) || e >= SETTLE_MS + COLLECT_MAX_MS;
+            if (done) break;
+          }
+        }
+        if (nowMs() > giveUp) break;
+        await sleep(40);
+      }
+      collectorRef.current = null;
+      if (cancelled()) return;
+      collected.push({ t: TARGETS[i], frames });
+    }
+    const { w, h } = viewportRef.current;
+    const result = assessCalibration(collected, w, h);
+    calibMetaRef.current = { ...result, duration_ms: Math.round(nowMs() - started), w, h };
+    setCalibration(result);
+    setModelReady(false);
+    if (result.accepted) {
+      const samples = result.cleaned.flatMap((tg) => tg.frames.map((f) => ({ f, t: tg.t })));
+      modelRef.current = fit(samples);
+      setModelReady(Boolean(modelRef.current));
+      if (!modelRef.current) result.reasons.push('NO_FIT');
+    }
+    setAttempts((a) => a + 1);
+    go('calibrated');
+  }, [go]);
+
+  /* ── backend analysis (quality gate + model) ── */
+  const runAnalysis = useCallback(async () => {
+    setFault(null);
+    go('analyzing');
     try {
       const result = await gazeApi.analyze(sessionRef.current);
       setAnalysis(result);
-      setPhase('result');
+      go('result');
     } catch (err) {
-      fail(err.kind || 'backend_unavailable', err.message, 'analysis');
+      fail(GAZE_FAULT_BY_API_KIND[err.kind] || 'server_error', err.message, 'analysis');
     }
-  };
+  }, [fail, go]);
 
-  const handleSkip = () => {
-    stopStream();
-    clearTimers();
-    onSkip();
-  };
+  const finishTask = useCallback((task, durationMs) => {
+    taskRef.current = null;
+    stopTracker();
+    const validCount = task.samples.filter((s) => s.face_detected).length;
+    if (validCount < MIN_TASK_SAMPLES) {
+      fail('insufficient_data', `Only ${validCount} usable gaze samples were captured in ${(durationMs / 1000).toFixed(0)} seconds. Please repeat the test with your face in view.`, 'setup');
+      return;
+    }
+    const meta = calibMetaRef.current;
+    sessionRef.current = {
+      session_id: crypto.randomUUID(),
+      category,
+      screen_width: viewportRef.current.w,
+      screen_height: viewportRef.current.h,
+      calibration: {
+        completed: true, quality_score: meta.quality, sample_count: meta.validFrames,
+        duration_ms: meta.duration_ms, mean_error_px: meta.meanErrPx ?? undefined, method: 'mediapipe_iris_ridge_9pt_auto',
+      },
+      samples: task.samples,
+    };
+    runAnalysis();
+  }, [category, fail, runAnalysis, stopTracker]);
 
+  /* ── 30-second task ── */
+  const startTask = useCallback(() => {
+    const token = ++runIdRef.current;
+    const cancelled = () => runIdRef.current !== token || !mountedRef.current;
+    viewportRef.current = { w: window.innerWidth, h: window.innerHeight };
+    smootherRef.current.reset();
+    const t0 = nowMs();
+    const task = { samples: [], valid: 0, invalid: 0, lost: 0, lastT: -1, stim: () => Math.min(Math.floor((nowMs() - t0) / STIMULUS_MS), STIMULI.length - 1) };
+    taskRef.current = task;
+    setElapsed(0); setStimulus(0); setTaskStats({ valid: 0, invalid: 0, lost: 0 });
+    go('task');
+    const timer = setInterval(() => {
+      if (cancelled()) { clearInterval(timer); return; }
+      const e = nowMs() - t0;                              // real elapsed time, not a counter
+      setElapsed(Math.min(e, TASK_MS));
+      setStimulus(task.stim());
+      if (e >= TASK_MS) { clearInterval(timer); finishTask(task, e); }
+    }, 200);
+  }, [go, finishTask]);
+
+  const handleSkip = (reason) => {
+    runIdRef.current += 1;
+    stopTracker();
+    // A click handler passes an event object; only a string counts as a reason.
+    onSkip(typeof reason === 'string' && reason ? reason : 'user_skipped');
+  };
   const handleContinue = () => onComplete(sessionRef.current, analysis);
 
   /* ════════════════════════════════════════════════════════════
      RENDER
      ════════════════════════════════════════════════════════════ */
-  const preview = (opacity) => (
-    <div style={{ position: 'absolute', bottom: '16px', right: '16px', width: '160px', height: '120px', borderRadius: '12px', overflow: 'hidden', border: `2px solid rgba(255,255,255,${opacity})` }}>
-      <video ref={videoRef} autoPlay playsInline muted style={{ width: '100%', height: '100%', objectFit: 'cover', transform: 'scaleX(-1)' }} />
+  const stepIndex = { intro: 0, setup: face.ok ? 1 : 0, calibration: 2, calibrated: 2, task: 3, analyzing: 4, result: 5, error: 0 }[phase] ?? 0;
+  const rail = <div style={{ marginBottom: 20 }}><ProgressIndicator steps={STEPS} current={stepIndex} /></div>;
+
+  const trackLabel = (() => {
+    if (phase === 'task') return 'TRACKING';
+    if (phase === 'calibration') return 'CALIBRATING';
+    if (phase === 'calibrated') return calibration?.accepted ? 'CALIBRATION COMPLETE' : 'CALIBRATION FAILED';
+    if (camera === 'initializing') return 'INITIALIZING';
+    if (camera === 'ready') return face.ok ? 'FACE DETECTED' : 'FACE NOT DETECTED';
+    return 'NOT STARTED';
+  })();
+
+  const guidance = (() => {
+    if (face.ok && face.reason === 'LOW_LIGHT') return GUIDANCE.LOW_LIGHT;
+    if (face.ok) return 'Face detected. Keep your head still and look at the screen.';
+    return GUIDANCE[face.reason] || 'Looking for your face…';
+  })();
+
+  const debugPanel = DEBUG_ENABLED ? <DebugPanel info={{ state: trackLabel, phase, attempts, ...debug }} /> : null;
+  const preview = (
+    <div className="ns-gaze-preview" style={{ position: 'relative', width: '100%', aspectRatio: '4 / 3', borderRadius: 14, overflow: 'hidden', background: '#050912' }}>
+      <video ref={previewRef} autoPlay playsInline muted style={{ width: '100%', height: '100%', objectFit: 'cover', transform: 'scaleX(-1)' }} />
+      <canvas ref={overlayRef} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', transform: 'scaleX(-1)', pointerEvents: 'none' }} />
     </div>
   );
-  const spinner = (size) => (
-    <div style={{ display: 'inline-block', width: size, height: size, border: '3px solid var(--color-primary)', borderTopColor: 'transparent', borderRadius: '50%', animation: reduceMotion ? 'none' : 'spin 0.8s linear infinite' }} />
-  );
 
+  const renderPhase = () => {
   if (phase === 'intro') {
+    const blocked = modelStatus.available === false;
     return (
       <section style={{ ...card, position: 'relative' }}>
-        <h2 style={{ marginTop: 0, color: 'var(--color-neutral-900)', marginBottom: '12px' }}>
-          Gaze Session {category === 'child' ? '(Child)' : '(Adult)'}
-        </h2>
-        <p style={{ color: 'var(--color-neutral-600)', lineHeight: 1.7, maxWidth: '640px', marginBottom: '6px' }}>
-          We will use the webcam to estimate where on the screen the child looks during a short picture task.
-          You will first click nine calibration dots, then look at five targets to check accuracy, then view the pictures for
-          <strong> 30 seconds</strong>. Video is <strong>not recorded or stored</strong>; only gaze coordinates are sent.
+        {rail}
+        <div style={{ marginBottom: 18 }}><GazeVisualizer size={150} /></div>
+        <h2 style={{ marginTop: 0, marginBottom: 12 }}>Gaze session {category === 'child' ? '(child)' : ''}</h2>
+        <p style={{ color: 'var(--color-neutral-600)', lineHeight: 1.7, maxWidth: 640, marginBottom: 6 }}>
+          We use the webcam to estimate where on the screen the child looks during a short picture task. The steps are: camera check,
+          face detection, a 9-dot calibration (just look at each dot), a <strong>30-second</strong> picture task, then analysis.
+          Video is <strong>not recorded or stored</strong>; only gaze coordinates are sent.
         </p>
-        <p style={{ color: 'var(--color-neutral-500)', fontSize: '0.88rem', lineHeight: 1.6, marginBottom: '24px' }}>
-          Sit about an arm&apos;s length from the screen in a well-lit room and keep your head still. This step is optional.
+        <p style={{ color: 'var(--color-neutral-500)', fontSize: '0.88rem', lineHeight: 1.6, marginBottom: 18 }}>
+          Sit about an arm&apos;s length from the screen in a well-lit room. Works in Chrome and Edge on localhost or HTTPS.
         </p>
-        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-          <button type="button" onClick={requestCamera} style={primaryBtn}>Continue</button>
-          <button type="button" onClick={handleSkip} style={ghostBtn}>Skip gaze step</button>
-        </div>
-      </section>
-    );
-  }
-
-  if (phase === 'permission') {
-    return (
-      <section style={{ ...card, position: 'relative', textAlign: 'center', padding: '48px 28px' }}>
-        <button type="button" onClick={handleSkip} style={skipLink}>Skip this step →</button>
-        {spinner(32)}
-        <p style={{ color: 'var(--color-neutral-600)', marginTop: '16px', fontWeight: 600 }}>Starting camera and eye-tracking…</p>
-      </section>
-    );
-  }
-
-  if (phase === 'error' && fault) {
-    const retryLabel = { camera: 'Try again', calibration: 'Recalibrate', analysis: 'Retry analysis' }[fault.retry];
-    const onRetry = fault.retry === 'analysis' ? runAnalysis
-      : fault.retry === 'calibration' ? startCalibration : requestCamera;
-    return (
-      <section style={{ ...card, position: 'relative', borderColor: 'var(--color-risk-high-border)', backgroundColor: 'var(--color-risk-high-bg)' }}>
-        <h3 style={{ marginTop: 0, color: 'var(--color-risk-high)', marginBottom: '10px' }}>{FAULT_TITLES[fault.kind] || 'Gaze step problem'}</h3>
-        <p role="alert" style={{ color: 'var(--color-neutral-700)', lineHeight: 1.7, marginBottom: '20px' }}>
-          {fault.message} You can retry, or continue the screening without the gaze step (gaze will be reported as not available).
+        <p role="status" style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.86rem', fontWeight: 600, marginBottom: 18,
+          color: modelStatus.checking ? 'var(--ns-n500)' : blocked ? 'var(--ns-risk-high-text)' : modelStatus.available ? 'var(--ns-risk-low-text)' : 'var(--ns-risk-mod-text)' }}>
+          <span aria-hidden="true" style={{ width: 8, height: 8, borderRadius: '50%', background: 'currentColor' }} />
+          {modelStatus.checking ? 'Checking the gaze model…'
+            : blocked ? `Gaze model unavailable — ${reasonText(modelStatus.reason)}`
+            : modelStatus.available ? `Gaze model ready${modelStatus.version ? ` (${modelStatus.version})` : ''}`
+            : 'Could not verify the gaze model; the analysis step will report its status.'}
         </p>
-        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-          <button type="button" onClick={onRetry} style={primaryBtn}>{retryLabel}</button>
-          <button type="button" onClick={handleSkip} style={{ ...ghostBtn, borderColor: 'var(--color-risk-high-border)', color: 'var(--color-risk-high)' }}>
-            Continue without gaze →
+        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
+          <button type="button" onClick={startSetup} disabled={modelStatus.checking || blocked} style={{ ...primaryBtn, opacity: modelStatus.checking || blocked ? 0.5 : 1 }}>Start camera check</button>
+          {blocked && <button type="button" onClick={checkModel} style={ghostBtn}>Check again</button>}
+          <button type="button" onClick={() => handleSkip(blocked ? 'model_unavailable' : 'user_skipped')} style={skipText}>
+            {blocked ? 'Continue without gaze (model unavailable)' : 'Skip gaze step'}
           </button>
         </div>
+        {debugPanel}
+      </section>
+    );
+  }
+
+  if (phase === 'setup') {
+    const checks = [
+      ['Camera', camera === 'ready' ? true : camera === 'initializing' ? null : false, 'starting…'],
+      ['Face', camera === 'ready' ? Boolean(face.ok) || face.reason === FACE_REASONS.BLINK : null, GUIDANCE[face.reason] || 'not detected yet'],
+      ['Position', camera !== 'ready' || face.ok === null ? null : face.reason !== FACE_REASONS.OFF_CENTER, GUIDANCE[FACE_REASONS.OFF_CENTER]],
+      ['Distance', camera !== 'ready' || face.ok === null ? null : face.reason !== FACE_REASONS.TOO_FAR && face.reason !== FACE_REASONS.TOO_CLOSE, face.reason === FACE_REASONS.TOO_CLOSE ? GUIDANCE[FACE_REASONS.TOO_CLOSE] : GUIDANCE[FACE_REASONS.TOO_FAR]],
+      ['Lighting', face.luma === null || face.luma === undefined ? null : face.luma >= LOW_LIGHT, GUIDANCE.LOW_LIGHT],
+      ['Tracking', camera === 'ready' ? face.fps >= 8 : null, 'frame rate is low'],
+    ];
+    const ready = camera === 'ready' && face.ok && face.stable >= STABLE_FRAMES && !(face.luma !== null && face.luma < LOW_LIGHT);
+    return (
+      <section className="ns-dark" style={{ ...card, position: 'relative', background: 'var(--ns-navy-900)', color: '#E6ECF5', border: '1px solid rgba(148,163,184,0.16)' }}>
+        <button type="button" onClick={() => handleSkip('user_skipped')} style={{ ...skipLink, color: '#8FA3C0' }}>Skip this step →</button>
+        {rail}
+        <p className="ns-eyebrow ns-eyebrow--dark" role="status">{trackLabel}</p>
+        <h2 style={{ marginTop: 8, marginBottom: 6 }}>Check your camera and face</h2>
+        <p style={{ margin: '0 0 18px', color: '#9FB0C8', maxWidth: 'none' }}>{guidance}</p>
+        <div className="ns-gaze-setup">
+          <div style={{ maxWidth: 420, width: '100%' }}>{preview}</div>
+          <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'grid', gap: 12, alignContent: 'start' }} aria-label="Camera and face checks">
+            {checks.map(([label, ok, hint]) => <Check key={label} ok={ok} label={label} hint={hint} />)}
+          </ul>
+        </div>
+        <div style={{ marginTop: 22, display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+          <button type="button" onClick={runCalibration} disabled={!ready} style={{ ...primaryBtn, opacity: ready ? 1 : 0.5 }}>Begin calibration</button>
+          {!ready && <span style={{ fontSize: '0.82rem', color: '#8FA3C0' }}>Enabled once your face is detected and steady.</span>}
+        </div>
+        <style>{'.ns-gaze-setup{display:grid;grid-template-columns:minmax(0,420px) 1fr;gap:26px}@media (max-width:760px){.ns-gaze-setup{grid-template-columns:1fr}}'}</style>
+        {debugPanel}
       </section>
     );
   }
 
   if (phase === 'calibration') {
-    const donePoints = Object.values(calibrationClicks).filter((c) => c >= CLICKS_PER_POINT).length;
-    return (
-      <section style={{ ...card, position: 'relative', background: 'var(--color-neutral-900)', minHeight: '420px', padding: '32px' }}>
-        <button type="button" onClick={handleSkip} style={{ ...skipLink, color: 'var(--color-neutral-400)' }}>Skip this step →</button>
-        <p style={{ color: '#fff', fontWeight: 700, fontSize: '1rem', marginBottom: '8px', textAlign: 'center' }}>Calibration</p>
-        <p style={{ color: 'var(--color-neutral-400)', fontSize: '0.88rem', textAlign: 'center', marginBottom: '28px' }}>
-          Look at each green dot and click it {CLICKS_PER_POINT} times. <strong style={{ color: '#7C9A85' }}>{donePoints} / 9</strong> points done.
-        </p>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gridTemplateRows: 'repeat(3, 1fr)', gap: '16px', width: '100%', maxWidth: '420px', aspectRatio: '1', margin: '0 auto' }}>
-          {Array.from({ length: 9 }, (_, index) => {
-            const clicks = calibrationClicks[index] || 0;
-            const done = clicks >= CLICKS_PER_POINT;
-            return (
-              <button
-                key={index}
-                type="button"
-                disabled={done}
-                onClick={(e) => handleCalibrationClick(index, e)}
-                aria-label={`Calibration point ${index + 1}, ${clicks} of ${CLICKS_PER_POINT} clicks`}
-                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', border: 'none', cursor: done ? 'default' : 'pointer' }}
-              >
-                <span style={{
-                  width: done ? '18px' : `${22 - clicks * 2}px`,
-                  height: done ? '18px' : `${22 - clicks * 2}px`,
-                  borderRadius: '50%',
-                  backgroundColor: done ? 'var(--color-primary-dark)' : '#4ADE80',
-                  boxShadow: done ? 'none' : '0 0 12px rgba(74,222,128,0.5)',
-                  opacity: done ? 0.5 : 1 - clicks * 0.15,
-                }} />
-              </button>
-            );
-          })}
+    const [fx, fy] = TARGETS[targetIdx];
+    const lost = face.holdLost;
+    return createPortal(
+      <div role="dialog" aria-label="Calibration" style={{ position: 'fixed', inset: 0, background: 'var(--ns-navy-900)', zIndex: 1000 }}>
+        <button type="button" onClick={() => handleSkip('user_skipped')} style={{ ...skipLink, position: 'absolute', color: 'var(--color-neutral-400)' }}>Skip this step →</button>
+        <div style={{ position: 'absolute', top: '14%', left: 0, right: 0, textAlign: 'center', pointerEvents: 'none', padding: '0 16px' }}>
+          <p style={{ fontFamily: 'var(--font-data)', fontSize: '0.72rem', letterSpacing: '0.14em', color: '#8FA3C0', margin: '0 0 6px' }}>
+            CALIBRATING · POINT {targetIdx + 1} OF {TARGETS.length}
+          </p>
+          <p role="status" style={{ fontSize: '1rem', fontWeight: 700, margin: 0, color: lost ? '#F8B4B4' : '#F4F7FB' }}>
+            {lost ? 'FACE LOST — hold still and face the screen' : targetStage === 'waiting' ? 'Get ready…' : 'Look directly at the glowing point'}
+          </p>
         </div>
-        {preview(0.2)}
+        <span aria-hidden="true" style={{
+          position: 'absolute', left: `${fx * 100}%`, top: `${fy * 100}%`, width: 26, height: 26, marginLeft: -13, marginTop: -13, borderRadius: '50%',
+          background: lost ? '#64748B' : '#22D3EE', boxShadow: lost ? 'none' : '0 0 0 6px rgba(34,211,238,0.18), 0 0 22px rgba(34,211,238,0.6)',
+          transition: reduceMotion ? 'none' : 'left 320ms ease, top 320ms ease',
+          animation: reduceMotion || targetStage !== 'collect' ? 'none' : 'ns-pulse 1s ease-in-out infinite',
+        }} />
+        <div style={{ position: 'absolute', left: '50%', top: '71%', transform: 'translate(-50%, -50%)', width: 150, pointerEvents: 'none' }}>{preview}</div>
+        {debugPanel}
+      </div>,
+      document.body,
+    );
+  }
+
+  if (phase === 'calibrated' && calibration) {
+    const q = Math.round(calibration.quality * 100);
+    const ok = calibration.accepted && modelReady;
+    const exhausted = attempts >= MAX_ATTEMPTS;
+    return (
+      <section style={card}>
+        {rail}
+        <p className="ns-eyebrow" role="status">{ok ? 'CALIBRATION COMPLETE' : 'CALIBRATION NEEDS IMPROVEMENT'}</p>
+        <h2 style={{ margin: '8px 0 6px' }}>Calibration quality: {q}% <span style={{ fontSize: '0.9rem', fontWeight: 600, color: ok ? 'var(--ns-risk-low-text)' : 'var(--ns-risk-mod-text)' }}>{ok ? 'READY' : 'RETRY'}</span></h2>
+        <p style={{ color: 'var(--color-neutral-600)', lineHeight: 1.65, margin: '0 0 6px' }}>
+          {calibration.targetsOk} of {calibration.targetsTotal} points tracked · {calibration.validFrames} clean frames ({calibration.rawFrames} captured)
+          {calibration.meanErrPx !== null && ` · typical error ≈ ${calibration.meanErrPx}px (${(calibration.meanErrFrac * 100).toFixed(1)}% of the screen diagonal, limit ${(MAX_MEAN_ERR_FRAC * 100).toFixed(0)}%)`}.
+          This is a technical tracking-quality indicator, not a clinical measure.
+        </p>
+        {!ok && (
+          <p role="alert" style={{ color: 'var(--ns-risk-mod-text)', lineHeight: 1.65, margin: '8px 0 0' }}>
+            {calibration.reasons.map((r) => CALIBRATION_ADVICE[r]).filter(Boolean).join(' ')} (Attempt {attempts} of {MAX_ATTEMPTS}.)
+          </p>
+        )}
+        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginTop: 20, alignItems: 'center' }}>
+          {ok ? <button type="button" onClick={startTask} style={primaryBtn}>Start the 30-second task</button>
+            : <button type="button" onClick={startSetup} style={primaryBtn}>Recalibrate</button>}
+          {ok && <button type="button" onClick={startSetup} style={ghostBtn}>Recalibrate anyway</button>}
+          {(!ok && exhausted) && <button type="button" onClick={() => handleSkip('calibration_failed')} style={skipText}>Skip the gaze step (the report will say why)</button>}
+        </div>
+        {debugPanel}
       </section>
     );
   }
 
-  if (phase === 'validation') {
-    const [fx, fy] = VALIDATION_TARGETS[validationIdx];
+  if (phase === 'error' && fault) {
+    const retryLabel = { setup: 'Try again', calibration: 'Recalibrate', analysis: 'Retry analysis', intro: 'Check again' }[fault.retry];
+    const onRetry = fault.retry === 'analysis' ? runAnalysis : startSetup;
     return (
-      <div role="dialog" aria-label="Calibration check" style={{ position: 'fixed', inset: 0, background: 'var(--color-neutral-900)', zIndex: 1000 }}>
-        <p style={{ position: 'absolute', top: 24, width: '100%', textAlign: 'center', color: '#fff', fontWeight: 700 }}>
-          Checking accuracy — look at the dot ({validationIdx + 1} / {VALIDATION_TARGETS.length})
-        </p>
-        <span style={{ position: 'absolute', left: `${fx * 100}%`, top: `${fy * 100}%`, width: 22, height: 22, marginLeft: -11, marginTop: -11, borderRadius: '50%', backgroundColor: '#4ADE80', boxShadow: '0 0 14px rgba(74,222,128,0.6)' }} />
-      </div>
+      <section style={{ ...card, position: 'relative', border: '1px solid var(--color-risk-high-border)', backgroundColor: 'var(--color-risk-high-bg)' }}>
+        <p className="ns-eyebrow" style={{ color: 'var(--color-risk-high)' }}>{fault.code.toUpperCase()}</p>
+        <h3 style={{ marginTop: 6, color: 'var(--color-risk-high)', marginBottom: 10 }}>{FAULT_TITLES[fault.code] || 'Gaze step problem'}</h3>
+        <p role="alert" style={{ color: 'var(--color-neutral-700)', lineHeight: 1.7, marginBottom: 20 }}>{fault.message}</p>
+        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
+          <button type="button" onClick={onRetry} style={primaryBtn}>{retryLabel}</button>
+          <button type="button" onClick={() => handleSkip(fault.code)} style={skipText}>Skip the gaze step (the report will say why)</button>
+        </div>
+        {debugPanel}
+      </section>
     );
   }
 
   if (phase === 'task') {
-    const stim = STIMULI[currentStimulus] || STIMULI[0];
+    const stim = STIMULI[stimulus] || STIMULI[0];
+    const secs = Math.floor(elapsed / 1000);
+    const total = taskStats.valid + taskStats.invalid + taskStats.lost;
+    const quality = total ? Math.round((taskStats.valid / total) * 100) : null;
+    const mm = (s) => `00:${String(s).padStart(2, '0')}`;
     return (
-      <section style={{ position: 'relative', background: '#1A1A18', borderRadius: '20px', minHeight: '480px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '32px', userSelect: 'none' }}>
-        <button type="button" onClick={handleSkip} style={{ ...skipLink, color: 'var(--color-neutral-400)' }}>Skip this step →</button>
-        <div style={{ position: 'absolute', top: '16px', right: '80px', color: '#fff', fontFamily: 'var(--font-mono)', fontSize: '1.6rem', fontWeight: 700, opacity: 0.85 }}>{countdown}s</div>
-        <p style={{ color: 'var(--color-neutral-400)', fontSize: '0.85rem', marginBottom: '24px', fontWeight: 600 }}>Picture {currentStimulus + 1} / {STIMULI.length}</p>
-        <div style={{ marginBottom: '20px' }}><StimulusSVG stimulus={stim} /></div>
-        <p style={{ color: 'var(--color-neutral-500)', fontSize: '0.82rem', marginTop: '16px' }}>Just look at the pictures naturally.</p>
-        {preview(0.15)}
+      <section className="ns-dark" style={{ position: 'relative', background: 'var(--ns-navy-900)', borderRadius: 20, minHeight: 480, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 32, userSelect: 'none' }}>
+        <div style={{ position: 'absolute', top: 16, left: 20, right: 20, display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', fontFamily: 'var(--font-data)', fontSize: '0.74rem', letterSpacing: '0.08em', color: '#9FB0C8' }}>
+          <span role="timer" aria-label={`${secs} of 30 seconds`} style={{ color: '#F4F7FB', fontSize: '1.05rem', fontWeight: 600 }}>GAZE ANALYSIS · {mm(secs)} / 00:30</span>
+          <span role="status">
+            <span style={{ color: face.holdLost ? '#F8B4B4' : '#22D3EE' }}>● {face.holdLost ? 'FACE LOST' : 'TRACKING'}</span>
+            {' · '}Face {face.holdLost ? '✕' : '✓'}{' · '}Quality {quality === null ? '—' : `${quality}%`}
+          </span>
+        </div>
+        <p style={{ color: 'var(--color-neutral-400)', fontSize: '0.85rem', marginBottom: 24, fontWeight: 600 }}>Picture {stimulus + 1} / {STIMULI.length}</p>
+        <div style={{ marginBottom: 20 }}><StimulusSVG stimulus={stim} /></div>
+        <p style={{ color: 'var(--color-neutral-500)', fontSize: '0.82rem', marginTop: 16 }}>
+          {face.holdLost ? 'Please face the screen so tracking can continue.' : 'Just look at the pictures naturally.'}
+        </p>
+        <div style={{ position: 'absolute', right: 16, bottom: 16, width: 132, opacity: 0.9 }}>{preview}</div>
+        {debugPanel}
       </section>
     );
   }
 
   if (phase === 'analyzing') {
     return (
-      <section style={{ ...card, textAlign: 'center', padding: '56px 28px' }}>
-        <div style={{ marginBottom: '18px' }}>{spinner(36)}</div>
-        <p style={{ color: 'var(--color-neutral-700)', fontWeight: 600, fontSize: '1.05rem' }}>Checking gaze data quality…</p>
-        <p style={{ color: 'var(--color-neutral-500)', fontSize: '0.85rem', marginTop: '8px' }}>{sampleCount} gaze samples captured</p>
+      <section style={{ ...card, textAlign: 'center', padding: '56px 28px' }} role="status">
+        <GazeVisualizer size={120} />
+        <p style={{ color: 'var(--color-neutral-700)', fontWeight: 600, fontSize: '1.05rem', marginTop: 12 }}>Analyzing gaze behaviour…</p>
+        <p style={{ color: 'var(--color-neutral-500)', fontSize: '0.85rem', marginTop: 8 }}>Checking data quality and running the gaze model on the server.</p>
+        {debugPanel}
       </section>
     );
   }
@@ -602,28 +757,29 @@ export default function GazeSession({ onComplete, onSkip, category }) {
     if (analysis.status !== 'success') {
       const poor = analysis.status === 'insufficient_quality';
       return (
-        <section style={{ ...card, borderColor: 'var(--color-risk-high-border)', backgroundColor: 'var(--color-risk-high-bg)' }}>
-          <h3 style={{ marginTop: 0, color: 'var(--color-risk-high)' }}>
-            {poor ? 'Gaze data quality too low' : 'Gaze analysis not available'}
-          </h3>
+        <section style={{ ...card, border: '1px solid var(--color-risk-high-border)', backgroundColor: 'var(--color-risk-high-bg)' }}>
+          {rail}
+          <p className="ns-eyebrow" style={{ color: 'var(--color-risk-high)' }}>{(analysis.error_code || (poor ? 'INSUFFICIENT_DATA' : 'MODEL_UNAVAILABLE'))}</p>
+          <h3 style={{ marginTop: 6, color: 'var(--color-risk-high)' }}>{poor ? 'Gaze data quality too low' : 'Gaze analysis not available'}</h3>
           <p role="alert" style={{ color: 'var(--color-neutral-700)', lineHeight: 1.7 }}>
             {reasonText(analysis.reason)} ({q.valid_sample_count} of {q.sample_count} samples usable, {q.duration_s}s.)
             {' '}Gaze will be reported as <strong>not available</strong>; it will not count as a low or high result.
           </p>
-          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginTop: '16px' }}>
-            {poor && <button type="button" onClick={requestCamera} style={primaryBtn}>Repeat gaze step</button>}
-            {!poor && <button type="button" onClick={runAnalysis} style={primaryBtn}>Retry analysis</button>}
-            <button type="button" onClick={handleContinue} style={ghostBtn}>Continue without gaze result</button>
+          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginTop: 16, alignItems: 'center' }}>
+            {poor ? <button type="button" onClick={startSetup} style={primaryBtn}>Repeat gaze test</button> : <button type="button" onClick={runAnalysis} style={primaryBtn}>Retry analysis</button>}
+            <button type="button" onClick={handleContinue} style={skipText}>Continue (the report will show why gaze was not scored)</button>
           </div>
         </section>
       );
     }
     return (
       <section style={card}>
-        <h3 style={{ marginTop: 0, color: 'var(--color-neutral-900)' }}>Gaze session recorded</h3>
+        {rail}
+        <p className="ns-eyebrow">ANALYZED</p>
+        <h3 style={{ marginTop: 6, color: 'var(--color-neutral-900)' }}>Gaze session recorded</h3>
         <p style={{ color: 'var(--color-neutral-600)', lineHeight: 1.7 }}>
-          {q.valid_sample_count} of {q.sample_count} samples were usable over {q.duration_s}s
-          (calibration quality {q.calibration_score?.toFixed(2)}). The gaze model output will appear with your final results.
+          {q.valid_sample_count} of {q.sample_count} samples were usable over {q.duration_s}s (calibration quality {Math.round((q.calibration_score ?? 0) * 100)}%).
+          The gaze model output will appear with your final results.
         </p>
         <button type="button" onClick={handleContinue} style={primaryBtn}>Continue</button>
       </section>
@@ -631,4 +787,14 @@ export default function GazeSession({ onComplete, onSkip, category }) {
   }
 
   return null;
+  };
+
+  return (
+    <>
+      {/* Frame source for the tracker: rendered in every phase so the stream never loses its element. */}
+      <video ref={videoRef} playsInline muted autoPlay aria-hidden="true" tabIndex={-1}
+        style={{ position: 'fixed', width: 2, height: 2, opacity: 0, pointerEvents: 'none', left: 0, top: 0 }} />
+      {renderPhase()}
+    </>
+  );
 }
