@@ -1,246 +1,227 @@
-"""Gaze preprocessing shared by training and inference (the only implementation).
+"""The ONLY gaze preprocessing implementation (training and inference both call it).
 
-canonical samples -> validate -> I-DT fixation flag -> 10 Hz resample ->
-[x, y, speed, is_fixation] -> normalise -> pad/truncate to SEQ_LEN.
-
-Every function is pure numpy; nothing here depends on FastAPI or torch.
+Pure numpy/pandas; no torch, no FastAPI.
 """
 
 from __future__ import annotations
 
-import math
 from dataclasses import dataclass, field
-from typing import Iterable, Mapping, Optional
+from typing import Optional
 
 import numpy as np
+import pandas as pd
 
 from . import config as C
+from .config import PreprocessConfig
 
-SOCIAL_STIMULI = frozenset({"happy_face", "neutral_face"})
+POSE_FEATURES = {"head_pose_x": "pose_Rx", "head_pose_y": "pose_Ry", "head_pose_z": "pose_Rz"}
 
 
-# ── 1. Validation ────────────────────────────────────────────────────────────
+class SchemaError(ValueError):
+    """Required OpenFace columns are missing / the file is not OpenFace output."""
+
+
+# ── 1. column selection ──────────────────────────────────────────────────────
+
+def standardize_frame(df: pd.DataFrame, cfg: PreprocessConfig = C.DEPLOYED) -> pd.DataFrame:
+    """Strip OpenFace's leading-space column names and keep only what the schema needs."""
+    df = df.copy()
+    df.columns = [str(c).strip() for c in df.columns]
+    needed = list(C.REQUIRED_COLUMNS)
+    for fname in cfg.feature_names:
+        if fname in POSE_FEATURES:
+            needed.append(POSE_FEATURES[fname])
+    missing = [c for c in dict.fromkeys(needed) if c not in df.columns]
+    if missing:
+        raise SchemaError(f"OpenFace output is missing required columns: {missing}")
+    return df[list(dict.fromkeys(needed))].apply(pd.to_numeric, errors="coerce")
+
+
+# ── 2. frame cleaning ────────────────────────────────────────────────────────
 
 @dataclass
-class CleanedSamples:
-    t_ms: np.ndarray                 # (N,) float64, strictly increasing
-    x: np.ndarray                    # (N,) normalised to [0, 1]
-    y: np.ndarray
-    stimulus: list[Optional[str]]
-    n_total: int = 0
-    rejected: dict[str, int] = field(default_factory=dict)
+class CleanedFrames:
+    t: np.ndarray                    # (N,) seconds, strictly increasing, valid frames only
+    values: dict                     # name -> (N,) arrays (gaze_angle_x/y, pose_*)
+    confidence: np.ndarray           # (N,) of kept frames
+    n_total: int
+    rejected: dict = field(default_factory=dict)
+    mean_confidence_all: Optional[float] = None   # over every frame OpenFace returned
 
     @property
     def n_valid(self) -> int:
-        return int(len(self.t_ms))
-
-    @property
-    def valid_ratio(self) -> float:
-        return self.n_valid / self.n_total if self.n_total else 0.0
+        return int(len(self.t))
 
 
-def validate_samples(
-    samples: Iterable[Mapping], screen_w: float, screen_h: float
-) -> CleanedSamples:
-    """Apply the documented per-sample rejection rules.
+def clean_frames(df: pd.DataFrame, cfg: PreprocessConfig = C.DEPLOYED) -> CleanedFrames:
+    """Reject bad frames (counted, never silently): timestamp, success/no-face, low confidence,
+    non-finite or impossible gaze, impossible frame-to-frame jump."""
+    d = standardize_frame(df, cfg)
+    n_total = len(d)
+    rej = dict.fromkeys(
+        ("invalid_timestamp", "non_monotonic", "no_face", "low_confidence",
+         "invalid_gaze", "impossible_jump"), 0)
+    pose_cols = [c for c in d.columns if c.startswith("pose_")]
 
-    Rules (a sample is dropped, and counted, at the first one it violates):
-      non_finite          timestamp / x / y is NaN or +-inf
-      negative_timestamp  timestamp < 0
-      non_monotonic       timestamp <= the largest timestamp seen so far
-      face_not_detected   face_detected is False
-      out_of_bounds       x or y outside [0, screen] (predictions off the screen)
-      tracker_placeholder x == y == 0 exactly (the eye tracker's no-data/blink code in the
-                          training data; also never a real WebGazer prediction)
-    """
-    rejected = {k: 0 for k in (
-        "non_finite", "negative_timestamp", "non_monotonic",
-        "face_not_detected", "out_of_bounds", "tracker_placeholder",
-    )}
-    t_out: list[float] = []
-    x_out: list[float] = []
-    y_out: list[float] = []
-    stim: list[Optional[str]] = []
-    n_total = 0
-    last_t = -math.inf
+    ts = d["timestamp"].to_numpy(float)
+    keep = np.ones(n_total, bool)
 
-    for s in samples:
-        n_total += 1
-        try:
-            t = float(s["timestamp"])
-        except (KeyError, TypeError, ValueError):
-            rejected["non_finite"] += 1
+    bad = ~np.isfinite(ts) | (ts < 0)
+    rej["invalid_timestamp"] = int(bad.sum()); keep &= ~bad
+
+    # non-monotonic: timestamp not strictly greater than the running maximum of kept frames
+    run_max = -np.inf
+    for i in range(n_total):
+        if not keep[i]:
             continue
-        if not math.isfinite(t):
-            rejected["non_finite"] += 1
+        if ts[i] <= run_max:
+            keep[i] = False; rej["non_monotonic"] += 1
+        else:
+            run_max = ts[i]
+
+    succ = d["success"].to_numpy(float)
+    bad = keep & ~(succ == 1)
+    rej["no_face"] = int(bad.sum()); keep &= ~bad
+
+    conf = d["confidence"].to_numpy(float)
+    mean_all = float(np.nanmean(conf)) if np.isfinite(conf).any() else None
+    bad = keep & ~(np.isfinite(conf) & (conf >= C.MIN_CONFIDENCE))
+    rej["low_confidence"] = int(bad.sum()); keep &= ~bad
+
+    gx, gy = d["gaze_angle_x"].to_numpy(float), d["gaze_angle_y"].to_numpy(float)
+    bad = keep & ~(np.isfinite(gx) & np.isfinite(gy)
+                   & (np.abs(gx) <= C.MAX_ABS_GAZE_ANGLE) & (np.abs(gy) <= C.MAX_ABS_GAZE_ANGLE))
+    for pc in pose_cols:
+        bad |= keep & ~np.isfinite(d[pc].to_numpy(float))
+    rej["invalid_gaze"] = int(bad.sum()); keep &= ~bad
+
+    # impossible jumps relative to the previous kept frame (iterative so one outlier
+    # does not take its neighbours with it)
+    idx = np.flatnonzero(keep)
+    last = None
+    for i in idx:
+        if last is not None:
+            dt = ts[i] - ts[last]
+            speed = np.hypot(gx[i] - gx[last], gy[i] - gy[last]) / dt
+            if speed > C.MAX_GAZE_SPEED:
+                keep[i] = False; rej["impossible_jump"] += 1
+                continue
+        last = i
+
+    values = {"gaze_angle_x": gx[keep], "gaze_angle_y": gy[keep]}
+    for pc in pose_cols:
+        values[pc] = d[pc].to_numpy(float)[keep]
+    return CleanedFrames(t=ts[keep], values=values, confidence=conf[keep],
+                         n_total=n_total, rejected=rej, mean_confidence_all=mean_all)
+
+
+# ── 3. resampling ────────────────────────────────────────────────────────────
+
+@dataclass
+class Resampled:
+    grid: dict                # name -> (T,) arrays on the fixed grid (NaN in holes)
+    hole: np.ndarray          # (T,) True where no real frame within MAX_GAP_S
+    hz: int
+
+
+def resample(cl: CleanedFrames, cfg: PreprocessConfig = C.DEPLOYED) -> Resampled:
+    """Linear interpolation onto a fixed grid; steps inside a gap longer than MAX_GAP_S are holes.
+    A fixed grid removes the recording frame-rate (22.4 vs 24.4 fps between DASD classes) as a cue."""
+    if cl.n_valid < 2:
+        return Resampled({k: np.zeros(0) for k in cl.values}, np.zeros(0, bool), cfg.resample_hz)
+    t0, t1 = cl.t[0], cl.t[-1]
+    n = int(np.floor((t1 - t0) * cfg.resample_hz)) + 1
+    grid_t = t0 + np.arange(n) / cfg.resample_hz
+    # gap test: distance between the surrounding real frames
+    right = np.searchsorted(cl.t, grid_t, side="left").clip(1, cl.n_valid - 1)
+    left = right - 1
+    span = cl.t[right] - cl.t[left]
+    hole = span > C.MAX_GAP_S
+    out = {k: np.interp(grid_t, cl.t, v) for k, v in cl.values.items()}
+    for v in out.values():
+        v[hole] = np.nan
+    return Resampled(out, hole, cfg.resample_hz)
+
+
+# ── 4. features / normalisation ──────────────────────────────────────────────
+
+def build_features(rs: Resampled, cfg: PreprocessConfig = C.DEPLOYED) -> np.ndarray:
+    """(T, F) raw (un-normalised) feature matrix in cfg.feature_names order; NaN in holes."""
+    T = len(rs.hole)
+    cols = []
+    for name in cfg.feature_names:
+        if name in ("gaze_angle_x", "gaze_angle_y"):
+            cols.append(rs.grid[name])
+        elif name in ("gaze_vel_x", "gaze_vel_y"):
+            base = rs.grid["gaze_angle_" + name[-1]]
+            v = np.full(T, np.nan)
+            if T > 1:
+                v[1:] = np.diff(base) * rs.hz
+            cols.append(v)
+        elif name in POSE_FEATURES:
+            cols.append(rs.grid[POSE_FEATURES[name]])
+        else:
+            raise SchemaError(f"unknown feature {name!r}")
+    return np.stack(cols, axis=1) if cols else np.zeros((T, 0))
+
+
+def make_windows(feats: np.ndarray, hole: np.ndarray, cfg: PreprocessConfig = C.DEPLOYED) -> np.ndarray:
+    """Slide a fixed window over the session.  Windows with too many hole steps are dropped;
+    remaining holes are filled with the window mean (position) / 0 (velocity).  -> (W, L, F)."""
+    L, S = cfg.window_steps, cfg.stride_steps
+    T = len(feats)
+    wins = []
+    for a in range(0, T - L + 1, S):
+        seg = feats[a:a + L].copy()
+        h = hole[a:a + L] | ~np.isfinite(seg).all(axis=1)
+        if (1 - h.mean()) < cfg.min_window_coverage:
             continue
-        if t < 0:
-            rejected["negative_timestamp"] += 1
-            continue
-        if t <= last_t:
-            rejected["non_monotonic"] += 1
-            continue
-        last_t = t
-        if s.get("face_detected", True) is False:
-            rejected["face_not_detected"] += 1
-            continue
-        try:
-            x = float(s["x"])
-            y = float(s["y"])
-        except (KeyError, TypeError, ValueError):
-            rejected["non_finite"] += 1
-            continue
-        if not (math.isfinite(x) and math.isfinite(y)):
-            rejected["non_finite"] += 1
-            continue
-        if x == 0.0 and y == 0.0:
-            rejected["tracker_placeholder"] += 1
-            continue
-        if not (0.0 <= x <= screen_w and 0.0 <= y <= screen_h):
-            rejected["out_of_bounds"] += 1
-            continue
-        t_out.append(t)
-        x_out.append(x / screen_w)
-        y_out.append(y / screen_h)
-        sid = s.get("stimulus_id")
-        stim.append(None if sid is None else str(sid))
-
-    return CleanedSamples(
-        t_ms=np.asarray(t_out, dtype=np.float64),
-        x=np.asarray(x_out, dtype=np.float64),
-        y=np.asarray(y_out, dtype=np.float64),
-        stimulus=stim,
-        n_total=n_total,
-        rejected=rejected,
-    )
+        for j, name in enumerate(cfg.feature_names):
+            col = seg[:, j]
+            fill = 0.0 if "vel" in name else float(np.nanmean(col[~h]))
+            col[h] = fill
+        if cfg.center_window:
+            for j, name in enumerate(cfg.feature_names):
+                if "vel" not in name:
+                    seg[:, j] -= seg[:, j].mean()
+        wins.append(seg)
+    return np.stack(wins) if wins else np.zeros((0, L, len(cfg.feature_names)))
 
 
-def compute_dt(t_ms: np.ndarray) -> np.ndarray:
-    """Server-side dt (ms) between consecutive valid samples; first entry is 0."""
-    if len(t_ms) == 0:
-        return np.zeros(0)
-    return np.concatenate([[0.0], np.diff(t_ms)])
+def fit_normalizer(windows: np.ndarray) -> dict:
+    """Per-feature mean/std from TRAINING windows only (stored in the checkpoint metadata)."""
+    flat = windows.reshape(-1, windows.shape[-1])
+    std = flat.std(axis=0)
+    return {"method": "global_zscore", "mean": flat.mean(axis=0).tolist(),
+            "std": np.where(std < 1e-6, 1.0, std).tolist()}
 
 
-def segment_bounds(t_ms: np.ndarray) -> list[tuple[int, int]]:
-    """Half-open index ranges of runs whose consecutive gaps are <= MAX_GAP_MS."""
-    n = len(t_ms)
-    if n == 0:
-        return []
-    breaks = np.where(np.diff(t_ms) > C.MAX_GAP_MS)[0] + 1
-    starts = np.concatenate([[0], breaks])
-    ends = np.concatenate([breaks, [n]])
-    return list(zip(starts.tolist(), ends.tolist()))
+def normalize(windows: np.ndarray, norm: dict) -> np.ndarray:
+    if norm.get("method") != "global_zscore":
+        raise SchemaError(f"unsupported normalisation {norm.get('method')!r}")
+    mean = np.asarray(norm["mean"], np.float32); std = np.asarray(norm["std"], np.float32)
+    return ((windows - mean) / std).astype(np.float32)
 
 
-# ── 2. Fixation flag (I-DT) ──────────────────────────────────────────────────
+# ── 5. whole-session convenience (what both training and inference call) ─────
 
-def detect_fixations(t_ms: np.ndarray, x: np.ndarray, y: np.ndarray) -> np.ndarray:
-    """I-DT: a run of samples lasting >= FIXATION_MIN_MS whose dispersion
-    (x-range + y-range, normalised coordinates) stays <= FIXATION_DISPERSION.
-    Windows never span a gap > MAX_GAP_MS.  Returns a float32 0/1 array.
-    """
-    n = len(t_ms)
-    flag = np.zeros(n, dtype=np.float32)
-    for lo, hi in segment_bounds(t_ms):
-        i = lo
-        while i < hi:
-            j = i
-            xmin = xmax = x[i]
-            ymin = ymax = y[i]
-            while j + 1 < hi:
-                nx0, nx1 = min(xmin, x[j + 1]), max(xmax, x[j + 1])
-                ny0, ny1 = min(ymin, y[j + 1]), max(ymax, y[j + 1])
-                if (nx1 - nx0) + (ny1 - ny0) > C.FIXATION_DISPERSION:
-                    break
-                xmin, xmax, ymin, ymax = nx0, nx1, ny0, ny1
-                j += 1
-            if t_ms[j] - t_ms[i] >= C.FIXATION_MIN_MS:
-                flag[i:j + 1] = 1.0
-                i = j + 1
-            else:
-                i += 1
-    return flag
+@dataclass
+class Prepared:
+    windows: np.ndarray              # (W, L, F) raw features, un-normalised
+    cleaned: CleanedFrames
+    resampled: Resampled
+    duration_s: float
 
 
-# ── 3. Resample + feature matrix ─────────────────────────────────────────────
-
-def build_feature_matrix(cleaned: CleanedSamples) -> np.ndarray:
-    """(T, len(FEATURE_NAMES)) float32, un-normalised, T <= SEQ_LEN.
-
-    Each gap-free segment (>= 2 samples) is resampled to a RESAMPLE_HZ grid
-    (linear x/y, nearest fixation flag); segments are concatenated in time
-    order with gaps removed.  speed = |d(x,y)| * RESAMPLE_HZ (screen-widths/s
-    on the normalised axes); the first step of a segment has speed 0.
-    """
-    t, x, y = cleaned.t_ms, cleaned.x, cleaned.y
-    if len(t) < 2:
-        return np.zeros((0, len(C.FEATURE_NAMES)), dtype=np.float32)
-    fix = detect_fixations(t, x, y)
-
-    rows: list[np.ndarray] = []
-    for lo, hi in segment_bounds(t):
-        if hi - lo < 2:
-            continue
-        ts, xs, ys, fs = t[lo:hi], x[lo:hi], y[lo:hi], fix[lo:hi]
-        grid = np.arange(ts[0], ts[-1] + 1e-9, C.STEP_MS)
-        gx = np.interp(grid, ts, xs)
-        gy = np.interp(grid, ts, ys)
-        idx = np.clip(np.searchsorted(ts, grid), 0, len(ts) - 1)
-        prev = np.clip(idx - 1, 0, len(ts) - 1)
-        nearest = np.where(np.abs(ts[idx] - grid) <= np.abs(ts[prev] - grid), idx, prev)
-        gf = fs[nearest]
-        speed = np.zeros(len(grid))
-        if len(grid) > 1:
-            speed[1:] = np.hypot(np.diff(gx), np.diff(gy)) * C.RESAMPLE_HZ
-        rows.append(np.stack([gx, gy, speed, gf], axis=1))
-
-    if not rows:
-        return np.zeros((0, len(C.FEATURE_NAMES)), dtype=np.float32)
-    feats = np.concatenate(rows, axis=0).astype(np.float32)
-    return feats[: C.SEQ_LEN]
+def prepare_session(df: pd.DataFrame, cfg: PreprocessConfig = C.DEPLOYED) -> Prepared:
+    cl = clean_frames(df, cfg)
+    rs = resample(cl, cfg)
+    feats = build_features(rs, cfg)
+    wins = make_windows(feats, rs.hole, cfg)
+    dur = float(cl.t[-1] - cl.t[0]) if cl.n_valid >= 2 else 0.0
+    return Prepared(wins, cl, rs, dur)
 
 
-def normalize(feats: np.ndarray, mean: np.ndarray, std: np.ndarray) -> np.ndarray:
-    return ((feats - mean) / std).astype(np.float32)
-
-
-def pad_sequence(feats: np.ndarray) -> tuple[np.ndarray, int]:
-    """Zero-pad (after normalisation) to (SEQ_LEN, F); returns (array, real_length)."""
-    real = min(len(feats), C.SEQ_LEN)
-    out = np.zeros((C.SEQ_LEN, len(C.FEATURE_NAMES)), dtype=np.float32)
-    out[:real] = feats[:real]
-    return out, real
-
-
-# ── 4. Human-readable session summary (display only, never fed to the model) ─
-
-def summarize(cleaned: CleanedSamples) -> dict:
-    n = cleaned.n_valid
-    if n < 2:
-        return {}
-    t, x, y = cleaned.t_ms, cleaned.x, cleaned.y
-    fix = detect_fixations(t, x, y)
-
-    durations: list[float] = []
-    start: Optional[float] = None
-    for i in range(n):
-        if fix[i] and start is None:
-            start = t[i]
-        if start is not None and (not fix[i] or i == n - 1 or t[i + 1] - t[i] > C.MAX_GAP_MS):
-            durations.append(float(t[i] - start))
-            start = None
-    stim = cleaned.stimulus
-    social = sum(1 for s in stim if s in SOCIAL_STIMULI)
-    transitions = sum(1 for i in range(1, n) if stim[i] != stim[i - 1])
-    steps = np.hypot(np.diff(x), np.diff(y))
-    steps = steps[np.diff(t) <= C.MAX_GAP_MS]
-    return {
-        "fixation_ratio": round(float(fix.mean()), 4),
-        "mean_fixation_duration": round(float(np.mean(durations)), 1) if durations else 0.0,
-        "gaze_variability": round(float((np.std(x) + np.std(y)) / 2), 4),
-        "scanpath_length": round(float(steps.sum()), 4),
-        "social_attention_ratio": round(social / n, 4),
-        "stimulus_transitions": int(transitions),
-        "duration_s": round(float((t[-1] - t[0]) / 1000.0), 2),
-    }
+def to_tensor(windows: np.ndarray, norm: dict):
+    import torch
+    return torch.from_numpy(normalize(windows, norm))

@@ -100,7 +100,7 @@ def fuse(
     questionnaire_probability : float
         The 0-1 ASD probability from the trained questionnaire ML model.
     gaze_result : dict | None
-        Output from gaze_engine.compute_gaze_score(), or None if skipped.
+        Result of the server-side gaze analysis (ml/gaze/service.py), or None if skipped.
     speech_result : dict | None
         Output from speech_engine.compute_speech_score(), or None if skipped.
     facial_result : dict | None

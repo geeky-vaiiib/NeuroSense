@@ -163,12 +163,21 @@ export default function Results() {
   const legacyGazeFeatures = gazeFeatures && typeof gazeFeatures === 'object' && Object.keys(gazeFeatures).length > 0;
   const hasGazeData = gazeStatus ? gazeStatus === 'success' : legacyGazeFeatures;
   const GAZE_REASON_TEXT = {
+    face_not_detected: 'the face was not detected for much of the recording',
+    low_tracking_confidence: 'face-tracking confidence was too low',
+    too_many_invalid_frames: 'too many frames could not be tracked',
+    recording_too_short: 'the recording was too short',
+    too_few_usable_windows: 'too little continuous, well-tracked footage was recorded',
+    tracking_not_continuous: 'tracking was interrupted too often',
+    corrupt_video: 'the recording could not be read',
+    openface_unavailable: 'OpenFace is not installed on the server',
+    openface_failed: 'the server could not extract gaze features',
+    model_unavailable: 'the gaze model is unavailable',
     poor_calibration: 'the eye-tracking calibration was not accurate enough',
     calibration_incomplete: 'calibration was not completed',
     insufficient_samples: 'too few gaze samples were recorded',
     insufficient_valid_samples: 'too many gaze samples were unusable',
     insufficient_usable_duration: 'not enough continuous gaze data was recorded',
-    face_not_detected: 'the face was not detected for much of the session',
     inconsistent_timestamps: 'the recording timing was inconsistent',
   };
   const gazeUnavailableText = (() => {
@@ -196,7 +205,7 @@ export default function Results() {
     }
     if (gazeStatus === 'insufficient_quality') {
       return `Gaze data was recorded but could not be scored: ${GAZE_REASON_TEXT[gazeReason] || gazeReason || 'quality too low'}. `
-        + `(${gazeQuality?.valid_sample_count ?? 0} of ${gazeQuality?.sample_count ?? 0} samples usable.) It did not affect the result.`;
+        + `(${gazeQuality?.valid_sample_count ?? 0} of ${gazeQuality?.sample_count ?? 0} frames usable.) It did not affect the result.`;
     }
     if (gazeStatus === 'unavailable') {
       return `The gaze model could not score this session (${gazeReason || 'unknown reason'}). It did not affect the result.`;
@@ -250,9 +259,9 @@ export default function Results() {
       return {
         id: 'gaze', label: 'Gaze', available: ok, used: ok && gazeUsedInFusion, probability: ok ? gazeScore : null, contribution: bMap.gaze?.contribution,
         stateLabel: label, tone: ok ? (gazeUsedInFusion ? 'ok' : 'warn') : 'muted',
-        quality: gazeQ ? `${gazeQ.valid_sample_count}/${gazeQ.sample_count} usable samples · calibration ${gazeQ.calibration_score?.toFixed?.(2) ?? '—'}` : null,
+        quality: gazeQ ? `${gazeQ.valid_sample_count}/${gazeQ.sample_count} usable frames${gazeQ.data_quality_score != null ? ` · data quality ${Math.round(gazeQ.data_quality_score * 100)}%` : ''}` : null,
         detail: ok ? (gazeUsedInFusion ? `Probability ${pct(gazeScore)}; contributes ${pct(bMap.gaze?.contribution) ?? 'a share'} of the final result.`
-          : `Probability ${pct(gazeScore)} is shown for context; the gaze model has not met its validation threshold, so it did not influence the result.`)
+          : `Probability ${pct(gazeScore)} is shown for context; it did not influence the result${gazeFeatures?.fusion_reason ? ` (${gazeFeatures.fusion_reason})` : ''}.`)
           : gazeUnavailableText,
       };
     })(),
@@ -548,7 +557,7 @@ export default function Results() {
                   Gaze Analysis
                 </h3>
                 <p style={{ margin: '6px 0 0', color: 'var(--ns-n500)' }}>
-                  Eye movement features from the 30-second visual task.
+                  OpenFace gaze and head-pose measurements from the 30-second visual task, scored by a model trained on the DASD dataset.
                 </p>
               </div>
               {hasGazeData ? (
@@ -567,7 +576,7 @@ export default function Results() {
                     fontWeight: 600,
                   }}
                 >
-                  {gazeStatus ? 'Gaze model output' : (gazeMock ? 'Heuristic model' : 'Live session')}
+                  {gazeStatus ? 'OpenFace webcam model' : (gazeMock ? 'Heuristic model' : 'Live session')}
                 </span>
               ) : (
                 <span
@@ -640,7 +649,16 @@ export default function Results() {
                     backgroundColor: 'var(--ns-surface-2)',
                   }}
                 >
-                  {[
+                  {(gazeStatus ? [
+                    ['Model', gazeModelVersion || 'n/a'],
+                    ['Data quality', gazeQuality?.data_quality_score != null ? `${Math.round(gazeQuality.data_quality_score * 100)}%` : '—'],
+                    ['Frames', gazeQuality ? `${gazeQuality.valid_sample_count}/${gazeQuality.sample_count} usable` : '—'],
+                    ['Duration', gazeQuality?.duration_seconds != null ? `${gazeQuality.duration_seconds}s` : '—'],
+                    ['Windows scored', gazeFeatures?.windows_scored != null ? String(gazeFeatures.windows_scored) : '—'],
+                    ['Signal', gazeFeatures?.prediction === 'asd_signal' ? 'Higher-risk gaze pattern' : gazeFeatures?.prediction === 'typical_signal' ? 'Lower-risk gaze pattern' : '—'],
+                    ['Features used', Array.isArray(gazeFeatures?.features_used) ? gazeFeatures.features_used.join(', ') : '—'],
+                    ['Status', 'Analyzed'],
+                  ] : [
                     [
                       'Social attention ratio',
                       gazeFeatures.social_attention_ratio != null
@@ -671,7 +689,7 @@ export default function Results() {
                         ? String(gazeFeatures.stimulus_transitions)
                         : '—',
                     ],
-                  ].map(([label, value]) => (
+                  ]).map(([label, value]) => (
                     <div
                       key={label}
                       style={{
@@ -701,14 +719,14 @@ export default function Results() {
                   <p style={{ marginTop: '12px', fontSize: '0.85rem', fontWeight: 600, color: gazeUsedInFusion ? 'var(--ns-instrument)' : 'var(--ns-risk-mod)' }}>
                     {gazeUsedInFusion
                       ? 'Included in the final probability.'
-                      : 'Recorded and scored, but NOT included in the final probability: this gaze model has not reached the validation threshold required to influence the result.'}
+                      : `Recorded and scored, but NOT included in the final probability${gazeFeatures?.fusion_reason ? `: ${gazeFeatures.fusion_reason}` : ''}.`}
                   </p>
                 )}
                 {gazeStatus && (
                   <p style={{ marginTop: '12px', color: 'var(--ns-n500)', fontSize: '0.8rem', fontFamily: 'var(--font-data)' }}>
                     Model {gazeModelVersion || 'n/a'}
                     {gazeQuality
-                      ? ` · ${gazeQuality.valid_sample_count}/${gazeQuality.sample_count} usable samples · calibration ${gazeQuality.calibration_score?.toFixed(2)}`
+                      ? ` · ${gazeQuality.valid_sample_count}/${gazeQuality.sample_count} usable frames · tracking continuity ${Math.round((gazeQuality.tracking_continuity ?? 0) * 100)}%`
                       : ''}
                   </p>
                 )}

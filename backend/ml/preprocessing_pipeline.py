@@ -28,12 +28,10 @@ from typing import Optional
 # as a sub-package (uvicorn).
 
 try:
-    from ..ml.gaze_engine import compute_gaze_score
     from ..ml.speech_engine import compute_speech_score
     from ..ml.facial_engine import compute_facial_score
     from ..ml.preprocessor import preprocess_for_inference
 except ImportError:
-    from .gaze_engine import compute_gaze_score
     from .speech_engine import compute_speech_score
     from .facial_engine import compute_facial_score
     from ml.preprocessor import preprocess_for_inference
@@ -52,7 +50,7 @@ class PreprocessedInput:
     tabular_features : numpy.ndarray
         Shape ``(1, 15)`` feature vector ready for the questionnaire ML model.
     gaze_result : dict | None
-        Raw output of ``gaze_engine.compute_gaze_score()``.
+        Result of the server-side /gaze/analyze job.
         ``None`` when the gaze step was skipped or had no data.
     speech_result : dict | None
         Raw output of ``speech_engine.compute_speech_score()``.
@@ -79,7 +77,7 @@ def preprocess_screening_input(
     answers: dict,
     encoders: Optional[dict] = None,
     *,
-    gaze_session: Optional[dict] = None,
+    gaze_result: Optional[dict] = None,
     gaze_skipped: bool = False,
     audio_base64: Optional[str] = None,
     audio_mime_type: str = "audio/webm",
@@ -100,8 +98,8 @@ def preprocess_screening_input(
         AQ-10 / Q-CHAT-10 raw answer strings keyed by ``"A1"``–``"A10"``.
     encoders : dict | None
         Fitted sklearn LabelEncoders from the model bundle (for ethnicity).
-    gaze_session : dict | None
-        Canonical gaze session (schemas/gaze.py) captured by the frontend.
+    gaze_result : dict | None
+        Result of the server-side gaze analysis job (never client-supplied numbers).
     gaze_skipped : bool
         True when the user deliberately skipped the gaze step.
     audio_base64 : str | None
@@ -132,14 +130,9 @@ def preprocess_screening_input(
         category=category,
     )
 
-    # ── 2. Gaze ───────────────────────────────────────────────────────────────
-    gaze_result: Optional[dict] = None
-    if not gaze_skipped and gaze_session:
-        try:
-            gaze_result = compute_gaze_score(gaze_session, category=category)
-        except Exception as exc:
-            errors["gaze"] = str(exc)
-            gaze_result = None   # unavailable; never a fabricated score
+    # ── 2. Gaze: already analysed server-side by /gaze/analyze (OpenFace + trained model) ──
+    if gaze_skipped:
+        gaze_result = None
 
     # ── 3. Speech ─────────────────────────────────────────────────────────────
     speech_result: Optional[dict] = None

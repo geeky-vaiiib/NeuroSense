@@ -12,14 +12,14 @@ from starlette.responses import JSONResponse
 
 try:
     from .core import database
-    from .ml.gaze.gaze_model_service import get_gaze_service
+    from .ml.gaze.service import get_gaze_service
     from .ml.model import load_models
     from .core.config import get_settings
     from .routers import auth, cases, explainability, gaze, screening
     from .schemas.screening import HealthResponse
 except ImportError:  # pragma: no cover - fallback for backend cwd execution
     from .core import database
-    from ml.gaze.gaze_model_service import get_gaze_service
+    from ml.gaze.service import get_gaze_service
     from ml.model import load_models
     from core.config import get_settings
     from routers import auth, cases, explainability, gaze, screening
@@ -71,14 +71,15 @@ async def lifespan(app: FastAPI):
     logger.info(
         "Modality engines loaded:\n"
         "  Questionnaire  → TRAINED ML CLASSIFIER (supervised — UCI/Kaggle labeled data) ✓\n"
-        "  Gaze           → TRAINED BiLSTM (browser features; no heuristic fallback) — see /gaze/status\n"
+        "  Gaze           → TRAINED BiLSTM on DASD/OpenFace features (OpenFace on the server) — see /gaze/status\n"
         "  Speech         → RULE-BASED HEURISTIC (Bone et al. 2014 — no labeled training data) ✓\n"
         "  Facial         → NOT IMPLEMENTED ✗\n"
         "  Fusion         → fusion_engine.fuse() — Option A (P(Q) drives risk level) ✓"
     )
     _gaze = get_gaze_service().status()
-    logger.info("Gaze model: %s", _gaze["model_version"] if _gaze["available"]
-                else f"UNAVAILABLE ({_gaze['reason']})")
+    logger.info("Gaze model: %s (OpenFace available: %s)",
+                _gaze["model_version"] if _gaze["available"] else f"UNAVAILABLE ({_gaze['detail']})",
+                _gaze["openface_available"])
     logger.info(
         "Speech CNN model: %s",
         "LOADED — is_trained_model=True" if _SPEECH_CNN_PATH.exists()
@@ -141,8 +142,8 @@ async def health():
             "questionnaire_method": "supervised_ml",
             "questionnaire_is_trained": True,
             "gaze": True,
-            "gaze_method": "lstm_trained" if get_gaze_service().available else None,
-            "gaze_is_trained": get_gaze_service().available,
+            "gaze_method": "bilstm_openface_dasd" if get_gaze_service().available else None,
+            "gaze_is_trained": get_gaze_service().fusion_eligibility()[0],
             "gaze_detail": get_gaze_service().health(),
             "speech": True,
             "speech_method": "cnn_trained" if _SPEECH_CNN_PATH.exists() else "rule_based_heuristic",

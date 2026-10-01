@@ -109,7 +109,7 @@ export default function Screening() {
     if (isToddler) return 'N/A — Toddler track';
     if (gazeSkipped) return 'Skipped';
     if (gazeSession && gazeAnalysis?.status === 'success') {
-      return `Session recorded (${gazeAnalysis.quality.valid_sample_count} usable samples)`;
+      return `Recording analysed (${gazeAnalysis.quality.valid_sample_count} usable frames)`;
     }
     if (gazeSession) return 'Recorded, not usable — reported as not available';
     return 'Not started';
@@ -178,9 +178,8 @@ export default function Screening() {
           demo: { ...demo, age: Number(demo.age) },
           answers,
           aq10Score,
-          // The server re-analyses the raw session; the client never supplies a probability.
-          // A recorded-but-unusable session is still sent so its quality reason is stored.
-          gazeSession,
+          // Reference to the server-side analysis job; the client never supplies a probability.
+          gazeAnalysisId: gazeSession?.analysisId || null,
           gazeSkipped,
           gazeSkipReason: gazeSkipped ? gazeSkipReason : null,
           audioBase64: audioBase64,

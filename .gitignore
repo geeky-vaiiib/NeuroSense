@@ -42,3 +42,6 @@ env/
 
 # ── Datasets ──────────────────────────────────────────────────────────────────
 Eye-Tracking Dataset/
+
+# DASD dataset may not be redistributed (see its README)
+DASD-main/

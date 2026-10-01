@@ -116,40 +116,53 @@ export const casesApi = {
   dashboard: (params = {}) => api.get('/cases/dashboard/summary', { params }),
 };
 
-const GAZE_TIMEOUT_MS = 20_000;
+const GAZE_POLL_MS = 1500;
+const GAZE_MAX_WAIT_MS = 10 * 60_000;
+const sleepMs = (ms) => new Promise((r) => setTimeout(r, ms));
 
 export const gazeApi = {
-  /** GET /gaze/status: is the gaze model loaded and usable? */
+  /** GET /gaze/status: is the gaze model loaded, and is OpenFace installed on the server? */
   status: () => api.get('/gaze/status'),
 
-  /** POST /gaze/analyze. Rejects with ApiError (never mock data). */
-  async analyze(session) {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), GAZE_TIMEOUT_MS);
+  /**
+   * Upload the recording (multipart) and poll the background job.  The probability is computed
+   * by the backend only.  onStage(stage) receives the server's real processing stage.
+   * Rejects with ApiError; never returns synthetic data.
+   */
+  async analyze({ blob, durationMs, sessionId, onStage }) {
+    const form = new FormData();
+    const ext = blob.type.includes('mp4') ? 'mp4' : 'webm';
+    form.append('video', blob, `gaze.${ext}`);
+    form.append('duration_ms', String(Math.round(durationMs)));
+    if (sessionId) form.append('session_id', sessionId);
+    onStage?.('uploading');
     let res;
     try {
-      res = await authFetch('/gaze/analyze', {
-        method: 'POST',
-        body: JSON.stringify(session),
-        signal: controller.signal,
+      // multipart: let the browser set Content-Type with the boundary
+      res = await fetch(`${API_BASE_URL}/gaze/analyze`, {
+        method: 'POST', body: form, credentials: 'include', headers: { ...CSRF_HEADERS, Accept: 'application/json' },
       });
     } catch (err) {
       throw networkError(err);
-    } finally {
-      clearTimeout(timer);
     }
+    if (res.status === 401) notifySessionExpired('/gaze/analyze');
     if (!res.ok) throw apiErrorFromStatus(res.status, await res.json().catch(() => ({})));
-    let body;
-    try {
-      body = await res.json();
-    } catch {
-      throw new ApiError('invalid_response', FALLBACK_MESSAGES.invalid_response);
+    const { job_id: jobId } = await res.json().catch(() => ({}));
+    if (!jobId) throw new ApiError('invalid_response', FALLBACK_MESSAGES.invalid_response);
+
+    const t0 = Date.now();
+    while (Date.now() - t0 < GAZE_MAX_WAIT_MS) {
+      const job = await api.get(`/gaze/jobs/${encodeURIComponent(jobId)}`);
+      onStage?.(job.stage);
+      if (job.state === 'done') {
+        const body = job.result;
+        const okStatus = ['success', 'insufficient_quality', 'unavailable'].includes(body?.status);
+        if (body?.modality !== 'gaze' || !okStatus) throw new ApiError('invalid_response', FALLBACK_MESSAGES.invalid_response);
+        return { ...body, job_id: jobId };
+      }
+      await sleepMs(GAZE_POLL_MS);
     }
-    const okStatus = ['success', 'insufficient_quality', 'unavailable'].includes(body?.status);
-    if (body?.modality !== 'gaze' || !okStatus || typeof body?.quality?.valid !== 'boolean') {
-      throw new ApiError('invalid_response', FALLBACK_MESSAGES.invalid_response);
-    }
-    return body;
+    throw new ApiError('timeout', FALLBACK_MESSAGES.timeout);
   },
 };
 
@@ -161,7 +174,7 @@ export const screeningApi = {
       demo: formData.demo,
       answers: formData.answers,
       aq10Score: formData.aq10Score,
-      gazeSession: formData.gazeSession || null,
+      gazeAnalysisId: formData.gazeAnalysisId || null,
       gazeSkipped: formData.gazeSkipped || false,
       gazeSkipReason: formData.gazeSkipReason || null,
       audioBase64: formData.audioBase64 || null,

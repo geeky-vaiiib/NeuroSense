@@ -1,4 +1,4 @@
-"""Session-level quality gate. Runs before any model call; returns machine-readable reasons."""
+"""Recording quality metrics + gate.  Runs before any model call."""
 
 from __future__ import annotations
 
@@ -8,100 +8,76 @@ from typing import Optional
 import numpy as np
 
 from . import config as C
-from .preprocess import CleanedSamples
+from .preprocess import Prepared
 
 
 @dataclass
 class QualityReport:
     valid: bool
-    reason: Optional[str]                       # first failing rule (None when valid)
-    reasons: list[str] = field(default_factory=list)
-    sample_count: int = 0                       # samples received
+    reason: Optional[str]
+    error_code: Optional[str]
+    reasons: list = field(default_factory=list)
+    sample_count: int = 0                 # frames returned by OpenFace
     valid_sample_count: int = 0
-    valid_ratio: float = 0.0
-    calibration_score: Optional[float] = None
-    duration_s: float = 0.0
-    duration_ms: int = 0
-    sequence_steps: int = 0
+    valid_sample_ratio: float = 0.0
+    mean_confidence: Optional[float] = None
+    tracking_continuity: float = 0.0      # share of the session grid with real frames (no gaps)
+    duration_seconds: float = 0.0
+    window_count: int = 0
+    data_quality_score: float = 0.0       # 0..1, documented formula below
     rejected: dict = field(default_factory=dict)
-    warnings: list[str] = field(default_factory=list)      # non-fatal
-    sampling_rate_hz: Optional[float] = None               # valid samples / duration
-    tracking_continuity: Optional[float] = None            # 1 - (time inside gaps > MAX_GAP_MS) / duration
+    warnings: list = field(default_factory=list)
 
     def to_dict(self) -> dict:
         return asdict(self)
 
 
-def assess(
-    cleaned: CleanedSamples,
-    calibration: Optional[dict],
-    n_steps: int,
-    fixation_ratio: Optional[float] = None,
-) -> QualityReport:
-    """Apply every documented rule; ``reason`` is the first failure in priority order."""
-    reasons: list[str] = []
-    n_total, n_valid = cleaned.n_total, cleaned.n_valid
-    rej = cleaned.rejected
+def quality_score(valid_ratio: float, continuity: float, mean_conf: Optional[float]) -> float:
+    """0.4*valid-frame ratio + 0.3*tracking continuity + 0.3*confidence mapped from [0.5, 1] to [0, 1]."""
+    conf = 0.0 if mean_conf is None else min(1.0, max(0.0, (mean_conf - 0.5) / 0.5))
+    return round(0.4 * valid_ratio + 0.3 * continuity + 0.3 * conf, 4)
 
-    cal_score = None
-    if not calibration or not calibration.get("completed"):
-        reasons.append("calibration_incomplete")
+
+def assess(prep: Prepared) -> QualityReport:
+    cl, rs = prep.cleaned, prep.resampled
+    n_total, n_valid = cl.n_total, cl.n_valid
+    ratio = n_valid / n_total if n_total else 0.0
+    cont = float(1.0 - rs.hole.mean()) if len(rs.hole) else 0.0
+    mean_conf = float(np.mean(cl.confidence)) if n_valid else None
+    rej = cl.rejected
+    reasons: list[tuple[str, str]] = []     # (reason, error_code)
+
+    if n_total == 0:
+        reasons.append(("no_frames", C.ERR_TOO_FEW_FRAMES))
     else:
-        cal_score = float(calibration.get("quality_score", 0.0))
-        if cal_score < C.MIN_CALIBRATION_SCORE:
-            reasons.append("poor_calibration")
-
-    if n_total < C.MIN_TOTAL_SAMPLES:
-        reasons.append("insufficient_samples")
-    if n_total and rej.get("non_monotonic", 0) / n_total > C.MAX_NONMONOTONIC_RATIO:
-        reasons.append("inconsistent_timestamps")
-    seen_face = n_total - rej.get("non_finite", 0) - rej.get("negative_timestamp", 0) - rej.get("non_monotonic", 0)
-    if seen_face > 0 and rej.get("face_not_detected", 0) / seen_face > (1 - C.MIN_FACE_RATIO):
-        reasons.append("face_not_detected")
-    if n_valid < C.MIN_VALID_SAMPLES or (n_total and n_valid / n_total < C.MIN_VALID_RATIO):
-        if "face_not_detected" not in reasons:
-            reasons.append("insufficient_valid_samples")
-
-    duration_s = float((cleaned.t_ms[-1] - cleaned.t_ms[0]) / 1000.0) if n_valid >= 2 else 0.0
-    if duration_s > C.MAX_SESSION_S:
-        reasons.append("session_too_long")
-    if n_steps < C.MIN_SEQ_STEPS:
-        reasons.append("insufficient_usable_duration")
-
-    # ── non-fatal warnings: reported, never block inference ──
-    warnings: list[str] = []
+        if rej.get("no_face", 0) / n_total > 1 - C.MIN_VALID_FRAME_RATIO:
+            reasons.append(("face_not_detected", C.ERR_NO_FACE))
+        elif rej.get("low_confidence", 0) / n_total > 1 - C.MIN_VALID_FRAME_RATIO:
+            reasons.append(("low_tracking_confidence", C.ERR_LOW_CONFIDENCE))
+        elif ratio < C.MIN_VALID_FRAME_RATIO:
+            reasons.append(("too_many_invalid_frames", C.ERR_QUALITY))
     if not reasons:
-        if cal_score is not None and cal_score < C.WARN_CALIBRATION_SCORE:
-            warnings.append("marginal_calibration")
-        if n_total and n_valid / n_total < C.WARN_VALID_RATIO:
-            warnings.append("many_unusable_samples")
-        if n_valid >= 2:
-            gaps = np.diff(cleaned.t_ms)
-            gap_time = float(gaps[gaps > C.MAX_GAP_MS].sum())
-            if duration_s > 0 and gap_time / (duration_s * 1000.0) > C.WARN_GAP_RATIO:
-                warnings.append("gaps_in_session")
-        if fixation_ratio is not None and fixation_ratio < C.WARN_MIN_FIXATION_RATIO:
-            warnings.append("very_few_fixations")
+        if prep.duration_s < C.MIN_DURATION_S:
+            reasons.append(("recording_too_short", C.ERR_TOO_FEW_FRAMES))
+        elif prep.duration_s > C.MAX_SESSION_S:
+            reasons.append(("recording_too_long", C.ERR_QUALITY))
+        elif cont < C.MIN_TRACKING_CONTINUITY:
+            reasons.append(("tracking_not_continuous", C.ERR_QUALITY))
+        elif len(prep.windows) < C.MIN_WINDOWS:
+            reasons.append(("too_few_usable_windows", C.ERR_TOO_FEW_FRAMES))
 
-    rate = continuity = None
-    if n_valid >= 2 and duration_s > 0:
-        gaps = np.diff(cleaned.t_ms)
-        rate = round((n_valid - 1) / duration_s, 2)
-        continuity = round(max(0.0, 1.0 - float(gaps[gaps > C.MAX_GAP_MS].sum()) / (duration_s * 1000.0)), 4)
-
+    warnings = []
+    if not reasons:
+        if ratio < 0.8:
+            warnings.append("many_frames_rejected")
+        if cont < 0.8:
+            warnings.append("gaps_in_tracking")
     return QualityReport(
-        valid=not reasons,
-        reason=reasons[0] if reasons else None,
-        reasons=reasons,
-        sample_count=n_total,
-        valid_sample_count=n_valid,
-        valid_ratio=round(n_valid / n_total, 4) if n_total else 0.0,
-        calibration_score=cal_score,
-        duration_s=round(duration_s, 2),
-        duration_ms=int(round(duration_s * 1000)),
-        sequence_steps=int(n_steps),
-        rejected=dict(rej),
-        warnings=warnings,
-        sampling_rate_hz=rate,
-        tracking_continuity=continuity,
-    )
+        valid=not reasons, reason=reasons[0][0] if reasons else None,
+        error_code=reasons[0][1] if reasons else None, reasons=[r for r, _ in reasons],
+        sample_count=n_total, valid_sample_count=n_valid, valid_sample_ratio=round(ratio, 4),
+        mean_confidence=None if mean_conf is None else round(mean_conf, 4),
+        tracking_continuity=round(cont, 4), duration_seconds=round(prep.duration_s, 2),
+        window_count=int(len(prep.windows)),
+        data_quality_score=quality_score(ratio, cont, mean_conf) if n_total else 0.0,
+        rejected=dict(rej), warnings=warnings)

@@ -7,10 +7,8 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 try:
     from ..core.categories import validate_age_for_category
-    from .gaze import GazeAnalyzeRequest
 except ImportError:  # pragma: no cover - fallback for backend cwd execution
     from core.categories import validate_age_for_category
-    from schemas.gaze import GazeAnalyzeRequest
 
 
 # ── Enums ──────────────────────────────────────────────────────────
@@ -150,10 +148,11 @@ class ScreeningRequest(BaseModel):
         alias="gazePoints",
         description="DEPRECATED legacy normalised points; ignored. Use gazeSession.",
     )
-    gaze_session: Optional[GazeAnalyzeRequest] = Field(
+    gaze_analysis_id: Optional[str] = Field(
         default=None,
-        alias="gazeSession",
-        description="Canonical gaze session; scored server-side by the gaze model service",
+        alias="gazeAnalysisId",
+        max_length=64,
+        description="Id of a completed /gaze/analyze job; the server looks up its own result",
     )
     gaze_skip_reason: Optional[str] = Field(
         default=None,

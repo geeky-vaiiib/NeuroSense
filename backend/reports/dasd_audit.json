@@ -1,0 +1,97 @@
+{
+  "dataset": "DASD (Cai et al., MICCAI 2022)",
+  "root": "/Users/vaibhavjp/neuro-sense-main/DASD-main",
+  "participants": 82,
+  "asd": 57,
+  "td": 25,
+  "recordings": 82,
+  "frames_total": 41002,
+  "official_split": {
+    "ASD": {
+      "test": 19,
+      "train": 38
+    },
+    "TD": {
+      "test": 8,
+      "train": 17
+    }
+  },
+  "modalities": [
+    "OpenFace 2.0 per-frame CSV features (no raw video, no audio, no images shipped)"
+  ],
+  "n_columns": 714,
+  "gaze_columns": [
+    "gaze_0_x",
+    "gaze_0_y",
+    "gaze_0_z",
+    "gaze_1_x",
+    "gaze_1_y",
+    "gaze_1_z",
+    "gaze_angle_x",
+    "gaze_angle_y"
+  ],
+  "head_pose_columns": [
+    "pose_Tx",
+    "pose_Ty",
+    "pose_Tz",
+    "pose_Rx",
+    "pose_Ry",
+    "pose_Rz"
+  ],
+  "other_column_groups": {
+    "eye_lmk_*": "eye landmarks 2D/3D",
+    "x_/y_/X_/Y_/Z_": "68 face landmarks",
+    "p_*": "PDM shape params",
+    "AU*_r/_c": "action units"
+  },
+  "label_source": "ADOS-2 (README); folders abnormal=ASD(57) normal=TD(25); class_indices.json 0->abnormal 1->normal",
+  "label_mapping": {
+    "ASD": 1,
+    "TD": 0
+  },
+  "filename_warning": "all files are named normal_<n>.csv, also inside abnormal/ -> labels come from folders only",
+  "metadata_available": "none: no age, sex, ADOS score, stimulus id or session info",
+  "stimulus_info": "NOT provided. README: children did the experiment at home with a parent; stimulus/task unknown",
+  "missing_data_pct": {
+    "gaze_angle_x": 0.0,
+    "gaze_angle_y": 0.0,
+    "confidence": 0.0,
+    "pose_Rx": 0.0,
+    "pose_Ry": 0.0,
+    "pose_Rz": 0.0,
+    "pose_Tz": 0.0
+  },
+  "nan_cell_pct_overall": 0.0,
+  "success_flag_mean": 1.0,
+  "note_success": "success==1 for every row: frames where OpenFace failed were already removed -> gaps are the only trace of lost tracking",
+  "per_class": [
+    {
+      "label": "ASD",
+      "participants": 57,
+      "frames": 33226,
+      "dur_mean": 26.197,
+      "dur_min": 10.28,
+      "dur_max": 65.56,
+      "fps_mean": 22.412,
+      "conf_mean": 0.957,
+      "success_mean": 1.0
+    },
+    {
+      "label": "TD",
+      "participants": 25,
+      "frames": 7776,
+      "dur_mean": 12.643,
+      "dur_min": 7.16,
+      "dur_max": 18.88,
+      "fps_mean": 24.434,
+      "conf_mean": 0.965,
+      "success_mean": 1.0
+    }
+  ],
+  "CONFOUNDS": {
+    "duration_only_AUC_ASD": 0.915,
+    "fps_only_AUC_ASD": 0.806,
+    "meaning": "recording length / frame rate alone separate the classes -> the model must see fixed-length windows on a fixed-rate grid"
+  },
+  "participant_unit": "one CSV = one child (README: 82 children = 82 files); official train/test split is by file"
+}

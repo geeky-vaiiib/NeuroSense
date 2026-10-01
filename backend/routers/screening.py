@@ -21,6 +21,7 @@ try:
     )
     from ..core.cases_store import upsert_case_record
     from ..ml.fusion_engine import fuse, modality_breakdown_as_dicts
+    from ..ml.gaze import jobs as gaze_jobs
     from ..ml.model import get_bundle, predict
     from ..ml.preprocessing_pipeline import preprocess_screening_input
     from ..schemas.screening import (
@@ -42,6 +43,7 @@ except ImportError:  # pragma: no cover - fallback for backend cwd execution
     )
     from core.cases_store import upsert_case_record
     from ..ml.fusion_engine import fuse, modality_breakdown_as_dicts
+    from ml.gaze import jobs as gaze_jobs
     from ml.model import get_bundle, predict
     from ml.preprocessing_pipeline import preprocess_screening_input
     from schemas.screening import (
@@ -90,14 +92,19 @@ async def run_screening(
     is_mock = result["mock"]
 
     # ── Multimodal preprocessing via unified pipeline ────────────────────────
-    # Dispatches to gaze_engine, speech_engine, and facial_engine without
+    # Dispatches to the speech and facial engines (gaze is analysed by /gaze/analyze), and facial_engine without
     # changing any of their internal logic or return shapes.
+    _gaze_result = None
+    if body.gaze_analysis_id and not body.gaze_skipped:
+        _gaze_result = gaze_jobs.result_for(body.gaze_analysis_id, user.user_id)
+        if _gaze_result is None:
+            raise HTTPException(status_code=422, detail="gazeAnalysisId is unknown, expired or not finished")
     preprocessed = preprocess_screening_input(
         category=category,
         demo=demo_dict,
         answers=answers_dict,
         encoders=bundle.get("encoders"),
-        gaze_session=body.gaze_session.model_dump() if body.gaze_session else None,
+        gaze_result=_gaze_result,
         gaze_skipped=body.gaze_skipped or False,
         audio_base64=body.audio_base64,
         audio_mime_type=body.audio_mime_type or "audio/webm",
@@ -194,7 +201,14 @@ async def run_screening(
             "interpretation": interpretation,
             "demo": demo_dict,
             "answers": answers_dict,
-            "gaze_features": gaze_raw.get("features", {}),
+            "gaze_features": {
+                **(gaze_raw.get("features") or {}),
+                "prediction": gaze_raw.get("prediction"),
+                "dataset": gaze_raw.get("dataset"),
+                "feature_schema_version": gaze_raw.get("feature_schema_version"),
+                "explanation": gaze_raw.get("explanation"),
+                "fusion_reason": gaze_raw.get("fusion_reason"),
+            } if gaze_raw else {},
             "gaze_status": gaze_raw.get("status", "skipped" if body.gaze_skipped else "not_submitted"),
             "gaze_reason": gaze_raw.get("reason") or body.gaze_skip_reason,
             "gaze_model_version": gaze_raw.get("model_version"),
@@ -206,7 +220,7 @@ async def run_screening(
             "gaze_model_status": gaze_raw.get("model_status"),
             "gaze_fusion_eligible": gaze_raw.get("fusion_eligible"),
             "gaze_mock": gaze_raw.get("isMock", True),
-            "gaze_method": gaze_raw.get("method", "lstm_trained") if gaze_raw else None,
+            "gaze_method": gaze_raw.get("method") if gaze_raw else None,
             "gaze_is_trained": gaze_raw.get("is_trained_model", False),
             "gaze_interpretation": gaze_raw.get("interpretation", "") or "",
             "gaze_skipped": body.gaze_skipped or False,
