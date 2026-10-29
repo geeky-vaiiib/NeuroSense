@@ -22,7 +22,6 @@ from .categories import (
     default_respondent_relationship,
     derive_category_from_age,
     screening_tool_for_category,
-    validate_age_for_category,
 )
 from .database import get_cases_collection
 
@@ -56,11 +55,8 @@ def normalize_case_record(record: dict[str, Any]) -> dict[str, Any]:
     answers = deepcopy(_first(record, "answers", default={}) or {})
 
     age = int(_first(record, "age", default=demo_raw.get("age", 18)) or 18)
+    # A stored category is never reassigned from the age: history must read back as it was recorded.
     category = str(_first(record, "category", default=derive_category_from_age(age)))
-    try:
-        validate_age_for_category(category, age)
-    except ValueError:
-        category = derive_category_from_age(age)
 
     subject_name = _first(
         record,
@@ -95,7 +91,8 @@ def normalize_case_record(record: dict[str, Any]) -> dict[str, Any]:
     )
 
     risk_level = str(_first(record, "risk_level", "riskLevel", default="Low"))
-    risk_score = float(_first(record, "risk_score", "riskScore", default=0.0) or 0.0)
+    _rs = _first(record, "risk_score", "riskScore", default=None)
+    risk_score = None if _rs is None else float(_rs)          # legacy cases only; new cases carry the screening score
     aq10_score = int(_first(record, "aq10_score", "aq10Score", default=0) or 0)
 
     created_at = str(_first(record, "created_at", "createdAt", default=""))
@@ -105,7 +102,7 @@ def normalize_case_record(record: dict[str, Any]) -> dict[str, Any]:
     )
     referral_date = _iso_date(_first(record, "referral_date", "referralDate", default=""))
 
-    model_used = str(_first(record, "model_used", "modelUsed", default=f"{category}_MockProxy"))
+    model_used = str(_first(record, "model_used", "modelUsed", default="score_rule" if record.get("scoring_version") else f"{category}_MockProxy"))
     if "is_mock" in record:
         is_mock = bool(record["is_mock"])
     elif "isMock" in record:
@@ -147,11 +144,13 @@ def normalize_case_record(record: dict[str, Any]) -> dict[str, Any]:
     clinician = str(_first(record, "clinician", default="Awaiting clinician assignment"))
     status = str(_first(record, "status", default="pending-review"))
 
+    age_months = _first(record, "age_months", default=demo_raw.get("ageMonths"))
     demo = {
         "subjectName": subject_name,
         "respondentName": respondent_name,
         "respondentRelationship": respondent_relationship,
         "age": age,
+        "ageMonths": age_months,
         "gender": gender,
         "ethnicity": ethnicity,
         "jaundice": jaundice,
@@ -159,12 +158,16 @@ def normalize_case_record(record: dict[str, Any]) -> dict[str, Any]:
     }
 
     # ── Fusion metadata (new fields — gracefully absent on old records) ────────
-    questionnaire_probability = float(
-        _first(record, "questionnaire_probability", default=risk_score) or risk_score
-    )
-    fusion_score = float(
-        _first(record, "fusion_score", default=questionnaire_probability) or questionnaire_probability
-    )
+    _qp = _first(record, "questionnaire_probability", default=risk_score)
+    questionnaire_probability = None if _qp is None else float(_qp)
+    questionnaire_basis = _first(record, "questionnaire_basis", default=None)
+    questionnaire_model = _first(record, "questionnaire_model", default=None)
+    scoring_version = record.get("scoring_version")        # None = recorded before server-authoritative scoring
+    modality_states = list(_first(record, "modality_states", default=[]) or [])
+    screening_result = _first(record, "screening_result", default=None)
+    warnings = list(_first(record, "warnings", default=[]) or [])
+    _fs = _first(record, "fusion_score", default=None if scoring_version else questionnaire_probability)
+    fusion_score = None if _fs is None else float(_fs)
     gaze_score = _first(record, "gaze_score", default=None)
     speech_score = _first(record, "speech_score", default=None)
     heuristic_signal = _first(record, "heuristic_signal", default=None)
@@ -216,6 +219,13 @@ def normalize_case_record(record: dict[str, Any]) -> dict[str, Any]:
         "risk_level": risk_level,
         "risk_score": risk_score,
         "questionnaire_probability": questionnaire_probability,
+        "questionnaire_basis": questionnaire_basis,
+        "questionnaire_model": questionnaire_model,
+        "age_months": age_months,
+        "scoring_version": scoring_version,
+        "modality_states": modality_states,
+        "screening_result": screening_result,
+        "warnings": warnings,
         "fusion_score": fusion_score,
         "gaze_score": gaze_score,
         "speech_score": speech_score,
@@ -385,6 +395,13 @@ def case_detail(record: dict[str, Any]) -> dict[str, Any]:
             "confidence_note": normalized["confidence_note"],
             "fusion_score": normalized["fusion_score"],
             "questionnaire_probability": normalized["questionnaire_probability"],
+            "questionnaire_basis": normalized.get("questionnaire_basis"),
+            "questionnaire_model": normalized.get("questionnaire_model"),
+            "age_months": normalized.get("age_months"),
+            "scoring_version": normalized.get("scoring_version"),
+            "modality_states": normalized.get("modality_states"),
+            "screening_result": normalized.get("screening_result"),
+            "warnings": normalized.get("warnings"),
             # Gaze analysis fields (None on cases created before the gaze model)
             **{k: normalized.get(k) for k in (
                 "gaze_score", "gaze_status", "gaze_reason", "gaze_model_version",
@@ -405,12 +422,18 @@ _MODALITIES = (
 
 
 def _modality_status(records: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """Real per-modality counts from stored breakdowns: how many sessions produced a usable
-    signal, and how many of those actually influenced the fused result."""
+    """Per-modality counts from stored states: how many sessions produced an output and how many of those
+    actually entered the result (legacy cases fall back to their stored breakdown)."""
     out = []
     for mid, label in _MODALITIES:
         available = used = 0
         for r in records:
+            if r.get("modality_states"):
+                st = next((m for m in r["modality_states"] if m.get("id") == mid), None)
+                if st and st.get("output") is not None or (st and mid == "questionnaire"):
+                    available += 1
+                used += 1 if st and st.get("in_result") else 0
+                continue
             comp = next((c for c in (r.get("modality_breakdown") or []) if c.get("modality") == mid), None)
             if mid == "questionnaire":
                 available += 1
@@ -437,11 +460,8 @@ def dashboard_summary(user_id: str, category: str | None = None) -> dict[str, An
     )
     mock_cases = len([r for r in records if r["is_mock"]])
 
-    avg_risk = (
-        round(sum(r["risk_score"] for r in records) / total_cases, 2)
-        if total_cases
-        else 0.0
-    )
+    _scores = [r["risk_score"] for r in records if r["risk_score"] is not None]      # legacy model outputs only
+    avg_risk = round(sum(_scores) / len(_scores), 2) if _scores else None
     avg_aq10 = (
         round(sum(r["aq10_score"] for r in records) / total_cases, 1)
         if total_cases

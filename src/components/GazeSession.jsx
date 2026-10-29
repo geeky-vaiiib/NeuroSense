@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import GazeVisualizer from './screening/GazeVisualizer';
+import GazeRecordingSummary from './results/GazeRecordingSummary';
 import { gazeApi } from '../services/api';
 import { FaceTracker, TrackerError, LOW_LIGHT } from '../gaze/tracker';
 import { FACE_REASONS } from '../gaze/landmarks';
@@ -171,6 +172,7 @@ const REASON_TEXT = {
   openface_unavailable: 'The OpenFace service is not installed on the server.',
   openface_failed: 'The server could not extract gaze features from the recording.',
   model_unavailable: 'The gaze model is not available on the server.',
+  motion_outside_training_range: 'Head and eye movement in this recording is outside the range of the recordings the model was trained on, so it cannot be scored reliably.',
 };
 const reasonText = (r) => REASON_TEXT[r] || (r ? `Reason: ${r}` : 'Unknown reason.');
 
@@ -190,7 +192,7 @@ function Check({ ok, label, hint }) {
      onComplete(session, analysis) — analysis is the backend result; session = { analysisId }
      onSkip(reason) — only from an explicit user choice (or an unavailable service)
    ────────────────────────────────────────────────────────────── */
-export default function GazeSession({ onComplete, onSkip, category }) {
+export default function GazeSession({ onComplete, onSkip, category, keepFeatures = false }) {
   const [phase, setPhase] = useState('intro'); // intro|setup|countdown|task|processing|result|error
   const [status, setStatus] = useState({ checking: true });
   const [camera, setCamera] = useState('idle');
@@ -274,7 +276,7 @@ export default function GazeSession({ onComplete, onSkip, category }) {
   const upload = async (blob, durationMs) => {
     setPhase('processing'); setStage('uploading');
     try {
-      const res = await gazeApi.analyze({ blob, durationMs, sessionId: idRef.current, onStage: (s) => mountedRef.current && setStage(s) });
+      const res = await gazeApi.analyze({ blob, durationMs, sessionId: idRef.current, keepFeatures, onStage: (s) => mountedRef.current && setStage(s) });
       if (!mountedRef.current) return;
       setAnalysis(res); setPhase('result');
     } catch (e) {
@@ -439,7 +441,7 @@ export default function GazeSession({ onComplete, onSkip, category }) {
   } else if (phase === 'result' && analysis) {
     const q = analysis.quality;
     if (analysis.status !== 'success') {
-      const poor = analysis.status === 'insufficient_quality';
+      const poor = analysis.status === 'insufficient_quality' || analysis.status === 'out_of_domain';
       body = (
         <section style={{ ...card, border: '1px solid var(--color-risk-high-border)', backgroundColor: 'var(--color-risk-high-bg)' }}>
           <p className="ns-eyebrow" style={{ color: 'var(--color-risk-high)' }}>{analysis.error_code || 'UNAVAILABLE'}</p>
@@ -448,6 +450,7 @@ export default function GazeSession({ onComplete, onSkip, category }) {
             {reasonText(analysis.reason)}{q ? ` (${q.valid_sample_count} of ${q.sample_count} frames usable, ${q.duration_seconds}s.)` : ''}
             {' '}Gaze will be reported as <strong>not available</strong>; it will not count as a low or high result.
           </p>
+          <GazeRecordingSummary quality={q} descriptive={analysis.descriptive} />
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginTop: 16, alignItems: 'center' }}>
             {poor && <button type="button" onClick={startSetup} style={primaryBtn}>Repeat gaze test</button>}
             <button type="button" onClick={handleContinue} style={poor ? skipText : primaryBtn}>Continue (the report will show why gaze was not scored)</button>
@@ -463,6 +466,7 @@ export default function GazeSession({ onComplete, onSkip, category }) {
             {q.valid_sample_count} of {q.sample_count} frames were usable over {q.duration_seconds}s (data quality {Math.round(q.data_quality_score * 100)}%).
             The gaze result appears with your final results.
           </p>
+          <GazeRecordingSummary quality={q} descriptive={analysis.descriptive} />
           <button type="button" onClick={handleContinue} style={primaryBtn}>Continue</button>
         </section>
       );

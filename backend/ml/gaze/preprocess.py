@@ -15,6 +15,8 @@ from . import config as C
 from .config import PreprocessConfig
 
 POSE_FEATURES = {"head_pose_x": "pose_Rx", "head_pose_y": "pose_Ry", "head_pose_z": "pose_Rz"}
+REL_FEATURES = ("gaze_rel_x", "gaze_rel_y")   # gaze minus the head-pose-explained part (eye-in-head proxy)
+POSITION_FEATURES = ("gaze_angle_x", "gaze_angle_y", *POSE_FEATURES, *REL_FEATURES)
 
 
 class SchemaError(ValueError):
@@ -31,10 +33,15 @@ def standardize_frame(df: pd.DataFrame, cfg: PreprocessConfig = C.DEPLOYED) -> p
     for fname in cfg.feature_names:
         if fname in POSE_FEATURES:
             needed.append(POSE_FEATURES[fname])
+        if fname in REL_FEATURES or fname.startswith("gaze_rel_vel_"):
+            needed += ["pose_Ry", "pose_Rx"]
     missing = [c for c in dict.fromkeys(needed) if c not in df.columns]
     if missing:
         raise SchemaError(f"OpenFace output is missing required columns: {missing}")
-    return df[list(dict.fromkeys(needed))].apply(pd.to_numeric, errors="coerce")
+    # head pose is kept whenever OpenFace provides it: the domain gate and the descriptive summary use it
+    # even for models that do not take it as an input
+    keep = list(dict.fromkeys(needed + [c for c in C.HEAD_POSE_COLUMNS if c in df.columns]))
+    return df[keep].apply(pd.to_numeric, errors="coerce")
 
 
 # ── 2. frame cleaning ────────────────────────────────────────────────────────
@@ -160,9 +167,26 @@ def build_features(rs: Resampled, cfg: PreprocessConfig = C.DEPLOYED) -> np.ndar
             cols.append(v)
         elif name in POSE_FEATURES:
             cols.append(rs.grid[POSE_FEATURES[name]])
+        elif name in ("gaze_rel_vel_x", "gaze_rel_vel_y"):
+            ax = name[-1]
+            base = (rs.grid["gaze_angle_x"] - cfg.head_slopes[0] * rs.grid["pose_Ry"]) if ax == "x" \
+                else (rs.grid["gaze_angle_y"] - cfg.head_slopes[1] * rs.grid["pose_Rx"])
+            v = np.full(T, np.nan)
+            if T > 1:
+                v[1:] = np.diff(base) * rs.hz
+            cols.append(v)
+        elif name == "gaze_rel_x":
+            cols.append(rs.grid["gaze_angle_x"] - cfg.head_slopes[0] * rs.grid["pose_Ry"])
+        elif name == "gaze_rel_y":
+            cols.append(rs.grid["gaze_angle_y"] - cfg.head_slopes[1] * rs.grid["pose_Rx"])
         else:
             raise SchemaError(f"unknown feature {name!r}")
-    return np.stack(cols, axis=1) if cols else np.zeros((T, 0))
+    out = np.stack(cols, axis=1) if cols else np.zeros((T, 0))
+    if cfg.center_session and T:
+        for j, name in enumerate(cfg.feature_names):
+            if name in POSITION_FEATURES and np.isfinite(out[:, j]).any():
+                out[:, j] -= np.nanmean(out[:, j])          # holes are NaN and stay NaN
+    return out
 
 
 def make_windows(feats: np.ndarray, hole: np.ndarray, cfg: PreprocessConfig = C.DEPLOYED) -> np.ndarray:

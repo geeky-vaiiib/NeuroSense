@@ -17,11 +17,11 @@ other eye-tracker quantities do not exist in this pipeline and are never synthes
 
 from __future__ import annotations
 
+import dataclasses
 from dataclasses import asdict, dataclass
 
-MODEL_VERSION = "gaze-openface-dasd-v1"
 DATASET_NAME = "DASD"
-FEATURE_SCHEMA_VERSION = "openface-gaze-1.0.0"
+FEATURE_SCHEMA_VERSION = "openface-gaze-1.1.0"   # 1.1.0: position features are session-centred
 OPENFACE_VERSION = "OpenFace 2.x FeatureExtraction (DASD distributes OpenFace 2.0 CSVs)"
 OPENFACE_FLAGS = ("-gaze", "-pose")   # flags passed in deployment (see openface.py)
 
@@ -43,14 +43,15 @@ MAX_SESSION_S = 180.0
 class PreprocessConfig:
     """Everything that changes the tensor fed to the model (snapshotted in the checkpoint)."""
     feature_names: tuple[str, ...] = (
-        "gaze_angle_x", "gaze_angle_y", "gaze_vel_x", "gaze_vel_y",
-        "head_pose_x", "head_pose_y", "head_pose_z",
+        "gaze_angle_x", "gaze_angle_y", "head_pose_x", "head_pose_y", "head_pose_z",
     )
     resample_hz: int = 10
     window_s: float = 6.0
     stride_s: float = 1.0
     min_window_coverage: float = 0.8     # share of real (non-hole) steps required in a window
     center_window: bool = False          # subtract the window mean from position features
+    center_session: bool = False         # subtract the whole-session mean from position features
+    head_slopes: tuple[float, float] = (-0.755, 0.424)   # gaze_x~pose_Ry, gaze_y~pose_Rx (fit on DASD train split)
     normalization: str = "global_zscore"  # statistics are learned on training participants only
 
     @property
@@ -64,19 +65,32 @@ class PreprocessConfig:
     def to_dict(self) -> dict:
         d = asdict(self)
         d["feature_names"] = list(self.feature_names)
+        d["head_slopes"] = list(self.head_slopes)
         return d
 
     @classmethod
     def from_dict(cls, d: dict) -> "PreprocessConfig":
         d = dict(d)
         d["feature_names"] = tuple(d["feature_names"])
+        if "head_slopes" in d:
+            d["head_slopes"] = tuple(d["head_slopes"])
         return cls(**d)
 
 
-# Deployed configuration.  Chosen on the training-participant CV only (see the training
-# report); the training script rewrites the checkpoint metadata with the selected config
-# and the service refuses a checkpoint whose config differs from this one.
-DEPLOYED = PreprocessConfig()
+# Model registry.  Each model version has its own (frozen) preprocessing configuration; the service
+# refuses a checkpoint whose metadata disagrees with it.  v2 is kept as a reproducible baseline.
+# center_session=True: absolute gaze/head angles depend on camera placement (webcam adults sat
+# ~0.1-0.3 rad away from DASD means, and an absolute-position model then output P(ASD)>0.95 for
+# still adults) while session-centring cost nothing in dev CV, so only movement is modelled.
+_V2 = PreprocessConfig(
+    feature_names=("gaze_angle_x", "gaze_angle_y", "head_pose_x", "head_pose_y", "head_pose_z"), center_session=True)
+MODEL_CONFIGS: dict[str, PreprocessConfig] = {
+    "gaze-openface-dasd-v2": _V2,                                                   # baseline (gaze + head pose)
+    "gaze-openface-dasd-v3": dataclasses.replace(_V2, feature_names=("gaze_angle_x", "gaze_angle_y")),   # gaze only
+}
+DEFAULT_MODEL_VERSION = "gaze-openface-dasd-v3"
+MODEL_VERSION = DEFAULT_MODEL_VERSION
+DEPLOYED = MODEL_CONFIGS[DEFAULT_MODEL_VERSION]
 FEATURE_NAMES = DEPLOYED.feature_names
 FEATURE_ORDER = {n: i for i, n in enumerate(FEATURE_NAMES)}
 SEQUENCE_LENGTH = DEPLOYED.window_steps
@@ -90,7 +104,15 @@ MIN_WINDOWS = 3
 MIN_TRACKING_CONTINUITY = 0.50
 FACE_CENTER_TOLERANCE = 0.35      # fraction of frame width/height allowed off-centre (positioning check)
 
+# Domain applicability gate (per session).  z = robust z-score (median / 1.4826*MAD) of the session's
+# log within-session std of each position channel against the DASD per-child distribution.
+DOMAIN_Z_IN = 3.0          # max |z| <= this on every channel -> in_domain
+DOMAIN_Z_OUT = 6.0         # any |z| > this -> out_of_domain (probability withheld)
+MIN_LAB_SESSIONS = 10
+MIN_LAB_IN_DOMAIN = 0.8
+
 # Error codes
+ERR_OUT_OF_DOMAIN = "GAZE_OUT_OF_DOMAIN"
 ERR_NO_FACE = "GAZE_NO_FACE"
 ERR_LOW_CONFIDENCE = "GAZE_LOW_CONFIDENCE"
 ERR_TOO_FEW_FRAMES = "GAZE_TOO_FEW_FRAMES"

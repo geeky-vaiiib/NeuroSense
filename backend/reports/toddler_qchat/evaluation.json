@@ -1,0 +1,618 @@
+{
+ "table": [
+  {
+   "config": "A: items only",
+   "model": "logreg",
+   "auc_mean": 0.9418991899189919,
+   "auc_sd_repeats": 0.0013624550407939627,
+   "auc_of_mean_oof": 0.9426192619261926,
+   "auc_ci95": [
+    0.9058785525446134,
+    0.9735106026602216
+   ],
+   "auc_boot_se": 0.017305691300170477
+  },
+  {
+   "config": "A: items only",
+   "model": "tree",
+   "auc_mean": 0.870837083708371,
+   "auc_sd_repeats": 0.007851963451868324,
+   "auc_of_mean_oof": 0.9007650765076508,
+   "auc_ci95": [
+    0.8534709669629538,
+    0.9467733438301772
+   ],
+   "auc_boot_se": 0.02373596288569796
+  },
+  {
+   "config": "A: items only",
+   "model": "svc",
+   "auc_mean": 0.9492461746174617,
+   "auc_sd_repeats": 0.0029340207667102923,
+   "auc_of_mean_oof": 0.9494824482448245,
+   "auc_ci95": [
+    0.9175603860371588,
+    0.9758410476405509
+   ],
+   "auc_boot_se": 0.014890159423156623
+  },
+  {
+   "config": "A: items only",
+   "model": "forest",
+   "auc_mean": 0.9367686768676868,
+   "auc_sd_repeats": 0.0007891844246962084,
+   "auc_of_mean_oof": 0.9398064806480648,
+   "auc_ci95": [
+    0.9032930514825082,
+    0.9712125416355091
+   ],
+   "auc_boot_se": 0.01726888751631203
+  },
+  {
+   "config": "A: items only",
+   "model": "boosting",
+   "auc_mean": 0.9257650765076507,
+   "auc_sd_repeats": 0.0076364064181032925,
+   "auc_of_mean_oof": 0.9342934293429342,
+   "auc_ci95": [
+    0.8959545396736408,
+    0.9688088804873789
+   ],
+   "auc_boot_se": 0.018599290284673595
+  },
+  {
+   "config": "B: items + age + sex",
+   "model": "logreg",
+   "auc_mean": 0.9414266426642663,
+   "auc_sd_repeats": 0.0023031578005263437,
+   "auc_of_mean_oof": 0.9439693969396941,
+   "auc_ci95": [
+    0.9086323738897268,
+    0.974287150937316
+   ],
+   "auc_boot_se": 0.01684268320062818
+  },
+  {
+   "config": "B: items + age + sex",
+   "model": "tree",
+   "auc_mean": 0.8729072907290728,
+   "auc_sd_repeats": 0.012247013773544169,
+   "auc_of_mean_oof": 0.9049842484248424,
+   "auc_ci95": [
+    0.8597068636635169,
+    0.946585663147829
+   ],
+   "auc_boot_se": 0.022339323445538694
+  },
+  {
+   "config": "B: items + age + sex",
+   "model": "svc",
+   "auc_mean": 0.9476147614761476,
+   "auc_sd_repeats": 0.0029327261362952295,
+   "auc_of_mean_oof": 0.9488073807380739,
+   "auc_ci95": [
+    0.9163492650905338,
+    0.9752840765936004
+   ],
+   "auc_boot_se": 0.015020217879845418
+  },
+  {
+   "config": "B: items + age + sex",
+   "model": "forest",
+   "auc_mean": 0.9397839783978398,
+   "auc_sd_repeats": 0.0033688807129309156,
+   "auc_of_mean_oof": 0.9427317731773177,
+   "auc_ci95": [
+    0.9074654270045086,
+    0.9727069432860718
+   ],
+   "auc_boot_se": 0.01659149154838
+  },
+  {
+   "config": "B: items + age + sex",
+   "model": "boosting",
+   "auc_mean": 0.9245049504950495,
+   "auc_sd_repeats": 0.006124581759209304,
+   "auc_of_mean_oof": 0.9326057605760575,
+   "auc_ci95": [
+    0.891859031824294,
+    0.9682149022243306
+   ],
+   "auc_boot_se": 0.019061475393985738
+  },
+  {
+   "config": "C: + other demographics (info only)",
+   "model": "logreg",
+   "auc_mean": 0.9462421242124213,
+   "auc_sd_repeats": 0.002699707412135249,
+   "auc_of_mean_oof": 0.9467821782178216,
+   "auc_ci95": [
+    0.9094088571305696,
+    0.9768166694850574
+   ],
+   "auc_boot_se": 0.01734862934975119
+  },
+  {
+   "config": "C: + other demographics (info only)",
+   "model": "tree",
+   "auc_mean": 0.8612736273627363,
+   "auc_sd_repeats": 0.013040485987086977,
+   "auc_of_mean_oof": 0.9008775877587759,
+   "auc_ci95": [
+    0.8540020424236301,
+    0.9455443186911698
+   ],
+   "auc_boot_se": 0.023539731992094328
+  },
+  {
+   "config": "C: + other demographics (info only)",
+   "model": "svc",
+   "auc_mean": 0.948571107110711,
+   "auc_sd_repeats": 0.000778200561016673,
+   "auc_of_mean_oof": 0.9502700270027002,
+   "auc_ci95": [
+    0.9174179864253394,
+    0.9770983424554852
+   ],
+   "auc_boot_se": 0.015361768010653004
+  },
+  {
+   "config": "C: + other demographics (info only)",
+   "model": "forest",
+   "auc_mean": 0.9448469846984698,
+   "auc_sd_repeats": 0.0031546517662072665,
+   "auc_of_mean_oof": 0.9466696669666966,
+   "auc_ci95": [
+    0.9131547015420312,
+    0.975792127630869
+   ],
+   "auc_boot_se": 0.01603444611287552
+  },
+  {
+   "config": "C: + other demographics (info only)",
+   "model": "boosting",
+   "auc_mean": 0.9323919891989199,
+   "auc_sd_repeats": 0.007904057530809729,
+   "auc_of_mean_oof": 0.940931593159316,
+   "auc_ci95": [
+    0.9052749364990458,
+    0.9722664241873152
+   ],
+   "auc_boot_se": 0.017335921406368703
+  }
+ ],
+ "selected": {
+  "model": "logreg",
+  "config": "A: items only"
+ },
+ "metadata": {
+  "model_version": "toddler-qchat10-polish-v1",
+  "task": "ASD-group vs control from Q-CHAT-10 item responses (Polish cohort)",
+  "dataset": {
+   "citation": "Nied\u017awiecka, A., Pisula, E., Domasiewicz, Z. (2020). Q-CHAT scores of Polish toddlers with autism spectrum disorders and typically developing controls. Mendeley Data, V2. doi:10.17632/tmpkt2mfkg.2 (CC BY 4.0)",
+   "file": "QCHAT_dataset2 mendeley.sav",
+   "sha256": "7fed516fc4e615f4750d0e44c1eea538bbdcdee989e8c2ff8de719976fa08a41",
+   "licence": "CC BY 4.0",
+   "rows": 252
+  },
+  "label": {
+   "field": "group",
+   "positive": "ASD",
+   "provenance": "community-based diagnosis per dataset page; ADOS-2/ADI-R/DSM-5 use NOT verified"
+  },
+  "feature_names": [
+   "qchat1",
+   "qchat2",
+   "qchat5",
+   "qchat6",
+   "qchat9",
+   "qchat10",
+   "qchat15",
+   "qchat17",
+   "qchat19",
+   "qchat25"
+  ],
+  "feature_order": {
+   "qchat1": 0,
+   "qchat2": 1,
+   "qchat5": 2,
+   "qchat6": 3,
+   "qchat9": 4,
+   "qchat10": 5,
+   "qchat15": 6,
+   "qchat17": 7,
+   "qchat19": 8,
+   "qchat25": 9
+  },
+  "response_encoding": {
+   "client_input": "option letter A-E per item Q1..Q10",
+   "model_input": "recode 0-4, higher = more atypical",
+   "qchat25_items": [
+    1,
+    2,
+    5,
+    6,
+    9,
+    10,
+    15,
+    17,
+    19,
+    25
+   ],
+   "dataset_columns": [
+    "qchat1recode",
+    "qchat2recode",
+    "qchat5recode",
+    "qchat6recode",
+    "qchat9recode",
+    "qchat10recode",
+    "qchat15recode",
+    "qchat17recode",
+    "qchat19recode",
+    "qchat25recode"
+   ],
+   "q10_reversed_scale": true
+  },
+  "config": "A: items only",
+  "algorithm": "logreg",
+  "hyperparameters": {
+   "logisticregression__C": 0.01
+  },
+  "selection": {
+   "criterion": "one-SE rule on dev nested-CV ROC-AUC, simplest first; config A (items only) is the deployed questionnaire schema",
+   "best_config_A": {
+    "config": "A: items only",
+    "model": "svc",
+    "auc_mean": 0.9492461746174617,
+    "auc_sd_repeats": 0.0029340207667102923,
+    "auc_of_mean_oof": 0.9494824482448245,
+    "auc_ci95": [
+     0.9175603860371588,
+     0.9758410476405509
+    ],
+    "auc_boot_se": 0.014890159423156623
+   },
+   "within_one_se": [
+    "logreg",
+    "svc",
+    "forest"
+   ],
+   "config_B_vs_A": {
+    "auc_B_minus_A_ci95": [
+     -0.0048152565302811865,
+     0.008184847472816836
+    ],
+    "adopted_B": false
+   }
+  },
+  "seed": 2026,
+  "split": {
+   "seed": 2026,
+   "holdout_fraction": 0.25,
+   "dev": {
+    "n": 189,
+    "asd": 101,
+    "control": 88
+   },
+   "holdout": {
+    "n": 63,
+    "asd": 34,
+    "control": 29
+   },
+   "strata_dev": {
+    "1_other": 100,
+    "0_bdbp": 67,
+    "0_other": 21,
+    "1_bdbp": 1
+   },
+   "strata_holdout": {
+    "1_other": 33,
+    "0_bdbp": 22,
+    "0_other": 7,
+    "1_bdbp": 1
+   },
+   "participant_overlap": 0
+  },
+  "cross_validation": "nested: outer 5x5-fold stratified, inner 5-fold grid search (ROC-AUC)",
+  "decision_threshold": 0.503648,
+  "threshold_rule": "Youden J on (recalibrated) dev out-of-fold probabilities",
+  "recalibration": {
+   "slope": 2.9558800595572663,
+   "intercept": 0.45899183983809944,
+   "fit_on": "dev out-of-fold predictions only",
+   "form": "folded into model.json coefficients",
+   "dev_metrics_before_recalibration": {
+    "brier": 0.12857854614138003,
+    "ece_10bin": 0.1864835993007436,
+    "calibration": {
+     "slope": 2.9558800595572663,
+     "intercept": 0.45899183983809944
+    }
+   }
+  },
+  "metrics": {
+   "dev_oof": {
+    "n": 189,
+    "n_asd": 101,
+    "n_control": 88,
+    "threshold": 0.503648,
+    "roc_auc": 0.9426192619261926,
+    "pr_auc": 0.9336253762235927,
+    "accuracy": 0.8888888888888888,
+    "precision": 0.9081632653061225,
+    "sensitivity": 0.8811881188118812,
+    "specificity": 0.8977272727272727,
+    "f1": 0.8944723618090452,
+    "confusion_matrix": {
+     "tn": 79,
+     "fp": 9,
+     "fn": 12,
+     "tp": 89
+    },
+    "brier": 0.09142241816821932,
+    "ece_10bin": 0.04068553209037633,
+    "calibration": {
+     "slope": 1.0001048182379777,
+     "intercept": 6.625188421385472e-05
+    }
+   },
+   "dev_oof_ci95": {
+    "roc_auc": [
+     0.9098271521538848,
+     0.9718968134840933
+    ],
+    "pr_auc": [
+     0.8753785010694473,
+     0.9787697808664809
+    ],
+    "sensitivity": [
+     0.8145845231296401,
+     0.9366148325358852
+    ],
+    "specificity": [
+     0.8277623285131628,
+     0.9532284541723666
+    ],
+    "accuracy": [
+     0.8437830687830687,
+     0.9312169312169312
+    ],
+    "f1": [
+     0.8435268414481898,
+     0.934010152284264
+    ],
+    "brier": [
+     0.0672171088520799,
+     0.11781482830751448
+    ]
+   },
+   "dev_fold_level": {
+    "auc_per_repeat": [
+     0.9414941494149415,
+     0.9434068406840684,
+     0.9394689468946894,
+     0.9427317731773177,
+     0.9423942394239424
+    ]
+   },
+   "holdout_once": {
+    "n": 63,
+    "n_asd": 34,
+    "n_control": 29,
+    "threshold": 0.503648,
+    "roc_auc": 0.9350912778904665,
+    "pr_auc": 0.943721420395723,
+    "accuracy": 0.8412698412698413,
+    "precision": 0.8333333333333334,
+    "sensitivity": 0.8823529411764706,
+    "specificity": 0.7931034482758621,
+    "f1": 0.8571428571428571,
+    "confusion_matrix": {
+     "tn": 23,
+     "fp": 6,
+     "fn": 4,
+     "tp": 30
+    },
+    "brier": 0.10326628428783681,
+    "ece_10bin": 0.09801681482766961,
+    "calibration": {
+     "slope": 0.9108769593417461,
+     "intercept": -0.20677215557622353
+    }
+   },
+   "holdout_ci95": {
+    "roc_auc": [
+     0.8694703811999134,
+     0.9837206078083407
+    ],
+    "pr_auc": [
+     0.8761373401939214,
+     0.9876403287315595
+    ],
+    "sensitivity": [
+     0.7567567567567568,
+     0.972972972972973
+    ],
+    "specificity": [
+     0.6428571428571429,
+     0.9428571428571428
+    ],
+    "accuracy": [
+     0.746031746031746,
+     0.9206349206349206
+    ],
+    "f1": [
+     0.7555191256830601,
+     0.9333333333333333
+    ],
+    "brier": [
+     0.059146253044331534,
+     0.15148532849337545
+    ]
+   },
+   "baselines_dev": {
+    "official Q-CHAT-10 points (0-10)": {
+     "roc_auc": 0.9421129612961296,
+     "at_official_cutoff_3": {
+      "n": 189,
+      "n_asd": 101,
+      "n_control": 88,
+      "threshold": 0.5,
+      "roc_auc": 0.881581908190819,
+      "pr_auc": 0.8457331447430457,
+      "accuracy": 0.8835978835978836,
+      "precision": 0.8761904761904762,
+      "sensitivity": 0.9108910891089109,
+      "specificity": 0.8522727272727273,
+      "f1": 0.8932038834951457,
+      "confusion_matrix": {
+       "tn": 75,
+       "fp": 13,
+       "fn": 9,
+       "tp": 92
+      },
+      "brier": 0.1164021164021164,
+      "ece_10bin": 0.11640211640211641,
+      "calibration": {
+       "slope": 0.2213304057455733,
+       "intercept": -0.0819549081027983
+      }
+     }
+    },
+    "item sum (0-40)": {
+     "roc_auc": 0.9433505850585058,
+     "at_official_cutoff_3": null
+    }
+   },
+   "baselines_holdout": {
+    "official_qchat10_rule_cutoff_3": {
+     "n": 63,
+     "n_asd": 34,
+     "n_control": 29,
+     "threshold": 0.5,
+     "roc_auc": 0.8179513184584177,
+     "pr_auc": 0.7723550958845077,
+     "accuracy": 0.8253968253968254,
+     "precision": 0.7948717948717948,
+     "sensitivity": 0.9117647058823529,
+     "specificity": 0.7241379310344828,
+     "f1": 0.8493150684931506,
+     "confusion_matrix": {
+      "tn": 21,
+      "fp": 8,
+      "fn": 3,
+      "tp": 31
+     },
+     "brier": 0.1746031746031746,
+     "ece_10bin": 0.17460317460317462,
+     "calibration": {
+      "slope": 0.17915863223515785,
+      "intercept": -0.2955000738266114
+     }
+    },
+    "official_points_auc": 0.9158215010141988,
+    "auc_model_minus_official_points_ci95": [
+     -0.0055443548387096335,
+     0.048398833076252326
+    ]
+   },
+   "stratified_dev": {
+    "non-bdbp stratum (both classes present)": {
+     "n": 121,
+     "n_asd": 100,
+     "n_control": 21,
+     "threshold": 0.503648,
+     "roc_auc": 0.9033333333333334,
+     "pr_auc": 0.9794033424575366,
+     "accuracy": 0.859504132231405,
+     "precision": 0.946236559139785,
+     "sensitivity": 0.88,
+     "specificity": 0.7619047619047619,
+     "f1": 0.9119170984455959,
+     "confusion_matrix": {
+      "tn": 16,
+      "fp": 5,
+      "fn": 12,
+      "tp": 88
+     },
+     "brier": 0.10676993370821695,
+     "ece_10bin": 0.09001336456879461,
+     "calibration": {
+      "slope": 0.9293843021871829,
+      "intercept": 0.9379835606005006
+     }
+    },
+    "bdbp stratum": {
+     "note": "only 1 ASD children: not evaluable",
+     "n": 68
+    }
+   },
+   "stratified_holdout": {
+    "non-bdbp stratum": {
+     "n": 40,
+     "n_asd": 33,
+     "n_control": 7,
+     "threshold": 0.503648,
+     "roc_auc": 0.9090909090909092,
+     "pr_auc": 0.9805830526921897,
+     "accuracy": 0.85,
+     "precision": 0.9354838709677419,
+     "sensitivity": 0.8787878787878788,
+     "specificity": 0.7142857142857143,
+     "f1": 0.90625,
+     "confusion_matrix": {
+      "tn": 5,
+      "fp": 2,
+      "fn": 4,
+      "tp": 29
+     },
+     "brier": 0.10128128639079963,
+     "ece_10bin": 0.10016893086567165,
+     "calibration": {
+      "slope": 1.030656216142425,
+      "intercept": 0.765186596938523
+     }
+    },
+    "bdbp stratum": {
+     "n": 23,
+     "asd": 1,
+     "note": "ASD too rare to evaluate"
+    }
+   },
+   "controls": {
+    "label_permutation_auc_per_repeat": [
+     0.4313118811881187,
+     0.49786228622862283,
+     0.5092259225922593,
+     0.4168541854185419,
+     0.5142326732673267
+    ],
+    "source_only_auc": 0.8812443744374439,
+    "age_sex_only_auc_note": "see single-variable AUCs in dataset_audit.json"
+   }
+  },
+  "validated_for_deployment": false,
+  "trained_at": "2026-10-29T05:40:02.483574+00:00",
+  "environment": {
+   "python": "3.9.6",
+   "platform": "macOS-26.6.2-arm64-arm-64bit",
+   "numpy": "1.26.4",
+   "pandas": "2.2.3",
+   "sklearn": "1.5.2"
+  },
+  "population_note": "case-control sample (53.6% ASD); outputs are NOT population risk probabilities",
+  "limitations": [
+   "case-control design: 53.6% ASD; prevalence in the intended population is far lower, so predicted probabilities are not population risk and PPV would be much lower",
+   "recruitment source almost determines the label (bdbp# ids: 89 controls vs 2 ASD; FS/# ids: 80 ASD vs 12 controls): collection context is confounded with diagnosis",
+   "Polish translation of the Q-CHAT, completed by caregivers in Poland; not validated for English-language or other populations",
+   "ages 18-24 months only; sex imbalance (ASD 71% male, controls 52% male)",
+   "ASD labels described as 'community-based diagnosis'; instruments used are not documented on the dataset page",
+   "sibling_withASD is missing/0 for every control (structural), so it must never be a predictor"
+  ],
+  "model_file": {
+   "name": "model.json",
+   "sha256": "4bb11fa6abc79165df249db8322d2d86df6d7b989cf2b4e35b3e8fbe2765af90",
+   "format": "plain JSON numbers (no pickle)"
+  }
+ }
+}

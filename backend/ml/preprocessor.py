@@ -10,25 +10,12 @@ Supports adult, child, and toddler categories.
 from typing import Optional
 
 import numpy as np
-import joblib
-import os
 
-# ── AQ-10 scoring (adult / child) ─────────────────────────────────
-# ASD-trait questions — agree variants score 1
-ASD_TRAIT_IDS = {"A1", "A5", "A7", "A10"}
-
-ANSWER_MAP = {
-    "Definitely agree": 1,
-    "Slightly agree": 1,
-    "Definitely disagree": 0,
-    "Slightly disagree": 0,
-}
-
-# ── Q-CHAT-10 scoring (toddler) ──────────────────────────────────
-# For toddler Q-CHAT-10, only A10 is the ASD-trait direction question.
-# A1–A9: disagree = 1 (typical behavior absent = concerning)
-# A10:   agree = 1 (atypical behavior present = concerning)
-QCHAT_TRAIT_IDS = {"A10"}
+# Item scoring lives in ml/questionnaire_score.py (single, strict implementation).
+try:
+    from .questionnaire_score import score_items
+except ImportError:  # pragma: no cover - backend/ as cwd
+    from ml.questionnaire_score import score_items
 
 # ── Gender maps ───────────────────────────────────────────────────
 GENDER_MAP = {
@@ -49,29 +36,8 @@ TODDLER_GENDER_MAP = {
 
 
 def encode_aq10_scores(answers: dict, category: str = "adult") -> list[int]:
-    """
-    Convert AQ-10 / Q-CHAT-10 answers to binary scores (0 or 1).
-
-    Adult / Child (AQ-10):
-        For ASD-trait questions (A1, A7, A8, A10): agree = 1
-        For non-trait questions: disagree = 1
-
-    Toddler (Q-CHAT-10):
-        For A1–A9: disagree = 1 (typical behavior absent = concerning)
-        For A10:   agree = 1 (atypical behavior present = concerning)
-    """
-    trait_ids = QCHAT_TRAIT_IDS if category == "toddler" else ASD_TRAIT_IDS
-
-    scores = []
-    for i in range(1, 11):
-        key = f"A{i}"
-        raw = answers.get(key, "Slightly disagree")
-        is_agree = ANSWER_MAP.get(raw, 0)
-        if key in trait_ids:
-            scores.append(is_agree)
-        else:
-            scores.append(1 - is_agree)
-    return scores
+    """Item points (0/1) for A1..A10 - strict: raises questionnaire_score.AnswerError on missing/invalid answers."""
+    return score_items(category, answers)
 
 
 def preprocess_for_inference(
@@ -126,3 +92,11 @@ def preprocess_for_inference(
     else:
         features = aq_scores + [age, gender, ethnicity, jaundice, family_asd]
     return np.array(features, dtype=np.float64).reshape(1, -1)
+
+
+def feature_names_for(category: str) -> list[str]:
+    """Names in the EXACT column order of preprocess_for_inference / the training matrix."""
+    items = [f"A{i}_Score" for i in range(1, 11)]
+    if category == "toddler":
+        return items + ["Age", "Gender", "Jaundice", "Family_ASD", "Ethnicity"]
+    return items + ["Age", "Gender", "Ethnicity", "Jaundice", "Family_ASD"]

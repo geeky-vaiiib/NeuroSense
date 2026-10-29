@@ -1,64 +1,22 @@
-import pytest
-from fastapi.testclient import TestClient
+"""Full pipeline smoke test through the real API (score, result contract, modality states, persistence)."""
+
+from backend.tests.conftest import screening_body
+
 
 def test_full_pipeline_smoke(app_client):
-    if True:
-        client = app_client()
-        client.post('/auth/register', json={'name': 'E2E', 'email': 'e2e@example.com', 'password': 'correct-horse-9'})
-        payload = {
-            "category": "adult",
-            "demo": {
-                "subjectName": "Test Subject",
-                "respondentName": "Self",
-                "respondentRelationship": "Self",
-                "age": 30,
-                "gender": "Non-binary",
-                "jaundice": "No",
-                "familyAsd": "No"
-            },
-            "answers": {
-                "A1": "Definitely Agree",
-                "A2": "Slightly Agree",
-                "A3": "Definitely Disagree",
-                "A4": "Slightly Disagree",
-                "A5": "Definitely Agree",
-                "A6": "Definitely Agree",
-                "A7": "Definitely Agree",
-                "A8": "Definitely Agree",
-                "A9": "Definitely Agree",
-                "A10": "Definitely Agree"
-            },
-            "aq10Score": 8,
-            "gazePoints": [],
-            "gazeSkipped": True,
-            "audioBase64": "",
-            "speechSkipped": True,
-            "facialImageBase64": "",
-            "facialSkipped": True
-        }
-        
-        response = client.post("/screening/screen", json=payload)
-        assert response.status_code == 200, f"Expected 200, got {response.status_code}: {response.text}"
-        
-        data = response.json()
-        assert "caseId" in data
-        assert "riskLevel" in data
-        assert "fusionScore" in data
-        assert "modalityBreakdown" in data
-        assert "confidenceNote" in data
-        
-        # Verify that fusion correctly handled skipped modalities
-        breakdown = data["modalityBreakdown"]["components"]
-        assert len(breakdown) == 4, "Should have 4 modalities returned in breakdown"
-        
-        questionnaire = next(c for c in breakdown if c["modality"] == "questionnaire")
-        assert questionnaire["isTrainedModel"] is True
-        
-        gaze = next(c for c in breakdown if c["modality"] == "gaze")
-        assert gaze["available"] is False
-        
-        speech = next(c for c in breakdown if c["modality"] == "speech")
-        assert speech["available"] is False
-        
-        facial = next(c for c in breakdown if c["modality"] == "facial")
-        assert facial["available"] is False
+    client = app_client()
+    client.post("/auth/register", json={"name": "E2E", "email": "e2e@example.com", "password": "correct-horse-9"})
+    body = screening_body(points=8, category="adult", age=30, audioBase64="", facialImageBase64="")
+    r = client.post("/screening/screen", json=body)
+    assert r.status_code == 200, r.text
+    d = r.json()
+    assert d["caseId"] and d["riskLevel"] == "High" and d["fusionScore"] is None
+    states = {m["id"]: m for m in d["modalities"]}
+    assert set(states) == {"questionnaire", "gaze", "speech", "facial"}
+    assert states["questionnaire"]["in_result"] is True and states["questionnaire"]["status"] == "available_scoring_instrument"
+    for mid in ("gaze", "speech", "facial"):
+        assert states[mid]["status"] == "skipped" and states[mid]["in_result"] is False and states[mid]["output"] is None
+    assert d["result"]["modalities_in_result"] == ["questionnaire"] and d["result"]["composite_probability"] is None
+    stored = client.get(f"/cases/{d['caseId']}").json()
+    assert [m["id"] for m in stored["modality_states"]] == ["questionnaire", "gaze", "speech", "facial"]
+    assert stored["screening_result"] == d["result"]

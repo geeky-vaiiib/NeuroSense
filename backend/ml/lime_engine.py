@@ -53,19 +53,19 @@ def _build_plain_english(feature_name: str, weight: float, feature_value: float)
 
     # Demographics
     if feature_name == "Age":
-        return f"Age ({int(feature_value)}) contributed {direction_word} to the risk score"
+        return f"Age ({int(feature_value)}) contributed {direction_word} to the model output"
     if feature_name == "Gender":
-        return f"Reported gender contributed {direction_word} to the risk score"
+        return f"Reported gender contributed {direction_word} to the model output"
     if feature_name == "Jaundice":
         status = "present" if feature_value >= 1 else "absent"
-        return f"Neonatal jaundice ({status}) contributed {direction_word} to the risk score"
+        return f"Neonatal jaundice ({status}) contributed {direction_word} to the model output"
     if feature_name == "Family_ASD":
         status = "reported" if feature_value >= 1 else "not reported"
-        return f"Family ASD history ({status}) contributed {direction_word} to the risk score"
+        return f"Family ASD history ({status}) contributed {direction_word} to the model output"
     if feature_name == "Ethnicity":
-        return f"Ethnicity category contributed {direction_word} to the risk score"
+        return f"Ethnicity category contributed {direction_word} to the model output"
 
-    return f"{feature_name} contributed {direction_word} to the risk score"
+    return f"{feature_name} contributed {direction_word} to the model output"
 
 
 def compute_lime(
@@ -73,7 +73,7 @@ def compute_lime(
     X_instance: np.ndarray,
     X_train: Optional[np.ndarray],
     feature_names: Optional[list] = None,
-) -> list[dict]:
+) -> Optional[list[dict]]:
     """
     Compute LIME explanation for a single prediction.
 
@@ -95,14 +95,14 @@ def compute_lime(
     if feature_names is None:
         feature_names = DEFAULT_NAMES
 
-    if model is None or X_train is None:
-        return _mock_lime(X_instance, feature_names)
+    if model is None or X_train is None or len(X_train) < 2:
+        return None            # no placeholder explanation: the caller reports "unavailable"
 
     try:
         return _real_lime(model, X_instance, X_train, feature_names)
     except Exception as e:
         print(f"[NeuroSense] LIME computation failed: {e}")
-        return _mock_lime(X_instance, feature_names)
+        return None
 
 
 def _real_lime(
@@ -161,30 +161,3 @@ def _extract_feature_name(lime_rule: str, feature_names: list) -> str:
             return name
     # Fallback: return the rule itself
     return lime_rule.split(" ")[0]
-
-
-def _mock_lime(X_instance: np.ndarray, feature_names: list) -> list[dict]:
-    """
-    Generate plausible mock LIME explanations when no model is available.
-    Uses actual feature values to produce weighted importances.
-    """
-    vals = X_instance.flatten()
-
-    results = []
-    for i, name in enumerate(feature_names):
-        v = float(vals[i]) if i < len(vals) else 0.0
-        # Weight based on feature value — AQ-10 binary scores carry more weight
-        if name.startswith("A") and name.endswith("_Score"):
-            w = round(v * 0.12 - 0.02, 4)  # positive when scored 1
-        else:
-            w = round(v * 0.01, 4) if v > 0 else round(-0.01, 4)
-
-        results.append({
-            "feature": name,
-            "weight": w,
-            "direction": "positive" if w > 0 else "negative",
-            "plain_english": _build_plain_english(name, w, v),
-        })
-
-    results.sort(key=lambda r: abs(r["weight"]), reverse=True)
-    return results[:TOP_K]

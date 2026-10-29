@@ -61,7 +61,7 @@ function CaseCard({ record, onOpen, onViewResults }) {
         <div style={{ display: 'grid', gap: '8px' }}>
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
             <CategoryBadge category={record.category} size="sm" />
-            <RiskBadge level={record.riskLevel} size="sm" showScore score={record.riskScore} />
+            <RiskBadge level={record.riskLevel} category={record.category} size="sm" showScore score={record.riskScore} />
           </div>
           <div>
             <strong style={{ color: 'var(--color-neutral-900)' }}>
@@ -118,7 +118,7 @@ function CaseCard({ record, onOpen, onViewResults }) {
 
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
         <span style={{ color: 'var(--color-neutral-500)', fontSize: '0.85rem' }}>
-          {record.dataSource === 'mock' ? 'Mock mode case' : 'Live model case'}
+          {record.dataSource === 'mock' ? 'Older mock-mode record' : String(record.dataSource || '').startsWith('score_rule') ? 'Server-scored (score rule)' : 'Recorded by an earlier version'}
         </span>
         <button type="button" onClick={() => onOpen(record)} style={styles.linkButton}>
           View details
@@ -292,7 +292,7 @@ export default function Cases() {
           <div style={{ display: 'grid', gap: '18px' }}>
             <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
               <CategoryBadge category={selectedCase.category} size="lg" />
-              <RiskBadge level={selectedCase.riskLevel} size="lg" showScore score={selectedCase.riskScore} />
+              <RiskBadge level={selectedCase.riskLevel} category={selectedCase.category} size="lg" showScore score={selectedCase.riskScore} />
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '12px' }}>
@@ -302,7 +302,7 @@ export default function Cases() {
                 ['Relationship', selectedCase.respondentRelationship || 'Not provided'],
                 ['Screening date', selectedCase.screeningDate],
                 ['Tool', selectedCase.screeningTool],
-                ['Data source', selectedCase.dataSource === 'mock' ? 'Mock mode' : 'Live model'],
+                ['Scoring', selectedCase.dataSource === 'mock' ? 'Older mock-mode record' : String(selectedCase.dataSource || '').startsWith('score_rule') ? 'Server-scored (score rule)' : 'Recorded by an earlier version'],
               ].map(([label, value]) => (
                 <div
                   key={label}

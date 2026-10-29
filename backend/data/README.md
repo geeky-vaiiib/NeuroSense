@@ -81,14 +81,30 @@ The toddler dataset uses **different column names** from adult/child:
 
 ---
 
-## Leakage Columns — MUST Be Dropped
+## Label leakage — READ THIS BEFORE TRUSTING ANY QUESTIONNAIRE METRIC
 
-These columns are **automatically dropped** by `train_model.py`. If they are NOT dropped, models achieve 100% accuracy through data leakage — not genuine learning.
+Dropping the `result` / `Qchat-10-Score` columns is **not enough**. In all three datasets the class label is a
+deterministic function of the item total, which the item columns still contain:
 
-| Dataset | Leakage Columns |
-|---|---|
-| Adult / Child | `result` (sum of A1–A10 scores) |
-| Toddler | `Qchat-10-Score`, `Case_No`, `Who completed the test` |
+| Dataset | Rule that reproduces the label | Rows reproduced | Total alone, AUC | Item-free model (demographics/history), CV AUC |
+|---|---|---|---|---|
+| Adult | total of A1-A10 >= 7 | 704 / 704 | 1.000 | 0.70 |
+| Child | total of A1-A10 >= 7 | 292 / 292 | 1.000 | 0.58 |
+| Toddler | total of A1-A10 >= 4 | 1054 / 1054 | 1.000 | 0.65 |
+
+The shipped models agree with that rule on 99.7% (adult), 95.5% (child) and 99.6% (toddler) of rows, and 94-99% of
+the variance of their predicted probability is explained by the total alone. They have learned the scoring rule, so
+their accuracy / AUC / calibration are **not** evidence about clinical status, and the "probability" is not an
+independently validated probability. Verify with `python -m backend.data.audit_questionnaire_labels`
+(results: `backend/reports/questionnaire_label_audit.json`); `train_model.py` now prints a leakage warning when the
+agreement is >= 99%. The thresholds are the dataset providers' labelling rule; instrument manuals may quote a different
+cut-off. The app therefore shows the total score, the rule's threshold and a plain notice next to the model output
+(`backend/ml/questionnaire_score.py`).
+
+To make this model meaningful you need labels that do not come from the items (e.g. clinician-confirmed diagnoses)
+and participant-level evaluation; do not invent or relabel data.
+
+Other columns dropped by `train_model.py`: Adult / Child `result` (sum of A1-A10); Toddler `Qchat-10-Score`, `Case_No`, `Who completed the test`.
 
 ---
 

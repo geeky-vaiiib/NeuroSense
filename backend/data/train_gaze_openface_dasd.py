@@ -41,11 +41,19 @@ HIDDEN, DROPOUT = 32, 0.4
 REPORTS = Path(__file__).resolve().parents[1] / "reports"
 
 GAZE4 = ("gaze_angle_x", "gaze_angle_y", "gaze_vel_x", "gaze_vel_y")
-VARIANTS = {   # candidate input representations, compared on DEV CV only
-    "gaze+vel": dataclasses.replace(C.PreprocessConfig(), feature_names=GAZE4),
-    "gaze+vel, window-centred": dataclasses.replace(C.PreprocessConfig(), feature_names=GAZE4, center_window=True),
-    "gaze+vel+head-pose": C.PreprocessConfig(),
+# Candidate representations, compared on DEV CV only.  All are session-centred (translation
+# invariant): the representation experiment (backend/reports/domain_diagnosis/experiments.json)
+# showed absolute angles carry no CV benefit but make webcam output depend on camera placement.
+V2_CFG = C.MODEL_CONFIGS["gaze-openface-dasd-v2"]
+REPRO_DIR = REPORTS.parent / "models" / "reproduction"      # this script reproduces v2; it NEVER writes the frozen v2 files
+G2 = ("gaze_angle_x", "gaze_angle_y"); V2 = ("gaze_vel_x", "gaze_vel_y"); H3 = ("head_pose_x", "head_pose_y", "head_pose_z")
+VARIANTS = {
+    "gaze+head, session-centred": dataclasses.replace(V2_CFG, feature_names=G2 + H3),
+    "gaze+vel+head, session-centred": dataclasses.replace(V2_CFG, feature_names=G2 + V2 + H3),
+    "eye-in-head+vel+head, session-centred": dataclasses.replace(
+        V2_CFG, feature_names=("gaze_rel_x", "gaze_rel_y", "gaze_rel_vel_x", "gaze_rel_vel_y") + H3),
 }
+CV_SEEDS = (SEED, SEED + 1, SEED + 2)
 
 
 def seed_all(s: int):
@@ -210,8 +218,10 @@ def main():
     cv = {}
     for name, cfg in VARIANTS.items():
         data = load_windows(train_recs, cfg)
-        folds = cross_validate(data, train_recs, cfg, SEED)
-        cv[name] = {"folds": folds, "summary": summarize(folds)}
+        runs = [cross_validate(data, train_recs, cfg, sd) for sd in CV_SEEDS]
+        folds = [f for r in runs for f in r]
+        cv[name] = {"folds": folds, "summary": summarize(folds),
+                    "auc_per_repeat": [float(np.mean([f["roc_auc"] for f in r])) for r in runs]}
         s = cv[name]["summary"]
         print(f"[CV] {name:30s} AUC {s['roc_auc']['mean']:.3f}±{s['roc_auc']['std']:.3f}  "
               f"acc {s['accuracy']['mean']:.3f}  sens {s['recall_sensitivity']['mean']:.3f}  spec {s['specificity']['mean']:.3f}")
@@ -219,12 +229,18 @@ def main():
     cfg = VARIANTS[best_name]
     epochs = int(np.median([f["best_epoch"] for f in cv[best_name]["folds"]]))
     base = baselines(train_recs, cfg, SEED)
+    from backend.ml.gaze import quality as Q
+    dom_stats = [Q.domain_stats(P.prepare_session(dasd.read_csv(r), cfg), cfg) for r in train_recs]
+    dom_ref = Q.domain_reference(dom_stats)
+    flags = [Q.domain_check(st, dom_ref)["status"] for st in dom_stats]
+    dom_report = {"children": len(flags), "in_domain": flags.count("in_domain") / len(flags),
+                  "marginal": flags.count("marginal") / len(flags), "out_of_domain": flags.count("out_of_domain") / len(flags),
+                  "note": "in-sample false-reject rate of the gate on DASD training children"}
     print(f"selected: {best_name}; epochs={epochs}; baselines={base}")
 
     # ── 3. FINAL: train on all dev participants, test once ──
-    if cfg != C.DEPLOYED:
-        print("NOTE: selected config differs from config.DEPLOYED -> update config.DEPLOYED to the config below")
-        print(json.dumps(cfg.to_dict()))
+    if cfg != V2_CFG:
+        print("NOTE: selected config differs from the registered v2 config", json.dumps(cfg.to_dict()))
     data_tr = load_windows(train_recs, cfg)
     model, norm, hist, _ = fit(data_tr, train_recs, cfg, SEED, val_recs=None, epochs=epochs)
     ids_tr, y_tr, p_tr = participant_probs(model, norm, data_tr, train_recs)
@@ -241,10 +257,10 @@ def main():
     cvcm = {k: sum(f["confusion_matrix"][k] for f in cv[best_name]["folds"]) for k in ("tn", "fp", "fn", "tp")}
     plot_cm(cvcm, "Dev CV, pooled folds", REPORTS / "gaze_confusion_cv.png")
     (REPORTS / "gaze_training_history.json").write_text(json.dumps(hist, indent=1))
-    M.MODELS_DIR.mkdir(exist_ok=True)
-    torch.save({"model_state_dict": model.state_dict()}, M.CHECKPOINT_PATH)
+    REPRO_DIR.mkdir(parents=True, exist_ok=True)
+    torch.save({"model_state_dict": model.state_dict()}, REPRO_DIR / "gaze_openface_dasd_v2_repro.pt")
     meta = {
-        "model_version": C.MODEL_VERSION, "dataset": C.DATASET_NAME,
+        "model_version": "gaze-openface-dasd-v2", "dataset": C.DATASET_NAME,
         "feature_schema_version": C.FEATURE_SCHEMA_VERSION,
         "feature_names": list(cfg.feature_names), "feature_order": {n: i for i, n in enumerate(cfg.feature_names)},
         "sequence_length": cfg.window_steps, "sampling_rate_hz": cfg.resample_hz,
@@ -253,9 +269,11 @@ def main():
         "architecture": {"type": "BiLSTM(mean+max pool)", "input_size": len(cfg.feature_names),
                          "hidden_size": HIDDEN, "dropout": DROPOUT},
         "training_seed": SEED, "epochs": epochs, "lr": LR, "weight_decay": WD, "batch_size": BATCH,
+        "domain_reference": dom_ref, "domain_gate": {"z_in": C.DOMAIN_Z_IN, "z_out": C.DOMAIN_Z_OUT, **dom_report},
         "decision_threshold": 0.5, "session_aggregation": "mean of window probabilities",
-        "validation_strategy": f"{N_FOLDS}-fold stratified participant-level CV on the official train split "
-                               "(55 participants); official test split (27) used once",
+        "validation_strategy": f"{N_FOLDS}-fold stratified participant-level CV x3 repeats on the official train split "
+                               "(55 participants). v1 used the test split once; v2 (this model) is the second and last use, "
+                               "after a redesign driven only by dev CV and unlabelled webcam diagnostics",
         "participants": {"train": len(train_recs), "test": len(test_recs), **counts},
         "metrics": {"cv_selected_variant": best_name, "cv_summary": cv[best_name]["summary"],
                     "cv_all_variants": {k: v["summary"] for k, v in cv.items()},
@@ -266,9 +284,9 @@ def main():
                         "ASD/TD recording duration and frame rate differ in DASD (controlled by fixed windows)",
                         "not validated on webcam data with ground-truth labels"],
     }
-    M.METADATA_PATH.write_text(json.dumps(meta, indent=2, default=float))
+    (REPRO_DIR / "gaze_openface_dasd_v2_repro_metadata.json").write_text(json.dumps(meta, indent=2, default=float))
     (REPORTS / "gaze_cv_results.json").write_text(json.dumps(cv, indent=1, default=float))
-    print(f"saved {M.CHECKPOINT_PATH} in {time.time() - t0:.0f}s")
+    print(f"saved {REPRO_DIR} in {time.time() - t0:.0f}s")
 
 
 if __name__ == "__main__":

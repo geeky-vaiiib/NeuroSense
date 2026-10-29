@@ -97,7 +97,7 @@ export default function HowItWorks() {
         <div>
           <p className="ns-eyebrow ns-eyebrow--dark" style={{ marginBottom: 4 }}>Screening insight</p>
           <p style={{ fontSize: '0.95rem', color: '#C9D5E8', maxWidth: 'none' }}>
-            One overall indicator, the contribution and data quality of every signal, and a plain-language explanation of what drove it — for a clinician to review.
+            The questionnaire score against its threshold, the status and data quality of every other signal (experimental or unavailable signals do not change the result), and a plain-language explanation — for a clinician to review.
           </p>
         </div>
       </div>

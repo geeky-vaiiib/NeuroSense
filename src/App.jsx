@@ -12,10 +12,13 @@ import Landing   from './pages/Landing';
 import Auth      from './pages/Auth';
 import Dashboard from './pages/Dashboard';
 import Screening from './pages/Screening';
+import ScreeningStart from './pages/ScreeningStart';
+import ToddlerScreening from './pages/ToddlerScreening';
 import Results   from './pages/Results';
 import Cases     from './pages/Cases';
 import Settings  from './pages/Settings';
 import Diagnostic from './pages/Diagnostic';
+import GazeLab from './pages/GazeLab';
 
 /* ── Error Boundary ──────────────────────────────────────── */
 class ErrorBoundary extends Component {
@@ -136,13 +139,15 @@ function AppShell() {
         <div className="ns-page ns-page-enter" key={location.pathname.split('/').slice(0, 3).join('/')}>
           <Routes>
             <Route path="/"                element={<Dashboard />} />
-            <Route path="/screening"       element={<Screening />} />
+            <Route path="/screening"       element={<ScreeningStart />} />
+            <Route path="/screening/toddler" element={<ToddlerScreening />} />
             <Route path="/screening/:category" element={<Screening />} />
             <Route path="/results"         element={<Results />} />
             <Route path="/results/:caseId" element={<Results />} />
             <Route path="/cases"           element={<Cases />} />
             <Route path="/settings"        element={<Settings />} />
             <Route path="/diagnostic"      element={<Diagnostic />} />
+            <Route path="/gaze-lab"        element={<GazeLab />} />
             <Route path="*"               element={<NotFound />} />
           </Routes>
         </div>

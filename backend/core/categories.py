@@ -33,17 +33,11 @@ CATEGORY_SETTINGS: dict[str, dict] = {
             "Moderate": "Adult ASD traits present — review recommended",
             "Low": "Lower adult ASD likelihood on screening",
         },
-        "modality_confidence": [
-            {"id": "questionnaire", "label": "Adult self-report", "pct": 84},
-            {"id": "demographics", "label": "Adult demographics", "pct": 72},
-            {"id": "family-history", "label": "Family history signal", "pct": 66},
-            {"id": "xai-ready", "label": "Explainability readiness", "pct": 91},
-        ],
     },
     "child": {
         "label": "Child",
-        "age_min": 5,
-        "age_max": 17,
+        "age_min": 4,          # AQ-10 child (caregiver) form: ages 4-11 (matches the UI)
+        "age_max": 11,
         "screening_tool": "Child AQ-10",
         "respondent_relationship": "Parent / Guardian",
         "risk_copy": {
@@ -65,33 +59,26 @@ CATEGORY_SETTINGS: dict[str, dict] = {
             "Moderate": "Child ASD traits present — monitoring recommended",
             "Low": "Lower child ASD likelihood on screening",
         },
-        "modality_confidence": [
-            {"id": "questionnaire", "label": "Caregiver questionnaire", "pct": 81},
-            {"id": "developmental-history", "label": "Developmental history", "pct": 78},
-            {"id": "birth-context", "label": "Birth and family context", "pct": 69},
-            {"id": "xai-ready", "label": "Explainability readiness", "pct": 93},
-        ],
     },
     "toddler": {
         "label": "Toddler",
-        "age_min": 0,
+        "age_min": 0,          # age in YEARS is derived from months; the instrument range (18-24 months) is enforced in ml/qchat10.py
         "age_max": 4,
         "screening_tool": "Q-CHAT-10",
         "respondent_relationship": "Parent / Guardian",
         "risk_copy": {
             "High": (
-                "This caregiver-completed toddler screening shows a high concentration of "
-                "early ASD-related traits. A developmental paediatrician review is recommended "
-                "as early as possible \u2014 early intervention between 18 and 24 months produces "
-                "the best long-term outcomes."
+                "On this caregiver-completed Q-CHAT-10 the score is at or above the screening threshold. This is a screening "
+                "result, not a diagnosis: discussing it with a paediatrician or developmental specialist about whether a "
+                "developmental assessment is appropriate is suggested."
             ),
             "Moderate": (
-                "This caregiver-completed toddler screening shows several early traits associated "
-                "with ASD. A paediatric follow-up assessment is recommended."
+                "On this caregiver-completed Q-CHAT-10 the score is one point below the screening threshold. This is a screening "
+                "result, not a diagnosis: if you have concerns, mention them at your next well-child visit."
             ),
             "Low": (
-                "This caregiver-completed toddler screening shows fewer early ASD-related traits "
-                "at this time. Continue routine developmental monitoring at each well-child visit."
+                "On this caregiver-completed Q-CHAT-10 the score is below the screening threshold. A screening result cannot rule "
+                "out autism: if you have concerns, raise them with a health professional."
             ),
         },
         "diagnosis_copy": {
@@ -99,12 +86,6 @@ CATEGORY_SETTINGS: dict[str, dict] = {
             "Moderate": "Toddler early ASD traits present \u2014 paediatric review recommended",
             "Low": "Lower toddler ASD likelihood on screening",
         },
-        "modality_confidence": [
-            {"id": "questionnaire", "label": "Q-CHAT-10 caregiver report", "pct": 88},
-            {"id": "developmental-history", "label": "Early developmental milestones", "pct": 82},
-            {"id": "birth-context", "label": "Birth and family context", "pct": 74},
-            {"id": "xai-ready", "label": "Explainability readiness", "pct": 91},
-        ],
     },
 }
 
@@ -128,16 +109,16 @@ FEATURE_LABELS: dict[str, dict[str, str]] = {
         "Ethnicity": "Reported ethnicity",
     },
     "child": {
-        "A1_Score": "Child notices small sounds",
-        "A2_Score": "Child focuses on the whole picture",
-        "A3_Score": "Child handles multitasking",
-        "A4_Score": "Child returns to tasks after interruption",
-        "A5_Score": "Child reads implied meaning in conversation",
-        "A6_Score": "Child recognises when others are disengaged",
-        "A7_Score": "Child interprets characters' intentions",
-        "A8_Score": "Child collects detailed categories of information",
-        "A9_Score": "Child reads thoughts from facial cues",
-        "A10_Score": "Child understands other people's intentions",
+        "A1_Score": "Notices small sounds others do not",
+        "A2_Score": "Focuses on the whole picture rather than details",
+        "A3_Score": "Keeps track of several conversations in a group",
+        "A4_Score": "Switches easily between activities",
+        "A5_Score": "Struggles to keep a conversation going with peers",
+        "A6_Score": "Good at social chit-chat",
+        "A7_Score": "Struggles to work out a story character's intentions or feelings",
+        "A8_Score": "Enjoyed pretend play in preschool",
+        "A9_Score": "Reads what someone thinks or feels from their face",
+        "A10_Score": "Finds it hard to make new friends",
         "Age": "Child age at screening",
         "Gender": "Child's reported gender",
         "Jaundice": "Birth jaundice history",
@@ -219,7 +200,7 @@ def build_diagnosis_summary(category: str, risk_level: str) -> str:
     return category_copy.get(risk_level, category_copy["Low"])
 
 
-def build_case_tags(category: str, risk_level: str, is_mock: bool) -> list[str]:
+def build_case_tags(category: str, risk_level: str, is_mock: bool, score_rule: bool = False) -> list[str]:
     """Build default tags for a case record."""
     if category == "adult":
         report_type = "self-report"
@@ -230,7 +211,7 @@ def build_case_tags(category: str, risk_level: str, is_mock: bool) -> list[str]:
         f"{category}-track",
         report_type,
         f"{risk_level.lower()}-risk",
-        "mock-pipeline" if is_mock else "live-model",
+        "mock-pipeline" if is_mock else ("score-rule" if score_rule else "live-model"),
     ]
     return tags
 
@@ -257,16 +238,3 @@ def feature_label(feature_name: str, category: str) -> str:
     """Map technical feature names to category-aware display labels."""
     labels = FEATURE_LABELS.get(category, FEATURE_LABELS["adult"])
     return labels.get(feature_name, feature_name.replace("_", " "))
-
-
-def modality_confidence_for_category(category: str | None = None) -> list[dict]:
-    """Return dashboard confidence cards for a category or mixed overview."""
-    if category in CATEGORY_SETTINGS:
-        return CATEGORY_SETTINGS[category]["modality_confidence"]
-
-    return [
-        {"id": "adult-track",   "label": "Adult self-report",      "pct": 84},
-        {"id": "child-track",   "label": "Child caregiver report",  "pct": 81},
-        {"id": "toddler-track", "label": "Toddler Q-CHAT-10",       "pct": 88},
-        {"id": "routing",       "label": "Category model routing",  "pct": 89},
-    ]

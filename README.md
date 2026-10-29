@@ -1,236 +1,112 @@
 # NeuroSense
 
-NeuroSense is a triple-track multimodal ASD **screening** platform (not a diagnostic tool).
-It covers `adult`, `child`, and `toddler` categories across a Vite/React frontend and
-FastAPI backend with MongoDB Atlas persistence.
+NeuroSense is an **ASD screening aid** (not a diagnostic tool): a Vite/React frontend and a FastAPI backend with MongoDB persistence.
+The screening result is a **server-computed questionnaire score compared with a threshold**. Eye-gaze, speech and facial
+analyses are recorded as measurements or experimental outputs, are shown for transparency, and **never change the result**.
 
-> **Clinical disclaimer.** NeuroSense is a research-grade screening aid.
-> Results must not be used for clinical diagnosis without review by a qualified professional.
+> **Clinical disclaimer.** NeuroSense is a research prototype. Nothing in it has been validated for clinical use; results must
+> not be used for diagnosis without review by a qualified professional.
 
----
+## How to read the status claims in this repository
+Four different things are kept apart everywhere (README, UI, reports):
+
+| level | meaning |
+|---|---|
+| **1 Implemented** | the code exists and runs |
+| **2 Tested technically** | automated tests / manual runs show the code behaves as designed |
+| **3 Evaluated on labelled data** | a model has been measured against labelled examples with a leakage-safe protocol |
+| **4 Validated for the intended population** | evidence exists for the children/setting NeuroSense is meant for |
+
+Nothing here reaches level 4. Only gaze reaches level 3 (82 children, DASD) and even there the evidence is weak (see below).
+
+## What each component is (and is not)
+
+| Component | L1 | L2 | L3 | L4 | Reality |
+|---|---|---|---|---|---|
+| **Questionnaire score** (child AQ-10 caregiver form; adult AQ-10) | yes | yes | no | no | Server scores the 10 items (`backend/ml/questionnaire_score.py`); result = total vs threshold; risk band is a presentation of the score, not a probability. The threshold is the rule found in the training labels (total ≥ 7), not verified against the instrument manual. Toddler (Q-CHAT-10) submissions are refused: its 5-point scale is not representable. |
+| Questionnaire ML model (XGB/AdaBoost) | yes | yes | no | no | Trained on public datasets whose labels are a threshold on the item total (100% of rows; `backend/data/audit_questionnaire_labels.py`). It models the scoring rule, is shown for transparency / SHAP-LIME only, and does not affect the result. |
+| **Eye gaze** (OpenFace → BiLSTM `gaze-openface-dasd-v3`; v2 frozen baseline) | yes | yes | weak | no | Experimental. Trained on DASD (82 children). Metadata alone (duration etc.) scores as well on the same folds; the model ignores temporal order; webcam adults sit far below the training movement range (`backend/reports/`). Displayed as experimental output + quality + movement statistics; excluded from the result. |
+| **Speech** | measurement only | yes | no | no | Acoustic features (pitch, loudness, rate) are extracted and shown. **No classifier exists**: the old CNN was a synthetic proxy and the heuristic "flags" were removed. Status `model_unavailable`. |
+| **Facial** | detection only | yes | no | no | Face detection + image quality. No landmarks, no expression model, no ASD classifier. Status `model_unavailable`. |
+| Result contract (`ml/fusion_engine.py`) | yes | yes | no | no | Questionnaire only. No composite probability, no weights. Experimental / unavailable modalities are listed with their status and cannot enter. |
+| Explanations | yes | yes | n/a | no | (1) per-item score explanation (decides the result); (2) SHAP/LIME of the questionnaire ML model (explains the model, not the result); (3) gaze feature-sensitivity (ablation), not causal. |
+
+The modality status contract (`ml/modality_status.py`): `available_scoring_instrument`, `available_validated` (nothing qualifies today),
+`available_experimental`, `insufficient_data`, `failed_quality`, `model_unavailable`, `analysis_failed`, `skipped`, `not_provided`.
+An unavailable modality has `output: null` (never 0) and `in_result: false`.
 
 ## Architecture
 
-### System overview
-
 ```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                         NeuroSense Pipeline                             │
-│                                                                         │
-│  Browser (React / Vite)                                                 │
-│  ┌──────────┐  ┌────────────┐  ┌──────────────┐  ┌──────────────────┐  │
-│  │ AQ-10 /  │  │ GazeSession│  │ SpeechSession│  │  FacialSession   │  │
-│  │ Q-CHAT-10│  │(WebGazer.js│  │ (MediaRecorder│  │ (webcam snapshot)│  │
-│  │ wizard   │  │ /MediaPipe)│  │  + base64)   │  │    + base64)     │  │
-│  └────┬─────┘  └─────┬──────┘  └──────┬───────┘  └────────┬─────────┘  │
-│       │              │                │                   │             │
-│  POST /screening/screen ──────────────────────────────────────────────▶ │
-│                                                                         │
-│  Backend (FastAPI)                                                      │
-│  ┌─────────────────────────────────────────────────────────────────┐   │
-│  │              preprocessing_pipeline.preprocess_screening_input()│   │
-│  │  ┌───────────────┐ ┌──────────────┐ ┌─────────────┐ ┌────────┐ │   │
-│  │  │ preprocessor  │ │ gaze_engine  │ │speech_engine│ │facial  │ │   │
-│  │  │ .preprocess   │ │.compute_gaze │ │.compute_    │ │_engine │ │   │
-│  │  │ _for_inference│ │_score()      │ │speech_score │ │.compute│ │   │
-│  │  │               │ │              │ │()           │ │_facial │ │   │
-│  │  │  tabular      │ │  gaze dict   │ │ speech dict │ │_score()│ │   │
-│  │  └───────┬───────┘ └──────┬───────┘ └──────┬──────┘ └───┬────┘ │   │
-│  │          │                │                │            │      │   │
-│  │          ▼                └────────────────┴────────────┘      │   │
-│  │  model.predict()                         fusion_engine.fuse()   │   │
-│  │  (questionnaire ML)                      weighted avg of        │   │
-│  │                                          trained modalities     │   │
-│  └─────────────────────────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────────────────────┘
+Browser (React)  ──  POST /screening/screen  {demo, answers, gazeAnalysisId?, audio?, image?}   (no totals / risk levels / probabilities accepted)
+Gaze: POST /gaze/analyze (30 s video) → job → OpenFace → quality + domain gates → model → stored job result (user-bound)
+Backend:  validate (answers strictly, age range, category) → score_questionnaire() → ML model output (optional, labelled)
+          → modality states (gaze job lookup by id, speech/face measured) → fusion_engine.combine() → persist case (owner = session user)
+Results:  GET /cases/{id} (stored result, owner-scoped) · GET /explain/{id} (score explanation + SHAP/LIME status)
 ```
-
-### Modality status (per is_trained_model contract)
-
-| Modality | Method | is_trained_model | Training data | Fusion weight |
-|---|---|---|---|---|
-| **Questionnaire** | Supervised ML (AdaBoost/XGBoost/RF) | `True` | UCI / Kaggle ASD screening datasets | 40% |
-| **Gaze** | BiLSTM on browser-derivable features `[x, y, speed, is_fixation]` (`gaze_lstm_browser.pt`, trained by `backend/data/train_gaze_browser.py`); no heuristic fallback — unavailable sessions are excluded from fusion | `True` / unavailable | Cilia et al. (2022) hardware eye-tracking data (57 children). Not validated on webcam gaze. | 20% |
-| **Speech** | 1D-CNN (if `speech_cnn.pt` present) / prosody heuristic (Bone et al. 2014) | `True`¹ / `False` | Synthetic MFCC proxy (no real ASD-labelled speech data in this repo) | 20% |
-| **Facial** | 2D-CNN (if `facial_model.pt` present) / pixel-stat heuristic | `False` (no checkpoint yet) | FER-2013 proxy (general-purpose expression dataset — NOT ASD-specific)² | 20% |
-
-¹ The speech CNN checkpoint currently in `backend/models/speech_cnn.pt` is a **synthetic proxy**
-trained on MFCC arrays with planted statistical differences. `is_trained_model=False` is set in
-the inference result and the interpretation string discloses this explicitly.
-
-² `facial_model.pt` is not committed to this repository. Until it is present, `facial_engine`
-always falls back to the pixel-stat heuristic with `is_trained_model=False`.
-
-**Fusion rule.** `final_probability` is the weighted average of **only the modalities with
-`is_trained_model=True`**. Heuristic-only modalities are excluded from `final_probability`
-and appear only in `heuristic_signal` and `modality_breakdown` for transparency.
-
----
-
-### Frontend
 
 | File | Purpose |
 |---|---|
-| `src/pages/Screening.jsx` | Category-first wizard. Adult/child: 7-step flow (Track → Consent → Demographics → AQ-10 → Gaze → Speech → Facial → Review). Toddler: 5-step (no gaze/speech/facial). |
-| `src/components/GazeSession.jsx` | 30 s webcam fixation task (WebGazer.js / MediaPipe) |
-| `src/components/SpeechSession.jsx` | 20 s mic recording with amplitude visualiser |
-| `src/components/FacialSession.jsx` | Webcam snapshot for facial expression analysis |
-| `src/pages/Results.jsx` | Per-modality breakdown, SHAP/LIME panels, fusion formula |
-| `src/pages/Diagnostic.jsx` | Developer-only page at `/app/diagnostic` with 6 test sections including a 4-modality smoke test |
-| `src/data/screeningContent.js` | Central copy, question wording, validation helpers |
-| `src/data/mockData.js` | Seeded adult/child/toddler records with multimodal data |
+| `backend/ml/questionnaire_score.py` | the only scoring implementation (strict answers, per-instrument trait items, thresholds, age ranges, risk band) |
+| `backend/ml/modality_status.py`, `fusion_engine.py` | status contract and result contract (formula and eligibility documented in the module docstrings) |
+| `backend/ml/preprocessing_pipeline.py` | measures speech/facial; never produces a score |
+| `backend/ml/speech_engine.py`, `speech_features.py` | decoding + acoustic features; safe JSON classifier loader (no pickle); `data/train_speech_asd.py` needs a participant-labelled corpus |
+| `backend/ml/facial_engine.py`, `cv_preprocessing.py` | face detection + image quality |
+| `backend/ml/gaze/` | OpenFace gaze pipeline (below) |
+| `backend/ml/shap_engine.py`, `lime_engine.py`, `routers/explainability.py` | SHAP/LIME for the questionnaire ML model; return `null`/"unavailable" instead of placeholder values |
+| `backend/routers/screening.py`, `cases.py`, `core/cases_store.py` | submission, owner-scoped retrieval, history (stored records are never rewritten; pre-v2 cases are marked legacy) |
+| `backend/models/quarantine/` | synthetic-proxy speech CNN, the fusion meta-classifier trained on *simulated* data, and the FER-2013 "ASD proxy" trainers: kept for provenance, never loaded |
+| `src/components/results/` | `ScoreMeter`, `ModalityStatusGrid`, `ResultBasis`, `ExplanationPanel`, `SpeechMeasurements`, `GazeRecordingSummary` (render stored backend values only) |
 
-### Backend
-
-| File | Purpose |
-|---|---|
-| `backend/ml/preprocessing_pipeline.py` | **Unified preprocessing entry-point.** Dispatches to all 4 per-modality functions and returns `PreprocessedInput`. No ML logic — pure structural aggregation. |
-| `backend/ml/preprocessor.py` | Tabular feature engineering for questionnaire ML (AQ-10 / Q-CHAT-10 → feature vector) |
-| `backend/ml/gaze_engine.py` | Fixation scoring. Heuristic (Jones & Klin 2013) with LSTM hot-swap via `backend/models/gaze_lstm.pt` |
-| `backend/ml/speech_engine.py` | MFCC / prosody scoring (Bone et al. 2014) with 1D-CNN hot-swap via `backend/models/speech_cnn.pt` |
-| `backend/ml/facial_engine.py` | Facial expression risk scoring with 2D-CNN hot-swap via `backend/models/facial_model.pt` |
-| `backend/ml/cv_preprocessing.py` | OpenCV face detection (DNN → Haar → centre-crop) + CLAHE normalisation, called by `facial_engine` before CNN inference |
-| `backend/ml/fusion_engine.py` | Genuine multimodal late fusion: fixed calibrated weights (Q=40 %, G=20 %, S=20 %, F=20 %). Only trained modalities contribute to `final_probability`. |
-| `backend/ml/model.py` | Category-aware questionnaire ML model registry (adult / child / toddler) |
-| `backend/routers/screening.py` | Screening submission endpoint. Calls `preprocess_screening_input()` then `fuse()`. |
-| `backend/routers/explainability.py` | SHAP / LIME explanations per case |
-| `backend/routers/cases.py` | Case list, detail, and dashboard aggregation |
-| `backend/core/categories.py` | Category registry, age validation, interpretation copy |
-| `backend/core/cases_store.py` | Case normalisation, MongoDB persistence, JSON fallback |
-| `backend/data/train_model.py` | Questionnaire ML training (adult / child / toddler) |
-| `backend/data/train_gaze_lstm.py` | Gaze LSTM training (synthetic proxy) |
-| `backend/data/train_speech_cnn.py` | Speech 1D-CNN training (real ASD data preferred; synthetic proxy if absent) |
-| `backend/data/train_facial_cnn.py` | Facial 2D-CNN training (FER-2013 proxy; ASD-specific data preferred) |
-
----
-
-## API contract
-
-### `POST /screening/screen`
+## API: `POST /screening/screen`
 
 ```json
-{
-  "category": "adult",
-  "demo": {
-    "subjectName": "Jordan A.",
-    "respondentName": "Jordan A.",
-    "respondentRelationship": "Self",
-    "age": 34,
-    "gender": "Non-binary",
-    "ethnicity": "South Asian",
-    "jaundice": "No",
-    "familyAsd": "Yes"
-  },
-  "answers": { "A1": "Definitely agree" },
-  "aq10Score": 8,
-  "gazePoints": [{"x": 0.5, "y": 0.3, "timestamp": 1714300000, "stimulus": 0}],
-  "gazeSkipped": false,
-  "audioBase64": "UklGRi...",
-  "audioMimeType": "audio/webm",
-  "transcriptHint": "The quick brown fox...",
-  "speechSkipped": false,
-  "facialImageBase64": "/9j/4AAQ...",
-  "facialSkipped": false
-}
+{ "category": "child",
+  "demo": { "age": 7, "gender": "Male", "subjectName": "…", "respondentRelationship": "Parent", "jaundice": "No", "familyAsd": "No" },
+  "answers": { "A1": "Definitely agree", "A2": "Slightly disagree", "…": "…", "A10": "Definitely disagree" },
+  "gazeAnalysisId": "<job id from POST /gaze/analyze>", "gazeSkipped": false,
+  "audioBase64": "…", "audioMimeType": "audio/webm", "speechSkipped": false, "facialImageBase64": "…", "facialSkipped": false }
 ```
+Answers must be exactly one of the four options (case-insensitive); anything else, a missing item, age outside 4–11 (child) / 18+ (adult), or `category: "toddler"` is a 422 and nothing is stored.
+`aq10Score` is still *accepted* for backwards compatibility but **ignored**; a differing value yields a warning. `riskLevel`, `fusionScore`, probabilities, user ids etc. in the body are ignored.
 
-### Key response fields
+| Response field | Meaning |
+|---|---|
+| `aq10Score`, `questionnaireBasis` | server-computed total, threshold, band, per-item points, notice |
+| `riskLevel`, `result` | the contract result (`basis: questionnaire_score_only`, `composite_probability: null`, `modalities_in_result`, `excluded[]`, formula) |
+| `modalities[]` | status contract for questionnaire, gaze, speech, facial |
+| `modelOutput`, `questionnaireProbability` | ML model output (nullable), explicitly not a validated probability |
+| `fusionScore`, `heuristicSignal`, `modalityBreakdown` | **deprecated, always null** |
+| `warnings[]` | e.g. client total mismatch, no ML model loaded |
 
-| Field | Type | Description |
-|---|---|---|
-| `caseId` | string | Unique case identifier |
-| `riskLevel` | `"High"` \| `"Moderate"` \| `"Low"` | Driven by `final_probability` |
-| `fusionScore` | float | Weighted avg of trained modalities only |
-| `questionnaireProbability` | float | P(ASD) from questionnaire ML model |
-| `heuristicSignal` | float \| null | Weighted avg of heuristic-only modalities (supplemental) |
-| `confidenceNote` | string | Plain-English description of which modalities contributed |
-| `modalityBreakdown.components` | array | One entry per modality with `score`, `isTrainedModel`, `method` |
-| `modalities_used` | int | Count of modalities with a score (1–4) |
-
----
-
-## Running the app
-
-### Frontend
+## Running
 
 ```bash
-npm install
-npm run dev
+cp backend/.env.example backend/.env        # set MONGODB_URI and a generated JWT_SECRET
+python3 -m venv .venv && source .venv/bin/activate && pip install -r backend/requirements.txt
+uvicorn backend.main:app --port 8000        # frontend expects http://localhost:8000 (VITE_API_URL to change)
+npm install && npm run dev                  # http://localhost:5173
+scripts/dev_e2e_backend.sh                  # throw-away backend with an in-memory database, for local end-to-end checks
 ```
+Requirements: Python 3.9+, MongoDB (or `mongomock://` for local testing), optional Docker with the amd64 `algebr/openface` image (or a native `FeatureExtraction`) for gaze; the camera/microphone need HTTPS or localhost. Production notes: `COOKIE_SECURE=true` with HTTPS origins, a Linux x86-64 host for OpenFace (emulated on Apple silicon), a shared store for throttling if multi-instance.
+`GET /` reports the real state (version, database connectivity, per-modality status) and no secrets.
+Known environment issue: the shipped questionnaire pickles were written with scikit-learn 1.6.1 / a newer XGBoost while `requirements.txt` pins 1.5.2 (an `InconsistentVersionWarning` appears); results were checked to load and explain, but re-exporting the models with the pinned versions is still to do.
 
-### Backend
+## Training and audits (all reproducible; none of them is a clinical validation)
 
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r backend/requirements.txt
-uvicorn backend.main:app --reload --port 8000
+python3 -m backend.data.audit_questionnaire_labels       # label = item-total threshold in all three datasets
+python3 -m backend.data.train_model --category child     # prints a leakage warning when labels are reconstructable from the items
+python3 -m backend.data.audit_dasd | train_gaze_openface_dasd | compare_gaze_models | train_gaze_v3 | audit_gaze_leakage | benchmark_gaze_runtime
+python3 -m backend.data.train_speech_asd --manifest corpus.csv --dataset-name … --license …   # refuses without a participant-labelled corpus
 ```
-
-The frontend expects the backend at `http://localhost:8000`.
-
----
-
-## Model training
-
-### Questionnaire models (required)
-
-```bash
-python3 -m backend.data.train_model --category adult
-python3 -m backend.data.train_model --category child
-python3 -m backend.data.train_model --category toddler
-```
-
-Outputs: `backend/ml/model_{category}.pkl`, `encoders_{category}.pkl`, `background_{category}.npy`
-
-### Auxiliary modality models (optional — enable hot-swap)
-
-```bash
-# Gaze LSTM (synthetic proxy unless you supply a labelled gaze dataset)
-python3 -m backend.data.train_gaze_lstm
-
-# Speech 1D-CNN (auto-detects real data at backend/data/speech_dataset/, else synthetic proxy)
-python3 -m backend.data.train_speech_cnn
-
-# Facial 2D-CNN (FER-2013 proxy; see backend/data/train_facial_cnn.py for ASD dataset instructions)
-python3 -m backend.data.train_facial_cnn
-```
-
-Dropping the resulting `*.pt` files into `backend/models/` automatically activates the trained
-models on the next server restart — no code changes needed.
-
----
 
 ## Verification
-
 ```bash
-npm run lint
-npm run build
-PYTHONPATH=. pytest backend/tests/
-python3 -c "from backend.main import app; print(app.title)"
+PYTHONPATH=backend python3 -m pytest backend/tests -q      # backend (in-memory MongoDB; never touches a real database)
+npm run lint && npm test && npm run build                  # frontend
 ```
-
----
-
-## Mock mode
-
-If the backend is unavailable, the frontend falls back to seeded mock cases and preserves
-category badges, model/data-source tags, and result payload shapes. Mock submissions are saved
-in browser storage so new demo cases appear in the case list, dashboard, and results pages.
-
----
-
-## Modality maturity — honest status
-
-| Modality | Status | Notes |
-|---|---|---|
-| Questionnaire | ✅ Production-ready | Trained on real ASD screening data (UCI / Kaggle); participant-split validation |
-| Gaze | ⚠️ Research heuristic | No clinically labelled gaze+ASD dataset committed; LSTM checkpoint is a synthetic proxy |
-| Speech | ⚠️ Synthetic proxy | 1D-CNN checkpoint trained on synthetic MFCCs; `is_trained_model=False` in API response |
-| Facial | ⚠️ Heuristic only | No `facial_model.pt` committed; pixel-stat heuristic active; `is_trained_model=False` |
-
-Heuristic scores appear in `modality_breakdown` for transparency but **do not affect
-`final_probability` or `riskLevel`** under the current fusion strategy.
+Actual results of the last full run and the browser checks are recorded in `PROJECT_STATUS.md`.
 
 ---
 
@@ -246,28 +122,28 @@ request + cookie → get_current_user(): verify signature/exp/iss/aud/jti → no
 
 **Session/token.** Access JWT in an `HttpOnly` cookie (`Secure` when `COOKIE_SECURE=true`), lifetime `JWT_ACCESS_TOKEN_EXPIRE_MINUTES` (default 60), no refresh token: an expired session means logging in again. Claims: `sub, email, role, iat, nbf, exp, iss, aud, jti` only. `POST /auth/logout` stores the `jti` in `revoked_tokens` (TTL index) so a copied token dies too. Non-browser clients may send `Authorization: Bearer <jwt>`. Cookie-authenticated writes must also send `X-Requested-With: NeuroSense` (CSRF defence; the CORS allow-list blocks other origins from sending it). Trade-off: HttpOnly cookies keep the token away from XSS; the cost is that CSRF must be handled (done as above).
 
-**Users** (`users` collection): `user_id, name, email (lower-cased, unique index idx_user_email_unique), password_hash, role (user|clinician), created_at, updated_at, is_active`. Registration always creates role `user`; a `role` field in the request is rejected. Promote an account on a trusted machine: `python3 -m backend.scripts.manage_users set-role --email x@y.z --role clinician`. Password policy: 10–128 chars with a letter and a digit. Failed logins are throttled (5 per 15 min per IP+email, in-process).
+**Users** (`users` collection): `user_id, name, email (lower-cased, unique index idx_user_email_unique), password_hash, role (user|clinician), created_at, updated_at, is_active`. Registration always creates role `user`; a `role` field in the request is rejected. Promote an account on a trusted machine: `python3 -m backend.scripts.manage_users set-role --email x@y.z --role clinician`. Password policy: 10–128 chars with a letter and a digit. Failed logins are throttled (5 per 15 min per IP+email) and account creation is capped (10 per hour per client), both in-process.
 
 **Endpoints.**
 
 | Route | Access |
 |---|---|
 | `GET /`, `POST /auth/register`, `POST /auth/login` | public |
-| `GET /auth/me`, `POST /auth/logout`, `POST /gaze/analyze`, `GET /gaze/status`, `POST /screening/screen`, `GET /cases/`, `GET /cases/{id}`, `GET /cases/dashboard/summary`, `GET /explain/{id}` | authenticated |
-| role-restricted | none yet; `require_roles("clinician")` is available |
+| `GET /auth/me`, `POST /auth/logout`, `POST /gaze/analyze`, `GET /gaze/jobs/{id}`, `GET /gaze/status`, `POST /screening/screen`, `GET /cases/`, `GET /cases/{id}`, `GET /cases/dashboard/summary`, `GET /explain/{id}` | authenticated |
+| role-restricted (`clinician`) | `GET/POST/DELETE /gaze/lab/*` and `keep_features` uploads (dev tool, also needs `GAZE_LAB_ENABLED=1`) |
 
 **Ownership.** Every case stores `user_id` taken from the verified token (never from the request). Lists, dashboard and detail queries filter by `user_id` in MongoDB; another user's case returns `404 Case not found` (same as a missing one). `/explain/{id}` checks ownership before any model work. Cases created before authentication have no `user_id`; they are visible to nobody until an operator runs `manage_users assign-legacy-cases --email owner@x --yes` (dry run without `--yes`).
 
 **Indexes.** `users.email` (unique), `users.user_id` (unique), `cases.user_id+screening_date`, `revoked_tokens.jti` (unique) and `revoked_tokens.expires_at` (TTL), plus the existing case indexes.
 
-**Environment** (`backend/.env`, see `backend/.env.example`): `MONGODB_URI`, `MONGODB_DB_NAME`, `JWT_SECRET` (required, ≥32 random chars — startup fails otherwise), `JWT_ALGORITHM`, `JWT_ACCESS_TOKEN_EXPIRE_MINUTES`, `JWT_ISSUER`, `JWT_AUDIENCE`, `COOKIE_SECURE`, `COOKIE_SAMESITE`, `CORS_ALLOWED_ORIGINS` (explicit origins, `*` rejected). Frontend: optional `VITE_API_URL`.
+**Environment** (`backend/.env`, see `backend/.env.example`): `MONGODB_URI`, `MONGODB_DB_NAME`, `JWT_SECRET` (required, ≥32 random chars — startup fails otherwise), `JWT_ALGORITHM`, `JWT_ACCESS_TOKEN_EXPIRE_MINUTES`, `JWT_ISSUER`, `JWT_AUDIENCE`, `COOKIE_SECURE`, `COOKIE_SAMESITE`, `CORS_ALLOWED_ORIGINS` (explicit origins, `*` rejected; an `https://` origin requires `COOKIE_SECURE=true`). Frontend: optional `VITE_API_URL`.
 
 **Local setup.** `cp backend/.env.example backend/.env`, fill `MONGODB_URI` and a generated `JWT_SECRET`, start the backend, then register an account on `/auth`. There are no built-in accounts.
 
 **Tests.** `PYTHONPATH=backend python3 -m pytest backend/tests` (uses an in-memory MongoDB; never touches Atlas) and `npm test`.
 
 ### Failure behaviour (no synthetic results)
-The frontend has **no mock mode**: `src/data/mockData.js` and every network-failure fallback were removed. A failed request surfaces as an `ApiError` (`unauthenticated` 401, `forbidden` 403, `not_found` 404, `validation` 422, `server` 5xx, `network`, `timeout`) and the page shows it. If the questionnaire model is not loaded the server answers `503` instead of estimating a probability (`NEUROSENSE_ALLOW_MOCK_INFERENCE=true` re-enables the old AQ-10 estimate for local development only). Unavailable modalities (gaze, speech, facial) are reported as unavailable and excluded from fusion.
+There is no mock mode anywhere. A failed request is an `ApiError` the page shows; unavailable modalities are reported as such with `output: null`; a missing questionnaire ML model never blocks or alters the score-based result (the case simply has no model output and the explanation endpoint says so). The old `NEUROSENSE_ALLOW_MOCK_INFERENCE` fallback was removed.
 
 ### Legacy cases (created before accounts)
 They have no `user_id`, are preserved, and are invisible to every account. An administrator assigns them deliberately, to one known owner:
@@ -282,25 +158,23 @@ python3 -m backend.scripts.manage_users assign-legacy-cases --email owner@x.org 
 
 ### Local development
 ```bash
-uvicorn backend.main:app --reload --port 8000     # backend (needs backend/.env with MONGODB_URI and JWT_SECRET)
-npm run dev                                       # frontend on http://localhost:5173
-PYTHONPATH=backend python3 -m pytest backend/tests  # backend tests (in-memory MongoDB)
-npm test && npm run lint && npm run build           # frontend
+uvicorn backend.main:app --reload --port 8000
+npm run dev
 ```
-
 
 ---
 
-## Gaze pipeline (browser -> backend)
+## Gaze pipeline (browser recording -> server OpenFace -> trained model) — EXPERIMENTAL, not in fusion
 
 ```
-camera (getUserMedia) -> MediaPipe FaceMesh (vendored, 478 landmarks incl. iris) -> features [gx, gy, yaw, pitch, cx, cy]
-  -> 9-point auto calibration (ridge regression, leave-one-target-out quality) -> 30 s task, one sample per tracked frame
-  -> POST /gaze/analyze (canonical samples: timestamp, x, y, stimulus_id, face_detected)
-  -> backend: validation -> I-DT fixations -> 10 Hz resample -> [x, y, speed, is_fixation] -> BiLSTM -> probability
+camera (getUserMedia) -> 30 s MediaRecorder video -> POST /gaze/analyze (multipart, 202 + job id)
+  -> server: re-encode at true fps -> OpenFace 2.x FeatureExtraction (-gaze -pose; Docker algebr/openface or native)
+  -> quality gate -> 10 Hz grid, session-centred gaze angles (+ head pose for the gate) -> 6 s windows
+  -> BiLSTM (gaze-openface-dasd-v3; v2 kept as frozen baseline) -> domain gate -> result
+  -> GET /gaze/jobs/{id}   (honest stages: uploading / processing video / extracting features / running model)
 ```
-- **Code:** `src/gaze/` (landmarks, mapper, calibration, filters, tracker), `src/components/GazeSession.jsx`, `backend/ml/gaze/`.
-- **Requirements:** Chrome or Edge; `http://localhost` or HTTPS (camera access is blocked on plain-HTTP remote origins). WebGazer is no longer used.
-- **Calibration quality** = 0.75 x accuracy + 0.25 x validity; accepted when >= 8/9 targets have >= 10 clean frames and the leave-one-target-out error is <= 12 % of the screen diagonal (constants and rationale in `src/gaze/calibration.js`). It is a technical usability indicator, not a clinical measure. Skipping is offered only after 3 failed attempts (or immediately for unrecoverable conditions such as a denied camera or an unavailable model); every reason is stored and shown on the report.
-- **Model status:** `GET /gaze/status` (authenticated) and `modalities.gaze_detail` on `GET /`. The gaze step checks it first and refuses to start if the model cannot run. The backend interpreter needs `torch` (`pip install -r backend/requirements.txt`).
-- **Debug overlay (development builds only):** open the app with `?gazeDebug=1` (or `localStorage.ns_gaze_debug = "1"`): FPS, landmark count, feature vector and order, valid samples, calibration score, model status; every landmark is drawn on the preview.
+- **Status:** the gaze classifier is an experimental research signal and is **excluded from the combined result**: it was trained on DASD (82 children, ADOS-2 labels, unknown stimulus), shows no evidence yet of beating recording-context controls, and has not been validated on webcam data. Quality and plain movement statistics are always shown; the probability is withheld when the recording is outside the training range. See `backend/reports/` (`gaze_model_selection_and_runtime.md`, `gaze_domain_diagnosis.md`, `leakage_audit/`).
+- **Code:** `backend/ml/gaze/` (config, preprocess, openface, model, inference, quality, summary, service, jobs), `backend/routers/gaze.py`, `src/components/GazeSession.jsx`, `src/pages/GazeLab.jsx` (dev tool, `GAZE_LAB_ENABLED=1`).
+- **OpenFace:** set `OPENFACE_BIN` (native `FeatureExtraction`) or `OPENFACE_DOCKER_IMAGE=algebr/openface` (amd64 image; emulated on Apple silicon, native on Linux x86-64). `GAZE_WARMUP=1` primes it at start-up.
+- **Reproduce:** `python -m backend.data.audit_dasd`, `train_gaze_openface_dasd` (v2), `compare_gaze_models`, `train_gaze_v3`, `audit_gaze_leakage`, `benchmark_gaze_runtime`, `validate_webcam_domain`.
+- **Model status:** `GET /gaze/status` and `modalities.gaze_detail` on `GET /`. `GAZE_MODEL_VERSION` selects `gaze-openface-dasd-v2` or `-v3` (default).

@@ -3,12 +3,12 @@
 from __future__ import annotations
 
 import json
+import os
 import threading
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 
-import numpy as np
 import pandas as pd
 
 from . import config as C
@@ -23,8 +23,16 @@ MIN_FUSION_CV_AUC = 0.70
 
 
 class GazeService:
-    def __init__(self, checkpoint: Path = M.CHECKPOINT_PATH, metadata: Path = M.METADATA_PATH,
-                 validation: Path = WEBCAM_VALIDATION_PATH):
+    def __init__(self, checkpoint: Optional[Path] = None, metadata: Optional[Path] = None,
+                 validation: Path = WEBCAM_VALIDATION_PATH, model_version: Optional[str] = None):
+        """model_version: a key of config.MODEL_CONFIGS (env GAZE_MODEL_VERSION, default config.DEFAULT_MODEL_VERSION).
+        Explicit checkpoint/metadata paths override the registry (used by tests)."""
+        model_version = model_version or os.environ.get("GAZE_MODEL_VERSION") or C.DEFAULT_MODEL_VERSION
+        self.model_version = model_version
+        if checkpoint is None and metadata is None:
+            if model_version not in M.REGISTRY:
+                raise ValueError(f"unknown gaze model version {model_version!r}; known: {sorted(M.REGISTRY)}")
+            checkpoint, metadata = M.REGISTRY[model_version]
         self.model = None
         self.meta: dict = {}
         self.cfg: Optional[C.PreprocessConfig] = None
@@ -33,7 +41,9 @@ class GazeService:
         try:
             self.model, self.meta = M.load_checkpoint(checkpoint, metadata)
             self.cfg = C.PreprocessConfig.from_dict(self.meta["preprocess_config"])
-            if (self.cfg != C.DEPLOYED or self.meta.get("model_version") != C.MODEL_VERSION
+            self.model_version = self.meta.get("model_version", model_version)
+            expected = C.MODEL_CONFIGS.get(self.model_version)
+            if (expected is None or self.cfg != expected
                     or self.meta.get("feature_schema_version") != C.FEATURE_SCHEMA_VERSION):
                 self.model = None
                 self.load_error = (C.ERR_MODEL_MISMATCH, "checkpoint preprocessing differs from ml/gaze/config.py")
@@ -66,7 +76,7 @@ class GazeService:
 
     def status(self) -> dict:
         ok, why = self.fusion_eligibility()
-        return {"available": self.available, "model_version": C.MODEL_VERSION, "dataset": C.DATASET_NAME,
+        return {"available": self.available, "model_version": self.model_version, "dataset": C.DATASET_NAME,
                 "openface_available": OF.is_available(), "fusion_eligible": ok, "fusion_reason": why,
                 "error_code": None if self.available else self.load_error[0],
                 "detail": None if self.available else self.load_error[1]}
@@ -79,14 +89,14 @@ class GazeService:
 
     # ── analysis ──
     def _base(self, session_id: Optional[str]) -> dict:
-        return {"modality": "gaze", "dataset": C.DATASET_NAME, "model_version": C.MODEL_VERSION,
+        return {"modality": "gaze", "dataset": C.DATASET_NAME, "model_version": self.model_version,
                 "feature_schema_version": C.FEATURE_SCHEMA_VERSION, "session_id": session_id,
                 "analyzed_at": datetime.now(timezone.utc).isoformat(),
                 "probability": None, "prediction": None, "score": None, "is_trained_model": False,
                 "fusion_eligible": False, "isMock": False, "features": {}, "explanation": None,
                 "method": "bilstm_openface_dasd",
                 "modality_label": "Eye Gaze (OpenFace webcam model — DASD)",
-                "error_code": None, "reason": None, "detail": None, "quality": None}
+                "error_code": None, "reason": None, "detail": None, "quality": None, "domain": None, "descriptive": None}
 
     def _fail(self, base: dict, status: str, code: str, reason: str, detail: str = "",
               quality: Optional[Q.QualityReport] = None) -> dict:
@@ -107,8 +117,19 @@ class GazeService:
         except P.SchemaError as exc:
             return self._fail(base, "unavailable", C.ERR_OPENFACE_FAILED, "openface_schema_mismatch", str(exc))
         q = Q.assess(prep)
+        base["descriptive"] = Q.descriptive_summary(prep)       # shown whenever frames exist, whatever the classifier does
         if not q.valid:
             return self._fail(base, "insufficient_quality", q.error_code, q.reason, quality=q)
+        domain = None
+        if self.meta.get("domain_reference"):
+            domain = Q.domain_check(Q.domain_stats(prep, self.cfg), self.meta["domain_reference"])
+            base["domain"] = domain
+            if domain["status"] == "out_of_domain":
+                r = self._fail(base, "out_of_domain", C.ERR_OUT_OF_DOMAIN, "motion_outside_training_range",
+                               f"movement in this recording is {domain['direction']} the range seen in the training "
+                               f"recordings (max |z| = {domain['max_abs_z']}); the model cannot be applied", q)
+                r["domain"] = domain
+                return r
         try:
             norm = self.meta["normalization"]
             wp = I.predict_windows(self.model, prep.windows, norm)
@@ -117,6 +138,8 @@ class GazeService:
         except Exception as exc:
             return self._fail(base, "unavailable", C.ERR_INFERENCE, "inference_failed", str(exc), q)
         eligible, why = self.fusion_eligibility()
+        if domain is not None and domain["status"] != "in_domain":
+            eligible, why = False, f"session movement is outside the typical training range (max |z| = {domain['max_abs_z']})"
         pred = "asd_signal" if prob >= self.meta.get("decision_threshold", 0.5) else "typical_signal"
         base.update(
             status="success", model_status="available", probability=prob, prediction=pred, score=prob,
@@ -127,12 +150,11 @@ class GazeService:
                       "window_probability_max": round(float(wp.max()), 4)},
             explanation={"method": "feature ablation (replace one feature by its training mean, "
                                    "change in session probability)", "feature_effect": ablation},
-            fusion_reason=why,
-            interpretation=("The OpenFace-based gaze model produced a screening signal from this recording. "
-                            "It reflects gaze/head-movement patterns learned from the DASD dataset and is "
-                            "not a diagnosis."
-                            + ("" if eligible else " It is shown for information and not yet counted in the "
-                               "combined result (" + why + ").")))
+            fusion_reason=why, domain=domain,
+            interpretation=("Experimental research output of the OpenFace gaze model (trained on DASD, not validated on webcam "
+                            "recordings). It describes how this recording's gaze/head movement resembles the training "
+                            "recordings; it is not a diagnosis and is never used for the screening result"
+                            + (f" (this recording: {why})." if not eligible else ".")))
         return base
 
     def analyze_video(self, video: Path, duration_s: Optional[float] = None,

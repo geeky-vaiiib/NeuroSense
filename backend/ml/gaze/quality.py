@@ -81,3 +81,82 @@ def assess(prep: Prepared) -> QualityReport:
         window_count=int(len(prep.windows)),
         data_quality_score=quality_score(ratio, cont, mean_conf) if n_total else 0.0,
         rejected=dict(rej), warnings=warnings)
+
+
+# ── domain applicability ─────────────────────────────────────────────────────
+
+GATE_CHANNELS = {"gaze_angle_x": "gaze_angle_x", "gaze_angle_y": "gaze_angle_y",
+                 "head_pose_x": "pose_Rx", "head_pose_y": "pose_Ry", "head_pose_z": "pose_Rz"}
+
+
+def domain_stats(prep: Prepared, cfg: C.PreprocessConfig = C.DEPLOYED) -> dict:
+    """Within-session std of the five gaze/head channels (valid grid steps only), keyed by feature name.
+    The gate looks at head movement even for models that do not take it as input: it measures whether the
+    recording context resembles the training recordings, not only the model's own inputs."""
+    out = {}
+    for name, col in GATE_CHANNELS.items():
+        g = prep.resampled.grid.get(col)
+        if g is None:
+            continue
+        v = g[np.isfinite(g)]
+        if len(v) > 2:
+            out[name] = float(np.std(v, ddof=1))
+    return out
+
+
+def domain_reference(stats_per_child: list) -> dict:
+    """Robust location/scale of log-std per channel across DASD children (stored in the checkpoint)."""
+    ref = {}
+    for name in stats_per_child[0]:
+        x = np.log(np.maximum([s[name] for s in stats_per_child], 1e-9))
+        med = float(np.median(x)); sig = float(1.4826 * np.median(np.abs(x - med)))
+        ref[name] = {"median_log_std": med, "sigma": max(sig, 1e-3),
+                     "median_std": float(np.exp(med)), "min_std": float(np.exp(x.min())), "max_std": float(np.exp(x.max()))}
+    return ref
+
+
+def domain_check(stats: dict, reference: dict) -> dict:
+    """in_domain | marginal | out_of_domain by the largest |z| over channels (see config.DOMAIN_Z_*)."""
+    z = {}
+    for name, r in reference.items():
+        if name in stats:
+            z[name] = round((np.log(max(stats[name], 1e-9)) - r["median_log_std"]) / r["sigma"], 2)
+    worst = max((abs(v) for v in z.values()), default=float("inf"))
+    status = "in_domain" if worst <= C.DOMAIN_Z_IN else "marginal" if worst <= C.DOMAIN_Z_OUT else "out_of_domain"
+    direction = None
+    if status != "in_domain" and z:
+        k = max(z, key=lambda n: abs(z[n])); direction = "below" if z[k] < 0 else "above"
+    return {"status": status, "max_abs_z": round(worst, 2), "z": z, "direction": direction,
+            "session_std": {k: round(v, 4) for k, v in stats.items()},
+            "dasd_median_std": {k: round(r["median_std"], 4) for k, r in reference.items()}}
+
+
+# ── descriptive (non-diagnostic) recording summary ───────────────────────────
+
+DESCRIPTIVE_DISCLAIMER = ("Descriptive measurements of this one recording (OpenFace gaze direction and head pose). "
+                          "They are not diagnostic, are not compared with other children, and are not used in the combined result.")
+_DESC_CHANNELS = (
+    ("head_yaw", "Head turn (left-right)", "pose_Ry"), ("head_pitch", "Head nod (up-down)", "pose_Rx"),
+    ("head_roll", "Head tilt", "pose_Rz"), ("gaze_x", "Gaze direction, horizontal", "gaze_angle_x"),
+    ("gaze_y", "Gaze direction, vertical", "gaze_angle_y"))
+
+
+def descriptive_summary(prep: Prepared) -> Optional[dict]:
+    """Plain movement statistics in degrees from the cleaned frames, resampled on the model grid."""
+    cl, rs = prep.cleaned, prep.resampled
+    if cl.n_valid < 2 or not len(rs.hole):
+        return None
+    deg = 180.0 / np.pi
+    chans = {}
+    for key, label, col in _DESC_CHANNELS:
+        if col not in rs.grid:
+            continue
+        x = rs.grid[col]; x = x[np.isfinite(x)] * deg
+        if len(x) < 3:
+            continue
+        speed = np.abs(np.diff(x)) * rs.hz
+        p5, p50, p95 = np.percentile(x, [5, 50, 95])
+        chans[key] = {"label": label, "std_deg": round(float(x.std(ddof=1)), 2), "typical_range_deg": round(float(p95 - p5), 2),
+                      "median_deg": round(float(p50), 2), "mean_speed_deg_per_s": round(float(speed.mean()), 2)}
+    return {"channels": chans, "unit": "degrees", "disclaimer": DESCRIPTIVE_DISCLAIMER,
+            "basis": f"{int(np.sum(np.isfinite(rs.grid['gaze_angle_x'])))} usable samples at {rs.hz} Hz"}

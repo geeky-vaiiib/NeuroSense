@@ -1,3 +1,5 @@
+> **Superseded by v2** (`gaze-openface-dasd-v2`, session-centred 5-feature model) — see `gaze_domain_diagnosis.md`. The v1 numbers below are kept for the record. The statement that a logistic regression reached AUC 0.975 was a single-seed result and is retracted (3-seed value ≈ 0.87–0.93).
+
 # NeuroSense gaze model — DASD / OpenFace data report
 
 Model `gaze-openface-dasd-v1` · feature schema `openface-gaze-1.0.0` · trained with `python -m backend.data.train_gaze_openface_dasd` (seed 42, reproducible: two runs gave identical metrics).

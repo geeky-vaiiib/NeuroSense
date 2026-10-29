@@ -14,7 +14,6 @@ import {
   GENDER_OPTIONS,
   QUESTION_BANK,
   YES_NO_OPTIONS,
-  buildAq10Score,
   getCategoryContent,
   validateCategoryAge,
 } from '../data/screeningContent';
@@ -74,7 +73,7 @@ export default function Screening() {
   const category = 'child';
   const content = getCategoryContent(category);
   const questions = QUESTION_BANK[category];
-  const aq10Score = useMemo(() => buildAq10Score(answers, category), [answers, category]);
+  const answeredCount = useMemo(() => questions.filter((q) => answers[q.id]).length, [answers, questions]);
   const ageCheck = useMemo(() => validateCategoryAge(category, Number(demo.age)), [category, demo.age]);
 
   const isToddler = false;
@@ -132,14 +131,15 @@ export default function Screening() {
   const summaryRows = [
     ['Category', content?.label],
     ['Screening tool', content?.screeningTool],
-    ['AQ-10 score', `${aq10Score}/10`],
+    ['Questions answered', `${answeredCount}/10`],
+    ['Score and result', 'Calculated by the server on submit'],
     ['Submitted for', demo.subjectName || 'No name provided'],
     ['Respondent relationship', demo.respondentRelationship || 'Not provided'],
     ['Age', demo.age || 'Not provided'],
     ['Gender', demo.gender || 'Not provided'],
     ['Eye Gaze', gazeStatusLabel],
     ['Speech Sample', speechStatusLabel],
-    ['Facial Expression', facialStatusLabel],
+    ['Facial Check', facialStatusLabel],
   ];
 
   async function handlePrimaryAction() {
@@ -177,7 +177,6 @@ export default function Screening() {
           category,
           demo: { ...demo, age: Number(demo.age) },
           answers,
-          aq10Score,
           // Reference to the server-side analysis job; the client never supplies a probability.
           gazeAnalysisId: gazeSession?.analysisId || null,
           gazeSkipped,
@@ -351,11 +350,11 @@ export default function Screening() {
                 
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 'var(--sp-3)' }}>
                   {summaryRows.map(([label, value]) => {
-                    const isMultimodal = ['Eye Gaze', 'Speech Sample', 'Facial Expression'].includes(label);
+                    const isMultimodal = ['Eye Gaze', 'Speech Sample', 'Facial Check'].includes(label);
                     const hasCapturedData = isMultimodal && (
                       (label === 'Eye Gaze' && gazeAnalysis?.status === 'success' && !gazeSkipped) ||
                       (label === 'Speech Sample' && audioBlob && !speechSkipped) ||
-                      (label === 'Facial Expression' && facialImage && !facialSkipped)
+                      (label === 'Facial Check' && facialImage && !facialSkipped)
                     );
 
                     return (
@@ -377,9 +376,10 @@ export default function Screening() {
                   })}
                 </div>
 
-                <div style={{ marginTop: 'var(--sp-5)', padding: 'var(--sp-4)', borderRadius: 'var(--r-md)', backgroundColor: 'var(--ns-surface-2)', borderLeft: '3px solid var(--ns-n300)' }}>
+                <div role="note" style={{ marginTop: 'var(--sp-5)', padding: 'var(--sp-4)', borderRadius: 'var(--r-md)', backgroundColor: 'var(--ns-surface-2)', borderLeft: '3px solid var(--ns-n300)' }}>
                   <p style={{ margin: 0, color: 'var(--ns-n700)', lineHeight: 'var(--lh-body)' }}>
-                    {content.riskCopy[aq10Score >= 7 ? 'High' : aq10Score >= 4 ? 'Moderate' : 'Low']}
+                    When you submit, the server scores the ten answers and shows the total, the threshold and the result.
+                    Eye gaze, speech and facial recordings are shown as measurements or as unavailable; they do not change the questionnaire result.
                   </p>
                 </div>
               </section>

@@ -1,3 +1,4 @@
+import GazeRecordingSummary from '../components/results/GazeRecordingSummary';
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import CategoryBadge from '../components/CategoryBadge';
@@ -7,9 +8,13 @@ import { casesApi } from '../services/api';
 import { getCategoryContent } from '../data/screeningContent';
 import { generatePDF } from '../utils/generatePDF';
 import RiskGauge from '../components/results/RiskGauge';
-import FusionVisualization from '../components/results/FusionVisualization';
+import ScoreMeter from '../components/results/ScoreMeter';
+import ModalityStatusGrid from '../components/results/ModalityStatusGrid';
+import ResultBasis from '../components/results/ResultBasis';
+import SpeechMeasurements from '../components/results/SpeechMeasurements';
+import { isServerScored, modalityStates } from '../utils/caseModalities';
 import ExplanationPanel from '../components/results/ExplanationPanel';
-import StatusBadge from '../components/ui/StatusBadge';
+import ToddlerResults from '../components/results/ToddlerResults';
 
 const styles = {
   page: {
@@ -173,6 +178,7 @@ export default function Results() {
     openface_unavailable: 'OpenFace is not installed on the server',
     openface_failed: 'the server could not extract gaze features',
     model_unavailable: 'the gaze model is unavailable',
+    motion_outside_training_range: 'movement was outside the model\'s training range',
     poor_calibration: 'the eye-tracking calibration was not accurate enough',
     calibration_incomplete: 'calibration was not completed',
     insufficient_samples: 'too few gaze samples were recorded',
@@ -203,6 +209,9 @@ export default function Results() {
       }[gazeReason];
       return why || 'Gaze session was skipped by the respondent.';
     }
+    if (gazeStatus === 'out_of_domain') {
+      return 'The recording was analysed, but the movement in it is outside the range of the recordings the gaze model was trained on, so no gaze score is reported. It did not affect the result.';
+    }
     if (gazeStatus === 'insufficient_quality') {
       return `Gaze data was recorded but could not be scored: ${GAZE_REASON_TEXT[gazeReason] || gazeReason || 'quality too low'}. `
         + `(${gazeQuality?.valid_sample_count ?? 0} of ${gazeQuality?.sample_count ?? 0} frames usable.) It did not affect the result.`;
@@ -213,69 +222,26 @@ export default function Results() {
     return 'Gaze session was not completed for this case.';
   })();
   const gazeBadgeText = {
-    skipped: 'Skipped', insufficient_quality: 'Recorded · not scored', unavailable: 'Unavailable',
+    skipped: 'Skipped', insufficient_quality: 'Recorded · not scored', out_of_domain: 'Recorded · outside model range', unavailable: 'Unavailable',
   }[gazeStatus] || 'Not captured';
   const gazeUsedInFusion = selectedCase?.gaze_fusion_eligible === true;
-  const isToddler = false;
+  const isToddler = selectedCase?.category === 'toddler';
 
-  // Speech data from case record
-  const speechFeatures = selectedCase?.speech_features || selectedCase?.speechFeatures || null;
-  const speechInterpretation = selectedCase?.speech_interpretation || selectedCase?.speechInterpretation || '';
-  const speechMock = selectedCase?.speech_mock ?? selectedCase?.speechMock ?? true;
-  const speechSkipped = selectedCase?.speech_skipped ?? selectedCase?.speechSkipped ?? false;
-  const speechFlags = selectedCase?.speech_flags || selectedCase?.speechFlags || [];
-  const hasSpeechData = speechFeatures && typeof speechFeatures === 'object' && Object.keys(speechFeatures).length > 0;
-
-  // ── Modality cards: everything below is read from the stored backend result ──
-  const bMap = Object.fromEntries((selectedCase?.modality_breakdown || []).map((c) => [c.modality, c]));
-  const pct = (v) => (typeof v === 'number' ? `${Math.round(v * 100)}%` : null);
-  const qProb = selectedCase?.questionnaire_probability ?? selectedCase?.riskScore ?? null;
-  const gazeQ = gazeQuality;
-  const otherModality = (id, label) => {
-    const c = bMap[id];
-    const has = Boolean(c?.available);
-    const used = has && c?.isTrainedModel === true;
-    return {
-      id, label, available: has, used, probability: has ? c.score : null, contribution: c?.contribution,
-      stateLabel: !has ? 'Skipped or unavailable' : used ? 'Scored · used' : 'Scored · supplemental',
-      tone: !has ? 'muted' : used ? 'ok' : 'warn',
-      quality: has ? 'Quality not reported' : null,
-      detail: !has ? 'No usable signal for this session, so it did not affect the result.'
-        : used ? `Probability ${pct(c.score)}; contributes ${pct(c.contribution) ?? 'a share'} of the final result.`
-        : `Probability ${pct(c.score)} is shown for context and did not influence the final result.`,
-    };
-  };
-  const insightItems = selectedCase ? [
-    {
-      id: 'questionnaire', label: 'Questionnaire', available: true, used: true, probability: qProb, contribution: bMap.questionnaire?.contribution,
-      stateLabel: 'Scored · used', tone: 'ok', quality: `AQ-10 score ${selectedCase.aq10Score ?? 0}/10`,
-      detail: `Probability ${pct(qProb) ?? '—'}; contributes ${pct(bMap.questionnaire?.contribution) ?? 'a share'} of the final result.`,
-    },
-    (() => {
-      const ok = gazeStatus === 'success';
-      const label = ok ? (gazeUsedInFusion ? 'Scored · used' : 'Scored · supplemental')
-        : gazeStatus === 'skipped' ? 'Skipped' : gazeStatus === 'insufficient_quality' ? 'Not scored · low quality'
-        : gazeStatus === 'unavailable' ? 'Model unavailable' : 'Not captured';
-      return {
-        id: 'gaze', label: 'Gaze', available: ok, used: ok && gazeUsedInFusion, probability: ok ? gazeScore : null, contribution: bMap.gaze?.contribution,
-        stateLabel: label, tone: ok ? (gazeUsedInFusion ? 'ok' : 'warn') : 'muted',
-        quality: gazeQ ? `${gazeQ.valid_sample_count}/${gazeQ.sample_count} usable frames${gazeQ.data_quality_score != null ? ` · data quality ${Math.round(gazeQ.data_quality_score * 100)}%` : ''}` : null,
-        detail: ok ? (gazeUsedInFusion ? `Probability ${pct(gazeScore)}; contributes ${pct(bMap.gaze?.contribution) ?? 'a share'} of the final result.`
-          : `Probability ${pct(gazeScore)} is shown for context; it did not influence the result${gazeFeatures?.fusion_reason ? ` (${gazeFeatures.fusion_reason})` : ''}.`)
-          : gazeUnavailableText,
-      };
-    })(),
-    otherModality('speech', 'Speech'),
-  ] : [];
-  const finalValue = selectedCase ? (selectedCase.fusion_score ?? selectedCase.fusionScore ?? null) : null;
+  // ── Everything below is read from the stored backend result; nothing is recomputed in the browser ──
+  const states = modalityStates(selectedCase);
+  const serverScored = isServerScored(selectedCase);
+  const qBasis = selectedCase?.questionnaire_basis ?? null;
+  const speechFeatures = selectedCase?.speech_features || null;
+  const speechState = states.find((m) => m.id === 'speech');
+  const legacyProbability = selectedCase?.fusion_score ?? selectedCase?.questionnaire_probability ?? selectedCase?.riskScore ?? null;
 
   const topMetadata = selectedCase
     ? [
         ['Case ID', selectedCase.id],
         ['Screening tool', selectedCase.screeningTool],
-        ['Model used', selectedCase.modelUsed],
-        ['Data source', selectedCase.dataSource === 'mock' ? 'Mock mode' : 'Live model'],
-        ['AQ-10 score', `${selectedCase.aq10Score ?? 0}/10`],
+        ['Instrument score', qBasis ? `${qBasis.total_score}/${qBasis.max_score} (threshold ≥ ${qBasis.threshold})` : `${selectedCase.aq10Score ?? 0}/10 (older record)`],
+        ['Scoring', serverScored ? 'Server-computed' : 'Older record (not re-scored)'],
+        ['ML model (explanation only)', selectedCase.modelUsed],
         ['Status', selectedCase.status],
       ]
     : [];
@@ -299,11 +265,11 @@ export default function Results() {
               Screening insight
             </h1>
             <p style={{ margin: 0, color: 'var(--ns-n600)', lineHeight: 1.7 }}>
-              The overall indicator, what each signal contributed, and why. Screening support for
-              a qualified reviewer — not a diagnosis.
+              The questionnaire score and threshold, the status of each other signal, and how the score was formed. Screening
+              support for a qualified reviewer — not a diagnosis.
             </p>
           </div>
-          <button id="download-pdf-btn" onClick={handleDownloadPDF} disabled={pdfLoading || !selectedCase || !explanation} className="btn btn-secondary">
+          <button id="download-pdf-btn" onClick={handleDownloadPDF} disabled={pdfLoading || !selectedCase || !explanation || selectedCase?.category === 'toddler'} className="btn btn-secondary">
             {pdfLoading ? (
               <>
                 <span style={{ width: 14, height: 14, borderRadius: '50%', border: '2px solid var(--ns-n300)', borderTopColor: 'var(--ns-instrument)', animation: 'spin 0.7s linear infinite', display: 'inline-block' }} />
@@ -370,7 +336,7 @@ export default function Results() {
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px' }}>
                   <CategoryBadge category={item.category} size="sm" />
-                  <RiskBadge level={item.riskLevel} size="sm" />
+                  <RiskBadge level={item.riskLevel} category={item.category} size="sm" />
                 </div>
                 <strong
                   style={{
@@ -404,12 +370,18 @@ export default function Results() {
         </section>
       )}
 
-      {selectedCase && content && (
+      {selectedCase && isToddler && detailCache[selectedCaseId] && (
+        <ToddlerResults c={selectedCase} explanation={explanation} explanationLoading={explanationLoading[selectedCaseId]} />
+      )}
+
+      {selectedCase && content && !isToddler && (
         <>
           {/* ── Screening insight hero ─────────────────────────── */}
           <section className="ns-dark ns-insight" aria-labelledby="insight-title">
             <div className="ns-insight__gauge">
-              <RiskGauge value={finalValue} level={selectedCase.riskLevel} size={280} />
+              {serverScored && qBasis
+                ? <ScoreMeter basis={qBasis} level={selectedCase.riskLevel} />
+                : <RiskGauge value={legacyProbability} level={selectedCase.riskLevel} size={280} />}
               <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center', marginTop: 4 }}>
                 <RiskBadge level={selectedCase.riskLevel} size="lg" />
                 <CategoryBadge category={selectedCase.category} size="lg" />
@@ -433,55 +405,28 @@ export default function Results() {
                 ))}
               </dl>
               <p style={{ marginTop: 16, fontSize: '0.76rem', color: '#7F92AF', maxWidth: '62ch' }}>
-                {selectedCase.confidence_note || 'The final indicator is computed on the server from the signals that passed quality checks.'}
+                {serverScored ? (selectedCase.confidence_note || '') : 'Older record: the indicator shown is a stored model output from an earlier version, not an independently validated probability.'}
               </p>
             </div>
           </section>
 
-          {/* ── Signal by signal ───────────────────────────────── */}
+          {/* ── Modality status ────────────────────────────────── */}
           <section aria-labelledby="signals-title">
-            <h2 id="signals-title" style={{ fontSize: '1.15rem', marginBottom: 14 }}>Signals behind the result</h2>
-            <div className="ns-signal-grid">
-              {insightItems.map((it) => (
-                <article key={it.id} className="ns-card" style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 12, opacity: it.available ? 1 : 0.92 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
-                    <h3 style={{ fontSize: '0.98rem' }}>{it.label}</h3>
-                    <StatusBadge tone={it.tone}>{it.stateLabel}</StatusBadge>
-                  </div>
-                  <div style={{ minHeight: 44, display: 'flex', alignItems: 'baseline', gap: 6 }}>
-                    {it.probability !== null && it.probability !== undefined ? (
-                      <><span style={{ fontFamily: 'var(--font-heading)', fontSize: '1.9rem', fontWeight: 600, letterSpacing: '-0.03em' }}>{Math.round(it.probability * 100)}</span><span style={{ color: 'var(--ns-n500)' }}>%</span></>
-                    ) : (
-                      <span style={{ color: 'var(--ns-n400)', fontWeight: 500 }}>Unavailable</span>
-                    )}
-                  </div>
-                  <div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.74rem', color: 'var(--ns-n500)', marginBottom: 5 }}>
-                      <span>Share of final result</span>
-                      <span style={{ fontFamily: 'var(--font-data)' }}>{it.used ? (pct(it.contribution) ?? '—') : 'none'}</span>
-                    </div>
-                    <div style={{ height: 6, borderRadius: 6, background: 'var(--ns-n150)', overflow: 'hidden' }} aria-hidden="true">
-                      <div style={{ width: it.used && typeof it.contribution === 'number' ? `${it.contribution * 100}%` : 0, height: '100%', background: 'var(--ns-instrument)', transition: 'width 600ms ease' }} />
-                    </div>
-                  </div>
-                  <p style={{ fontSize: '0.78rem', color: 'var(--ns-n500)', maxWidth: 'none', lineHeight: 1.5 }}>
-                    <strong style={{ color: 'var(--ns-n700)' }}>Data quality:</strong> {it.quality || 'not applicable'}
-                  </p>
-                </article>
-              ))}
-            </div>
+            <h2 id="signals-title" style={{ fontSize: '1.15rem', marginBottom: 6 }}>Signals and their status</h2>
+            <p style={{ margin: '0 0 14px', color: 'var(--ns-n500)', fontSize: '0.86rem', maxWidth: '70ch' }}>
+              Only the questionnaire score is used for the result. Gaze, speech and facial analysis are shown for transparency; they are experimental or unavailable and cannot change it.
+            </p>
+            <ModalityStatusGrid states={states} />
           </section>
 
-          {/* ── Fusion ─────────────────────────────────────────── */}
-          <section className="ns-dark" style={{ borderRadius: 'var(--r-lg)', padding: 'clamp(20px, 3vw, 32px)' }} aria-labelledby="fusion-title">
-            <p className="ns-eyebrow ns-eyebrow--dark">Multimodal fusion</p>
-            <h2 id="fusion-title" style={{ fontSize: '1.25rem', marginTop: 8, marginBottom: 18 }}>How the signals combined</h2>
-            <FusionVisualization
-              items={insightItems.map((i) => ({ ...i, contribution: typeof i.contribution === 'number' ? i.contribution : 0 }))}
-              finalValue={finalValue}
-              level={selectedCase.riskLevel}
-            />
-          </section>
+          {/* ── How the result was determined ──────────────────── */}
+          {serverScored && selectedCase.screening_result && (
+            <section className="ns-dark" style={{ borderRadius: 'var(--r-lg)', padding: 'clamp(20px, 3vw, 32px)' }} aria-labelledby="fusion-title">
+              <p className="ns-eyebrow ns-eyebrow--dark">How the result was determined</p>
+              <h2 id="fusion-title" style={{ fontSize: '1.25rem', marginTop: 8, marginBottom: 18 }}>Score against threshold — no combined probability</h2>
+              <ResultBasis result={selectedCase.screening_result} />
+            </section>
+          )}
 
           {/* ── Why (SHAP / LIME) + context ────────────────────── */}
           <section className="ns-why-grid">
@@ -493,6 +438,8 @@ export default function Results() {
               error={errors[selectedCaseId]}
               modelUsed={selectedCase.modelUsed}
               isMock={explanation?.isMock}
+              scoreExplanation={explanation?.scoreExplanation}
+              modelExplanation={explanation?.modelExplanation}
               category={selectedCase.category}
             />
             <aside className="ns-card" style={{ padding: 24, alignSelf: 'start' }}>
@@ -519,6 +466,11 @@ export default function Results() {
             <h3 style={{ marginTop: 0, color: 'var(--ns-n900)' }}>
               Questionnaire snapshot
             </h3>
+            {qBasis && (
+              <p role="note" style={{ margin: '0 0 14px', color: 'var(--ns-n600)', fontSize: '0.88rem', lineHeight: 1.6 }}>
+                <strong>{qBasis.instrument} total: {qBasis.total_score}/{qBasis.max_score}</strong> (the training labels flag totals of {qBasis.threshold} or more). {qBasis.notice}
+              </p>
+            )}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px' }}>
               {Object.entries(selectedCase.answers || {}).map(([key, value]) => (
                 <div
@@ -607,7 +559,7 @@ export default function Results() {
                     }}
                   >
                     <span style={{ color: 'var(--ns-n600)', fontSize: '0.85rem' }}>
-                      Gaze model output (screening signal)
+                      Experimental model output (not used for the result)
                     </span>
                     <strong
                       style={{
@@ -655,7 +607,7 @@ export default function Results() {
                     ['Frames', gazeQuality ? `${gazeQuality.valid_sample_count}/${gazeQuality.sample_count} usable` : '—'],
                     ['Duration', gazeQuality?.duration_seconds != null ? `${gazeQuality.duration_seconds}s` : '—'],
                     ['Windows scored', gazeFeatures?.windows_scored != null ? String(gazeFeatures.windows_scored) : '—'],
-                    ['Signal', gazeFeatures?.prediction === 'asd_signal' ? 'Higher-risk gaze pattern' : gazeFeatures?.prediction === 'typical_signal' ? 'Lower-risk gaze pattern' : '—'],
+                    ['Experimental output', gazeFeatures?.prediction === 'asd_signal' ? 'above the model cut-off (not diagnostic)' : gazeFeatures?.prediction === 'typical_signal' ? 'below the model cut-off (not diagnostic)' : '—'],
                     ['Features used', Array.isArray(gazeFeatures?.features_used) ? gazeFeatures.features_used.join(', ') : '—'],
                     ['Status', 'Analyzed'],
                   ] : [
@@ -717,9 +669,7 @@ export default function Results() {
 
                 {gazeStatus === 'success' && (
                   <p style={{ marginTop: '12px', fontSize: '0.85rem', fontWeight: 600, color: gazeUsedInFusion ? 'var(--ns-instrument)' : 'var(--ns-risk-mod)' }}>
-                    {gazeUsedInFusion
-                      ? 'Included in the final probability.'
-                      : `Recorded and scored, but NOT included in the final probability${gazeFeatures?.fusion_reason ? `: ${gazeFeatures.fusion_reason}` : ''}.`}
+                    Experimental: this output is never used for the screening result.
                   </p>
                 )}
                 {gazeStatus && (
@@ -761,229 +711,13 @@ export default function Results() {
                   : gazeUnavailableText}
               </div>
             )}
-          </section>
-
-          {/* ── Speech Analysis Section ───────────────────────────── */}
-          <section className="panel">
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                gap: '16px',
-                alignItems: 'center',
-                marginBottom: '16px',
-              }}
-            >
-              <div>
-                <h3 style={{ margin: 0, color: 'var(--ns-n900)' }}>
-                  Speech Analysis
-                </h3>
-                <p style={{ margin: '6px 0 0', color: 'var(--ns-n500)' }}>
-                  Acoustic features from the 20-second speech sample.
-                </p>
-              </div>
-              {hasSpeechData ? (
-                <span
-                  style={{
-                    padding: '4px 10px',
-                    borderRadius: '999px',
-                    backgroundColor: speechMock
-                      ? 'var(--ns-risk-mod-bg)'
-                      : 'var(--ns-signal-dim)',
-                    color: speechMock
-                      ? 'var(--ns-risk-mod)'
-                      : 'var(--ns-instrument)',
-                    fontFamily: 'var(--font-data)',
-                    fontSize: '0.75rem',
-                    fontWeight: 600,
-                  }}
-                >
-                  {speechMock ? 'Heuristic model' : 'Acoustic analysis'}
-                </span>
-              ) : (
-                <span
-                  style={{
-                    padding: '4px 10px',
-                    borderRadius: '999px',
-                    backgroundColor: 'var(--ns-surface-2)',
-                    color: 'var(--ns-n500)',
-                    fontFamily: 'var(--font-data)',
-                    fontSize: '0.75rem',
-                    fontWeight: 600,
-                  }}
-                >
-                  Not captured
-                </span>
-              )}
-            </div>
-
-            {hasSpeechData ? (
-              <>
-                {/* Score progress bar */}
-                <div style={{ marginBottom: '18px' }}>
-                  <div
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      marginBottom: '6px',
-                    }}
-                  >
-                    <span style={{ color: 'var(--ns-n600)', fontSize: '0.85rem' }}>
-                      Speech risk score
-                    </span>
-                    <strong
-                      style={{
-                        fontFamily: 'var(--font-data)',
-                        color: 'var(--ns-n900)',
-                      }}
-                    >
-                      {selectedCase.riskScore != null
-                        ? ((selectedCase.riskScore) * 100).toFixed(0) + '%'
-                        : 'N/A'}
-                    </strong>
-                  </div>
-                  <div
-                    style={{
-                      height: '10px',
-                      borderRadius: '999px',
-                      backgroundColor: 'var(--ns-surface-2)',
-                      overflow: 'hidden',
-                    }}
-                  >
-                    <div
-                      style={{
-                        width: `${Math.min((selectedCase.riskScore || 0) * 100, 100)}%`,
-                        height: '100%',
-                        borderRadius: '999px',
-                        backgroundColor: '#C98B2E',
-                        transition: 'width 600ms ease',
-                      }}
-                    />
-                  </div>
-                </div>
-
-                {/* Feature table */}
-                <div
-                  style={{
-                    display: 'grid',
-                    gap: '10px',
-                    padding: '16px',
-                    borderRadius: '16px',
-                    border: '1px solid var(--border-color)',
-                    backgroundColor: 'var(--ns-surface-2)',
-                  }}
-                >
-                  {[
-                    [
-                      'Pitch variability',
-                      speechFeatures.pitch_std != null
-                        ? `${speechFeatures.pitch_std.toFixed(1)} Hz`
-                        : '\u2014',
-                    ],
-                    [
-                      'Voiced fraction',
-                      speechFeatures.voiced_fraction != null
-                        ? `${(speechFeatures.voiced_fraction * 100).toFixed(0)}%`
-                        : '\u2014',
-                    ],
-                    [
-                      'Speech rate',
-                      speechFeatures.speech_rate != null
-                        ? `${speechFeatures.speech_rate.toFixed(1)} syll/sec`
-                        : '\u2014',
-                    ],
-                    [
-                      'Mean energy',
-                      speechFeatures.energy_mean != null
-                        ? speechFeatures.energy_mean.toFixed(4)
-                        : '\u2014',
-                    ],
-                    [
-                      'MFCC-1 mean',
-                      speechFeatures.mfcc_mean && speechFeatures.mfcc_mean.length > 1
-                        ? speechFeatures.mfcc_mean[1].toFixed(1)
-                        : '\u2014',
-                    ],
-                  ].map(([label, value]) => (
-                    <div
-                      key={label}
-                      style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        gap: '12px',
-                      }}
-                    >
-                      <span style={{ color: 'var(--ns-n500)', fontSize: '0.85rem' }}>
-                        {label}
-                      </span>
-                      <strong
-                        style={{
-                          color: 'var(--ns-n900)',
-                          fontFamily: 'var(--font-data)',
-                          fontSize: '0.85rem',
-                          textAlign: 'right',
-                        }}
-                      >
-                        {value}
-                      </strong>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Clinical flags */}
-                {speechFlags && speechFlags.length > 0 && (
-                  <div style={{ marginTop: '14px', display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                    {speechFlags.map((flag, i) => (
-                      <span
-                        key={i}
-                        style={{
-                          fontSize: '0.75rem',
-                          padding: '4px 10px',
-                          background: '#FEF3C7',
-                          color: '#92400E',
-                          borderRadius: '20px',
-                          fontWeight: 600,
-                        }}
-                      >
-                        {flag}
-                      </span>
-                    ))}
-                  </div>
-                )}
-
-                {/* Interpretation */}
-                {speechInterpretation && (
-                  <p
-                    style={{
-                      marginTop: '14px',
-                      color: 'var(--ns-n600)',
-                      lineHeight: 1.7,
-                      fontSize: '0.9rem',
-                    }}
-                  >
-                    {speechInterpretation}
-                  </p>
-                )}
-              </>
-            ) : (
-              <div
-                style={{
-                  padding: '28px 20px',
-                  textAlign: 'center',
-                  borderRadius: '16px',
-                  border: '1px solid var(--border-color)',
-                  backgroundColor: 'var(--ns-surface-2)',
-                  color: 'var(--ns-n400)',
-                }}
-              >
-                {isToddler
-                  ? 'Speech session is not available for the toddler track.'
-                  : speechSkipped
-                    ? 'Speech session was skipped by the respondent.'
-                    : 'Speech session was skipped or not available for this track.'}
-              </div>
+            {!isToddler && gazeStatus && (
+              <GazeRecordingSummary quality={gazeQuality} descriptive={gazeFeatures?.descriptive} />
             )}
           </section>
+
+          {/* ── Speech: measurements + honest status (no score) ──── */}
+          <SpeechMeasurements state={speechState} features={speechFeatures} />
 
           <section className="panel">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>

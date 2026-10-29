@@ -80,12 +80,6 @@ export const CATEGORY_CONTENT = {
     },
     screeningTool: 'Child AQ-10',
     trackSummary: 'Caregiver report',
-    modalityConfidence: [
-      { id: 'questionnaire', label: 'Caregiver questionnaire', pct: 81 },
-      { id: 'developmental-history', label: 'Developmental history', pct: 78 },
-      { id: 'birth-context', label: 'Birth and family context', pct: 69 },
-      { id: 'xai-ready', label: 'Explainability readiness', pct: 93 },
-    ],
   }
 };
 
@@ -104,14 +98,7 @@ export const QUESTION_BANK = {
   ]
 };
 
-const AGREE_MAP = {
-  'Definitely agree': 1,
-  'Slightly agree': 1,
-  'Definitely disagree': 0,
-  'Slightly disagree': 0,
-};
-
-const ASD_TRAIT_IDS = new Set(['A1', 'A5', 'A7', 'A10']);
+// Scoring is done by the server (backend/ml/questionnaire_score.py); the browser never computes a total or a risk level.
 
 export function categoryLabel(category) {
   return CATEGORY_CONTENT[category]?.label ?? CATEGORY_CONTENT.child.label;
@@ -129,24 +116,4 @@ export function validateCategoryAge(category, age) {
   if (age < 4 || age > 11)
     return { valid: false, message: 'Child screening is intended for individuals aged 4 to 11 years.' };
   return { valid: true, message: '' };
-}
-
-export function buildAq10Score(answers) {
-  const traitIds = ASD_TRAIT_IDS;
-  return Object.entries(answers ?? {}).reduce((total, [questionId, answer]) => {
-    const agreeScore = AGREE_MAP[answer] ?? 0;
-    if (traitIds.has(questionId)) {
-      return total + agreeScore;
-    }
-    return total + (1 - agreeScore);
-  }, 0);
-}
-
-export function getMixedModalityConfidence() {
-  return [
-    { id: 'adult-track',   label: 'Adult self-report',      pct: 84 },
-    { id: 'child-track',   label: 'Child caregiver report',  pct: 81 },
-    { id: 'toddler-track', label: 'Toddler Q-CHAT-10',       pct: 88 },
-    { id: 'routing',       label: 'Category model routing',  pct: 89 },
-  ];
 }

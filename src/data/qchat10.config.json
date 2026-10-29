@@ -1,0 +1,300 @@
+{
+  "instrument": "Q-CHAT-10",
+  "ageMonthsMin": 18,
+  "ageMonthsMax": 24,
+  "maxScore": 10,
+  "officialThreshold": 3,
+  "wordingSource": "Autism Research Centre Q-CHAT-10 form (official English wording; not paraphrased). Helper lines are NeuroSense-authored and shown separately.",
+  "items": [
+    {
+      "id": "Q1",
+      "qchat25": 1,
+      "text": "Does your child look at you when you call his/her name?",
+      "helper": "Think about what usually happens when you say your child's name in an ordinary moment.",
+      "short": "Looks when name is called",
+      "options": [
+        {
+          "value": "A",
+          "label": "Always"
+        },
+        {
+          "value": "B",
+          "label": "Usually"
+        },
+        {
+          "value": "C",
+          "label": "Sometimes"
+        },
+        {
+          "value": "D",
+          "label": "Rarely"
+        },
+        {
+          "value": "E",
+          "label": "Never"
+        }
+      ]
+    },
+    {
+      "id": "Q2",
+      "qchat25": 2,
+      "text": "How easy is it for you to get eye contact with your child?",
+      "helper": "Think about how it usually goes when you try to catch your child's eye.",
+      "short": "Eye contact",
+      "options": [
+        {
+          "value": "A",
+          "label": "Very easy"
+        },
+        {
+          "value": "B",
+          "label": "Quite easy"
+        },
+        {
+          "value": "C",
+          "label": "Quite difficult"
+        },
+        {
+          "value": "D",
+          "label": "Very difficult"
+        },
+        {
+          "value": "E",
+          "label": "Impossible"
+        }
+      ]
+    },
+    {
+      "id": "Q3",
+      "qchat25": 5,
+      "text": "Does your child point to indicate that s/he wants something? (e.g. a toy that is out of reach)",
+      "helper": "Think about how your child shows you what they want, in your own words.",
+      "short": "Points to ask for something",
+      "options": [
+        {
+          "value": "A",
+          "label": "Many times a day"
+        },
+        {
+          "value": "B",
+          "label": "A few times a day"
+        },
+        {
+          "value": "C",
+          "label": "A few times a week"
+        },
+        {
+          "value": "D",
+          "label": "Less than once a week"
+        },
+        {
+          "value": "E",
+          "label": "Never"
+        }
+      ]
+    },
+    {
+      "id": "Q4",
+      "qchat25": 6,
+      "text": "Does your child point to share interest with you? (e.g. pointing at an interesting sight)",
+      "helper": "This is pointing just to show you something, not to ask for it.",
+      "short": "Points to share interest",
+      "options": [
+        {
+          "value": "A",
+          "label": "Many times a day"
+        },
+        {
+          "value": "B",
+          "label": "A few times a day"
+        },
+        {
+          "value": "C",
+          "label": "A few times a week"
+        },
+        {
+          "value": "D",
+          "label": "Less than once a week"
+        },
+        {
+          "value": "E",
+          "label": "Never"
+        }
+      ]
+    },
+    {
+      "id": "Q5",
+      "qchat25": 9,
+      "text": "Does your child pretend? (e.g. care for dolls, talk on a toy phone)",
+      "helper": "Think about make-believe play, like feeding a doll or talking on a toy phone.",
+      "short": "Pretend play",
+      "options": [
+        {
+          "value": "A",
+          "label": "Many times a day"
+        },
+        {
+          "value": "B",
+          "label": "A few times a day"
+        },
+        {
+          "value": "C",
+          "label": "A few times a week"
+        },
+        {
+          "value": "D",
+          "label": "Less than once a week"
+        },
+        {
+          "value": "E",
+          "label": "Never"
+        }
+      ]
+    },
+    {
+      "id": "Q6",
+      "qchat25": 10,
+      "text": "Does your child follow where you're looking?",
+      "helper": "Think about whether your child turns to look at what you are looking at.",
+      "short": "Follows your gaze",
+      "options": [
+        {
+          "value": "A",
+          "label": "Many times a day"
+        },
+        {
+          "value": "B",
+          "label": "A few times a day"
+        },
+        {
+          "value": "C",
+          "label": "A few times a week"
+        },
+        {
+          "value": "D",
+          "label": "Less than once a week"
+        },
+        {
+          "value": "E",
+          "label": "Never"
+        }
+      ]
+    },
+    {
+      "id": "Q7",
+      "qchat25": 15,
+      "text": "If you or someone else in the family is visibly upset, does your child show signs of wanting to comfort them? (e.g. stroking hair, hugging them)",
+      "helper": "Think about a time when you or someone at home was sad, hurt or crying.",
+      "short": "Comforts someone who is upset",
+      "options": [
+        {
+          "value": "A",
+          "label": "Always"
+        },
+        {
+          "value": "B",
+          "label": "Usually"
+        },
+        {
+          "value": "C",
+          "label": "Sometimes"
+        },
+        {
+          "value": "D",
+          "label": "Rarely"
+        },
+        {
+          "value": "E",
+          "label": "Never"
+        }
+      ]
+    },
+    {
+      "id": "Q8",
+      "qchat25": 17,
+      "text": "Would you describe your child's first words as:",
+      "helper": "Think about the very first words your child said, not how many words they say now.",
+      "short": "First words",
+      "options": [
+        {
+          "value": "A",
+          "label": "Very typical"
+        },
+        {
+          "value": "B",
+          "label": "Quite typical"
+        },
+        {
+          "value": "C",
+          "label": "Slightly unusual"
+        },
+        {
+          "value": "D",
+          "label": "Very unusual"
+        },
+        {
+          "value": "E",
+          "label": "My child doesn't speak"
+        }
+      ]
+    },
+    {
+      "id": "Q9",
+      "qchat25": 19,
+      "text": "Does your child use simple gestures? (e.g. wave goodbye)",
+      "helper": "A gesture is a hand or body movement that means something, like waving.",
+      "short": "Simple gestures",
+      "options": [
+        {
+          "value": "A",
+          "label": "Many times a day"
+        },
+        {
+          "value": "B",
+          "label": "A few times a day"
+        },
+        {
+          "value": "C",
+          "label": "A few times a week"
+        },
+        {
+          "value": "D",
+          "label": "Less than once a week"
+        },
+        {
+          "value": "E",
+          "label": "Never"
+        }
+      ]
+    },
+    {
+      "id": "Q10",
+      "qchat25": 25,
+      "text": "Does your child stare at nothing with no apparent purpose?",
+      "helper": "Think about moments when your child seems to gaze at nothing in particular.",
+      "short": "Stares at nothing",
+      "options": [
+        {
+          "value": "A",
+          "label": "Many times a day"
+        },
+        {
+          "value": "B",
+          "label": "A few times a day"
+        },
+        {
+          "value": "C",
+          "label": "A few times a week"
+        },
+        {
+          "value": "D",
+          "label": "Less than once a week"
+        },
+        {
+          "value": "E",
+          "label": "Never"
+        }
+      ]
+    }
+  ]
+}

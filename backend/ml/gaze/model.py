@@ -9,8 +9,12 @@ import torch
 import torch.nn as nn
 
 MODELS_DIR = Path(__file__).resolve().parents[2] / "models"
-CHECKPOINT_PATH = MODELS_DIR / "gaze_openface_dasd.pt"
+CHECKPOINT_PATH = MODELS_DIR / "gaze_openface_dasd.pt"                    # v2 baseline (never overwritten)
 METADATA_PATH = MODELS_DIR / "gaze_openface_dasd_metadata.json"
+REGISTRY = {   # model_version -> (checkpoint, metadata)
+    "gaze-openface-dasd-v2": (CHECKPOINT_PATH, METADATA_PATH),
+    "gaze-openface-dasd-v3": (MODELS_DIR / "gaze_openface_dasd_v3.pt", MODELS_DIR / "gaze_openface_dasd_v3_metadata.json"),
+}
 
 
 class GazeBiLSTM(nn.Module):
@@ -29,7 +33,8 @@ class GazeBiLSTM(nn.Module):
 
 
 def load_checkpoint(path: Path = CHECKPOINT_PATH, meta_path: Path = METADATA_PATH):
-    """-> (model.eval(), metadata dict).  Raises FileNotFoundError / ValueError."""
+    """-> (model.eval(), metadata dict).  Raises FileNotFoundError / ValueError.
+    Use REGISTRY[model_version] for the paths of a registered version."""
     if not Path(path).exists() or not Path(meta_path).exists():
         raise FileNotFoundError(f"gaze checkpoint or metadata missing: {path}")
     meta = json.loads(Path(meta_path).read_text())

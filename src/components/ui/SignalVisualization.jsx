@@ -3,7 +3,7 @@
  * flowing into one fusion node and out as a screening insight.
  *
  * Decorative / explanatory only: it carries no data. Real per-case data lives in
- * results/FusionVisualization. `highlight` dims the other streams (hover/focus interaction).
+ * results/ModalityStatusGrid. `highlight` dims the other streams (hover/focus interaction).
  */
 import { useState } from 'react';
 import useReducedMotion from './useReducedMotion';

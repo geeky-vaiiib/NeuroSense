@@ -45,8 +45,24 @@ def _check_throttle(key: str) -> None:
         raise HTTPException(status_code=429, detail="Too many failed attempts. Try again later.")
 
 
+_REG_MAX, _REG_WINDOW_S = 10, 60 * 60
+_registrations: dict[str, deque] = defaultdict(deque)
+
+
+def _check_register_throttle(request: Request) -> None:
+    """Per-client cap on account creation (in-process, like the login throttle)."""
+    key, now = request.client.host if request.client else "?", time.monotonic()
+    q = _registrations[key]
+    while q and now - q[0] > _REG_WINDOW_S:
+        q.popleft()
+    if len(q) >= _REG_MAX:
+        raise HTTPException(status_code=429, detail="Too many accounts created from this address. Try again later.")
+    q.append(now)
+
+
 def reset_throttle() -> None:
     _failures.clear()
+    _registrations.clear()
 
 
 def _set_session_cookie(response: Response, token: str) -> None:
@@ -64,8 +80,9 @@ def _issue_session(response: Response, user: dict) -> None:
 
 
 @router.post("/register", response_model=AuthResponse, status_code=201)
-def register(body: RegisterRequest, response: Response):
+def register(body: RegisterRequest, request: Request, response: Response):
     """Create an account with the default (least-privileged) role and start a session."""
+    _check_register_throttle(request)
     try:
         user = users_store.create_user(body.name, body.email, body.password)
     except users_store.DuplicateEmail:

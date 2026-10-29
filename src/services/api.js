@@ -121,6 +121,11 @@ const GAZE_MAX_WAIT_MS = 10 * 60_000;
 const sleepMs = (ms) => new Promise((r) => setTimeout(r, ms));
 
 export const gazeApi = {
+  /** Gaze Lab (dev): saved webcam sessions + validation state; run the domain check; clear sessions. */
+  labSessions: () => api.get('/gaze/lab/sessions'),
+  labValidate: () => api.post('/gaze/lab/validate', {}, { timeout: 120000 }),
+  labClear: () => api.delete('/gaze/lab/sessions'),
+
   /** GET /gaze/status: is the gaze model loaded, and is OpenFace installed on the server? */
   status: () => api.get('/gaze/status'),
 
@@ -129,12 +134,13 @@ export const gazeApi = {
    * by the backend only.  onStage(stage) receives the server's real processing stage.
    * Rejects with ApiError; never returns synthetic data.
    */
-  async analyze({ blob, durationMs, sessionId, onStage }) {
+  async analyze({ blob, durationMs, sessionId, onStage, keepFeatures = false }) {
     const form = new FormData();
     const ext = blob.type.includes('mp4') ? 'mp4' : 'webm';
     form.append('video', blob, `gaze.${ext}`);
     form.append('duration_ms', String(Math.round(durationMs)));
     if (sessionId) form.append('session_id', sessionId);
+    if (keepFeatures) form.append('keep_features', 'true');
     onStage?.('uploading');
     let res;
     try {
@@ -156,7 +162,7 @@ export const gazeApi = {
       onStage?.(job.stage);
       if (job.state === 'done') {
         const body = job.result;
-        const okStatus = ['success', 'insufficient_quality', 'unavailable'].includes(body?.status);
+        const okStatus = ['success', 'insufficient_quality', 'out_of_domain', 'unavailable'].includes(body?.status);
         if (body?.modality !== 'gaze' || !okStatus) throw new ApiError('invalid_response', FALLBACK_MESSAGES.invalid_response);
         return { ...body, job_id: jobId };
       }
@@ -173,7 +179,6 @@ export const screeningApi = {
       category: formData.category,
       demo: formData.demo,
       answers: formData.answers,
-      aq10Score: formData.aq10Score,
       gazeAnalysisId: formData.gazeAnalysisId || null,
       gazeSkipped: formData.gazeSkipped || false,
       gazeSkipReason: formData.gazeSkipReason || null,
@@ -181,6 +186,8 @@ export const screeningApi = {
       audioMimeType: formData.audioMimeType || null,
       transcriptHint: formData.transcriptHint || '',
       speechSkipped: formData.speechSkipped || false,
+      facialImageBase64: formData.facialImageBase64 || null,
+      facialSkipped: formData.facialSkipped || false,
     };
 
     // Warn if payload is very large (audio can be 500KB–1MB base64)

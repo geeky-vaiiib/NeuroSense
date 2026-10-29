@@ -4,7 +4,6 @@ import { NeuroSenseLogo } from '../branding/NeuroSenseLogo';
 import ProgressIndicator from './ProgressIndicator';
 import MetricCard from './MetricCard';
 import RiskGauge from '../results/RiskGauge';
-import FusionVisualization from '../results/FusionVisualization';
 import ExplanationPanel from '../results/ExplanationPanel';
 import QuestionFlow from '../screening/QuestionFlow';
 
@@ -41,18 +40,6 @@ describe('never invents values', () => {
     render(<RiskGauge value={0.4345} level="Moderate" />);
     expect(screen.getByRole('img', { name: /43 percent, Moderate/ })).toBeInTheDocument();
   });
-
-  it('fusion diagram marks unavailable signals and shows their status on focus', () => {
-    const items = [
-      { id: 'questionnaire', label: 'Questionnaire', available: true, used: true, contribution: 1, stateLabel: 'Scored · used', detail: 'Probability 43%.' },
-      { id: 'gaze', label: 'Gaze', available: false, used: false, contribution: 0, stateLabel: 'Skipped', detail: 'No usable signal.' },
-      { id: 'speech', label: 'Speech', available: false, used: false, contribution: 0, stateLabel: 'Skipped', detail: 'No usable signal.' },
-    ];
-    render(<FusionVisualization items={items} finalValue={0.4345} level="Moderate" />);
-    expect(screen.getByText('43%')).toBeInTheDocument();
-    fireEvent.focus(screen.getByLabelText(/^Gaze: Skipped/));
-    expect(screen.getByRole('status')).toHaveTextContent('Gaze: No usable signal.');
-  });
 });
 
 describe('explanation panel', () => {
@@ -61,14 +48,25 @@ describe('explanation panel', () => {
     { feature: 'Notices small sounds', shapValue: -0.2, direction: 'negative' },
   ];
   it('splits factors by direction and reveals technical detail on demand', () => {
-    render(<ExplanationPanel features={features} lime={[{ feature: 'Child age', weight: 0.3, plainEnglish: 'Older age raised the score.', direction: 'positive' }]} summary="Because." modelUsed="child_AdaBoost" category="child" />);
-    expect(screen.getByText(/Factors increasing the score/)).toBeInTheDocument();
+    render(<ExplanationPanel features={features} lime={[{ feature: 'Child age', weight: 0.3, plainEnglish: 'Older age raised the model output.', direction: 'positive' }]} modelUsed="child_AdaBoost" category="child" />);
+    expect(screen.getByText(/Factors raising the model output/)).toBeInTheDocument();
     expect(screen.getByText('+0.40')).toBeInTheDocument();
     expect(screen.getByText('-0.20')).toBeInTheDocument();
     expect(screen.queryByText('LIME local explanation')).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /technical view/i }));
     expect(screen.getByText('LIME local explanation')).toBeInTheDocument();
     expect(screen.getByText('child_AdaBoost')).toBeInTheDocument();
+  });
+
+  it('keeps the score explanation and the model explanation apart, and says when the model explanation is unavailable', () => {
+    const scoreExplanation = { instrument: 'AQ-10 (child, caregiver-completed)', total_score: 1, max_score: 10, threshold: 7,
+      items: [{ id: 'A1', answer: 'Definitely agree', scores_on: 'agree', points: 1 }, { id: 'A2', answer: 'Definitely agree', scores_on: 'disagree', points: 0 }] };
+    render(<ExplanationPanel features={[]} lime={[]} category="child" scoreExplanation={scoreExplanation}
+      modelExplanation={{ available: false, reason: 'No questionnaire ML model is loaded on the server.', scope: 'Describes the model, not the result.' }} />);
+    expect(screen.getByText(/How the questionnaire score was formed/)).toBeInTheDocument();
+    expect(screen.getByText(/does not decide the result/)).toBeInTheDocument();
+    expect(screen.getByText(/Model explanation unavailable: No questionnaire ML model/)).toBeInTheDocument();
+    expect(screen.queryByText(/Factors raising/)).not.toBeInTheDocument();
   });
   it('shows an error state without inventing factors', () => {
     render(<ExplanationPanel features={[]} error="x" />);

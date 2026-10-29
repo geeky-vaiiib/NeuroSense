@@ -229,12 +229,13 @@ export async function generatePDF(caseData, explanation) {
   doc.setFontSize(8);
   doc.setTextColor(...COLORS.gray);
   doc.setCharSpace(1.5);
-  doc.text('FUSION RISK SCORE', PAGE.marginLeft, y + 4);
+  doc.text('QUESTIONNAIRE SCREENING SCORE (SERVER-COMPUTED)', PAGE.marginLeft, y + 4);
   doc.setCharSpace(0);
   y += 9;
 
   // Big score number
-  const scoreStr = Number(caseData.riskScore).toFixed(2);
+  const basis = caseData.questionnaire_basis;
+  const scoreStr = basis ? `${basis.total_score}/${basis.max_score}` : `${caseData.aq10Score ?? '—'}/10`;
   const scoreColor = riskColor(caseData.riskLevel);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(28);
@@ -255,7 +256,7 @@ export async function generatePDF(caseData, explanation) {
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(10);
   doc.setTextColor(...COLORS.black);
-  doc.text(`AQ-10 Score: ${caseData.aq10Score}/10`, PAGE.marginLeft, y + 4);
+  doc.text(basis ? `${basis.instrument}: threshold >= ${basis.threshold}. Risk band is a presentation of the score, not a probability.` : 'Older record: scored before server-side scoring.', PAGE.marginLeft, y + 4);
   y += 9;
 
   // Interpretation paragraph
@@ -276,7 +277,7 @@ export async function generatePDF(caseData, explanation) {
 
   // ───── 3. SHAP SECTION ─────────────────────
 
-  y = sectionTitle(doc, y, 'SHAP Feature Importance — Top Contributing Signals');
+  y = sectionTitle(doc, y, 'Questionnaire ML model explanation (SHAP) - explains the model, not the result');
   y += 1;
 
   // Subtitle
@@ -285,7 +286,7 @@ export async function generatePDF(caseData, explanation) {
   doc.setTextColor(...COLORS.gray);
   const shapSubLines = wrapText(
     doc,
-    'Shapley values show the contribution of each feature to the risk score. Positive values increase risk.',
+    'Shapley values show how each 0/1 item point or detail moved the questionnaire ML model output (a model of the scoring rule trained on score-derived labels). They do not explain the screening result or any gaze, speech or facial measurement, and are not evidence of cause.',
     CONTENT_WIDTH
   );
   shapSubLines.forEach((line) => {

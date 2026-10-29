@@ -114,8 +114,12 @@ function normalizeRisk(value) {
   return String(value);
 }
 
-export default function RiskBadge({ risk, level, size = 'md', showScore = false, score }) {
+// Toddler Q-CHAT-10 has one cut-point and no risk tiers: show threshold wording, never a High/Moderate/Low risk label.
+const TODDLER_LABEL = { High: 'At or above threshold', Low: 'Below threshold' };
+
+export default function RiskBadge({ risk, level, size = 'md', showScore = false, score, category }) {
   const label = normalizeRisk(level ?? risk);
+  const toddlerText = category === 'toddler' ? (TODDLER_LABEL[label] ?? 'Q-CHAT-10 result') : null;
   const cfg = CONFIG[label] ?? FALLBACK;
   const metric = SIZE_MAP[size] ?? SIZE_MAP.md;
   const showNumericScore = showScore && Number.isFinite(score);
@@ -123,7 +127,7 @@ export default function RiskBadge({ risk, level, size = 'md', showScore = false,
   return (
     <span
       role="status"
-      aria-label={`Risk level: ${label}`}
+      aria-label={toddlerText ? `Q-CHAT-10: ${toddlerText}` : `Risk level: ${label}`}
       style={{
         display: 'inline-flex',
         alignItems: 'center',
@@ -142,8 +146,8 @@ export default function RiskBadge({ risk, level, size = 'md', showScore = false,
       }}
     >
       <ShapeIndicator shape={cfg.shape} size={metric.shapeSize} color={cfg.text} />
-      {label} risk
-      {showNumericScore && (
+      {toddlerText ?? `${label} risk`}
+      {showNumericScore && !toddlerText && (
         <span style={{ fontFamily: 'var(--font-data)', opacity: 0.85, fontSize: '0.9em' }}>
           {Math.round(score * 100)}%
         </span>

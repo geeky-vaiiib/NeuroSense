@@ -81,6 +81,9 @@ def load_settings() -> Settings:
     if samesite == "none" and not secure:
         raise ConfigError("COOKIE_SAMESITE=none requires COOKIE_SECURE=true.")
 
+    if not secure and any(o.startswith("https://") for o in origins):
+        raise ConfigError("CORS_ALLOWED_ORIGINS contains an https origin but COOKIE_SECURE is not true; "
+                          "set COOKIE_SECURE=true so the session cookie is never sent over plain HTTP.")
     return Settings(
         jwt_secret=secret,
         jwt_algorithm=alg,

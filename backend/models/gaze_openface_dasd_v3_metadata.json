@@ -1,0 +1,176 @@
+{
+  "model_version": "gaze-openface-dasd-v3",
+  "dataset": "DASD",
+  "feature_schema_version": "openface-gaze-1.1.0",
+  "feature_names": [
+    "gaze_angle_x",
+    "gaze_angle_y"
+  ],
+  "feature_order": {
+    "gaze_angle_x": 0,
+    "gaze_angle_y": 1
+  },
+  "sequence_length": 60,
+  "sampling_rate_hz": 10,
+  "preprocess_config": {
+    "feature_names": [
+      "gaze_angle_x",
+      "gaze_angle_y"
+    ],
+    "resample_hz": 10,
+    "window_s": 6.0,
+    "stride_s": 1.0,
+    "min_window_coverage": 0.8,
+    "center_window": false,
+    "center_session": true,
+    "head_slopes": [
+      -0.755,
+      0.424
+    ],
+    "normalization": "global_zscore"
+  },
+  "normalization": {
+    "method": "global_zscore",
+    "mean": [
+      -0.009841867574965421,
+      0.0027298097635161224
+    ],
+    "std": [
+      0.34411890387390287,
+      0.1474284187422659
+    ]
+  },
+  "openface_version": "OpenFace 2.x FeatureExtraction (DASD distributes OpenFace 2.0 CSVs)",
+  "openface_flags": [
+    "-gaze",
+    "-pose"
+  ],
+  "architecture": {
+    "type": "BiLSTM(mean+max pool)",
+    "input_size": 2,
+    "hidden_size": 32,
+    "dropout": 0.4
+  },
+  "training_seed": 42,
+  "epochs": 14,
+  "lr": 0.002,
+  "weight_decay": 0.01,
+  "batch_size": 64,
+  "decision_threshold": 0.5,
+  "session_aggregation": "mean of window probabilities",
+  "domain_reference": {
+    "gaze_angle_x": {
+      "median_log_std": -1.1676632803648719,
+      "sigma": 0.5675920962254427,
+      "median_std": 0.31109302979350895,
+      "min_std": 0.08292519272228537,
+      "max_std": 0.584403789776074
+    },
+    "gaze_angle_y": {
+      "median_log_std": -2.113614594772251,
+      "sigma": 0.5737866901120614,
+      "median_std": 0.12080053136523657,
+      "min_std": 0.021839691555124642,
+      "max_std": 0.28828432991855113
+    },
+    "head_pose_x": {
+      "median_log_std": -1.8206597850597328,
+      "sigma": 0.8544807226954368,
+      "median_std": 0.16191888402259508,
+      "min_std": 0.02119968252091734,
+      "max_std": 0.8207924290825666
+    },
+    "head_pose_y": {
+      "median_log_std": -1.020605312832712,
+      "sigma": 0.5983861422771087,
+      "median_std": 0.3603767334766999,
+      "min_std": 0.09702632583110822,
+      "max_std": 0.8204979404545892
+    },
+    "head_pose_z": {
+      "median_log_std": -1.9066301652479636,
+      "sigma": 0.7375405711600352,
+      "median_std": 0.14858023475814752,
+      "min_std": 0.03151788805767594,
+      "max_std": 0.8699700288617287
+    }
+  },
+  "domain_gate": {
+    "z_in": 3.0,
+    "z_out": 6.0,
+    "children": 82,
+    "in_domain": 1.0,
+    "marginal": 0.0,
+    "out_of_domain": 0.0,
+    "note": "in-sample false-reject rate of the gate on the 82 DASD children; channels = gaze x/y + head pose x/y/z"
+  },
+  "trained_on": {
+    "children": 82,
+    "ASD": 57,
+    "TD": 25,
+    "note": "all DASD children; no held-out set remains"
+  },
+  "validation_strategy": "selection: 10x repeated stratified participant-level 5-fold CV on the 55 official-train children (model_selection/model_comparison.json); supplementary: same CV on all 82 children. No untouched test set exists (official test split was examined during v1/v2 design).",
+  "metrics": {
+    "dev_cv_55": {
+      "auc": {
+        "mean": 0.8955108359133128,
+        "sd_repeats": 0.020198124381888376
+      },
+      "acc": {
+        "mean": 0.8618181818181817,
+        "sd_repeats": 0.03170108322575033
+      },
+      "sens": {
+        "mean": 0.8894736842105264,
+        "sd_repeats": 0.025784102555612393
+      },
+      "spec": {
+        "mean": 0.7999999999999999,
+        "sd_repeats": 0.10910139406465533
+      },
+      "auc_ci95_participant_bootstrap": [
+        0.7642677187153931,
+        0.9922480620155039
+      ],
+      "auc_diff_vs_v2_baseline": {
+        "mean": -0.0112517110012144,
+        "ci95": [
+          -0.04878319783197825,
+          0.016087433257055667
+        ]
+      }
+    },
+    "supplementary_cv_82": {
+      "auc": {
+        "mean": 0.9315087719298246,
+        "sd_repeats": 0.00701192757714909
+      },
+      "acc": {
+        "mean": 0.8926829268292684,
+        "sd_repeats": 0.02715982616014647
+      },
+      "sens": {
+        "mean": 0.9175438596491228,
+        "sd_repeats": 0.011233551293741853
+      },
+      "spec": {
+        "mean": 0.836,
+        "sd_repeats": 0.10190191362285596
+      }
+    },
+    "cv_summary": {
+      "roc_auc": {
+        "mean": 0.8955108359133128,
+        "std": 0.020198124381888376
+      }
+    }
+  },
+  "trained_at": "2026-10-28T18:04:03.021254+00:00",
+  "limitations": [
+    "82 children, single dataset, no external or webcam-labelled validation",
+    "AUC is statistically indistinguishable from recording-duration-only (0.89) on the dev set; context confounds cannot be excluded",
+    "signal is mostly movement amplitude (head/gaze), which is task- and context-sensitive",
+    "DASD stimulus unknown; recordings are of young children, webcam sessions so far are adults"
+  ]
+}

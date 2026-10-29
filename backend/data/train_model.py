@@ -60,6 +60,24 @@ CATEGORICAL_FEATURES = ["gender", "ethnicity", "jaundice", "austism"]  # sic: da
 LEAKAGE_COLUMNS = ["result"]  # THIS MUST BE DROPPED
 
 
+def label_rule_agreement(df: pd.DataFrame, category: str) -> dict:
+    """How well a plain threshold on the item total reproduces the class label.
+
+    If agreement is ~100% the label is a function of the items: a model trained on them learns the
+    scoring rule, and its accuracy/AUC say nothing about clinical status (see audit_questionnaire_labels.py).
+    """
+    items = [c for c in AQ_COLS if c in df.columns]
+    total = df[items].sum(axis=1)
+    agree = {t: float(((total >= t).astype(int) == df["target"]).mean()) for t in range(0, len(items) + 1)}
+    best = max(agree, key=agree.get)
+    out = {"category": category, "best_threshold_total_ge": int(best), "agreement": agree[best]}
+    if agree[best] >= 0.99:
+        print(f"\n  !!! LABEL LEAKAGE: 'total >= {best}' reproduces the {category} class label for {100 * agree[best]:.1f}% of rows.")
+        print("      The label is derived from the items themselves, so this model learns the scoring rule; its metrics")
+        print("      are NOT evidence of clinical validity. Do not present its output as a validated probability.\n")
+    return out
+
+
 def load_and_clean(path: str, category: str = "adult") -> pd.DataFrame:
     """Load CSV, drop leakage columns, handle missing values."""
     print(f"\n{'='*60}")
@@ -111,6 +129,8 @@ def load_and_clean(path: str, category: str = "adult") -> pd.DataFrame:
     )
     print(f"       Target column: '{target_col}' → binary 'target'")
     print(f"       Class distribution: {dict(df['target'].value_counts())}")
+
+    label_rule_agreement(df, category)
 
     # ── DROP LEAKAGE COLUMN ───────────────────────────────────────
     for col in LEAKAGE_COLUMNS:
@@ -265,9 +285,8 @@ def train_and_evaluate(X_train, y_train, X_test, y_test):
         # ── LEAKAGE WARNING ──────────────────────────────────────
         if acc > 0.98:
             print(f"\n  ⚠⚠⚠  WARNING: {name} accuracy is {acc:.4f} (>98%)")
-            print(f"        This may indicate DATA LEAKAGE.")
-            print(f"        Verify that the 'result' column has been dropped.")
-            print(f"        Check that no target-correlated features remain.\n")
+            print(f"        Dropping the 'result' column is not enough: the label is a threshold on the item total,")
+            print(f"        which the item columns still contain (run: python -m backend.data.audit_questionnaire_labels).\n")
 
         # Track best
         composite = (auc + f1) / 2
@@ -461,6 +480,7 @@ def train_toddler():
     # Jaundice and Ethnicity keep their lowercase names after encoding
 
     df = df.rename(columns=rename_map)
+    label_rule_agreement(df, "toddler")
 
     # ── Encode binary categoricals ───────────────────────────────
     encoders = {}

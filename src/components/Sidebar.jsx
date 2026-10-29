@@ -54,6 +54,17 @@ const NAV_ITEMS = [
     ),
   },
   {
+    to: '/app/gaze-lab',
+    clinicianOnly: true,
+    end: false,
+    label: 'Gaze Lab',
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>
+      </svg>
+    ),
+  },
+  {
     to: '/app/settings',
     end: false,
     label: 'Settings',
@@ -93,7 +104,7 @@ export default function Sidebar({ isOpen, onClose }) {
       {/* Nav */}
       <nav className="ns-sb-nav">
         <ul>
-          {NAV_ITEMS.map(({ to, end, label, icon }) => (
+          {NAV_ITEMS.filter((n) => !n.clinicianOnly || user?.role === 'clinician').map(({ to, end, label, icon }) => (
             <li key={to}>
               <NavLink
                 to={to}

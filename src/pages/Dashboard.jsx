@@ -123,14 +123,14 @@ export default function Dashboard() {
                 <li key={r.id}>
                   <button
                     type="button" onClick={() => navigate(`/app/results/${r.id}`)} className="ns-dash-row"
-                    aria-label={`Open result for ${r.subjectName || 'unnamed case'}, ${r.riskLevel} risk`}
+                    aria-label={`Open result for ${r.subjectName || 'unnamed case'}, ${r.category === 'toddler' ? 'Q-CHAT-10 result' : r.riskLevel + ' risk'}`}
                   >
                     <span style={{ minWidth: 0 }}>
                       <span style={{ display: 'block', fontWeight: 600, fontSize: '0.92rem', color: 'var(--ns-n900)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.subjectName || 'Unnamed case'}</span>
                       <span style={{ display: 'block', fontFamily: 'var(--font-data)', fontSize: '0.7rem', color: 'var(--ns-n500)', marginTop: 2 }}>{r.id} · {r.screeningDate}</span>
                     </span>
                     <span className="ns-dash-row__meta"><CategoryBadge category={r.category} size="sm" /></span>
-                    <span><RiskBadge level={r.riskLevel} size="sm" showScore score={r.riskScore} /></span>
+                    <span><RiskBadge level={r.riskLevel} category={r.category} size="sm" showScore score={r.riskScore} /></span>
                     <StatusBadge tone={r.status === 'pending-review' ? 'warn' : 'muted'}>{String(r.status).replace('-', ' ')}</StatusBadge>
                   </button>
                 </li>

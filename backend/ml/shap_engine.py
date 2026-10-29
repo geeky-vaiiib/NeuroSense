@@ -24,100 +24,52 @@ def compute_shap(
     model,
     X_instance: np.ndarray,
     feature_names: Optional[list] = None,
-) -> list[dict]:
-    """
-    Compute SHAP values for a single prediction.
+    background: Optional[np.ndarray] = None,
+) -> Optional[list[dict]]:
+    """Local SHAP values (impact on the positive-class output of ``model``) for one instance.
 
-    Args:
-        model:          trained sklearn/xgboost classifier (or None for mock)
-        X_instance:     feature array of shape (1, n_features)
-        feature_names:  list of feature name strings
-
-    Returns:
-        List of top 8 dicts: { feature, shap_value, direction }
-        sorted by absolute shap_value descending.
+    Returns ``None`` when no model is loaded or SHAP fails - there is no placeholder/mock output.
+    ``background`` is the training-data reference used by KernelExplainer (AdaBoost); it must NOT be the instance
+    itself (a one-row background gives all-zero attributions).
     """
+    if model is None:
+        return None
     if feature_names is None:
         feature_names = FEATURE_NAMES
-
-    if model is None:
-        return _mock_shap(X_instance, feature_names)
-
     try:
-        return _real_shap(model, X_instance, feature_names)
+        return _real_shap(model, X_instance, feature_names, background)
     except Exception as e:
         print(f"[NeuroSense] SHAP computation failed: {e}")
-        return _mock_shap(X_instance, feature_names)
+        return None
 
 
-def _real_shap(model, X_instance: np.ndarray, feature_names: list) -> list[dict]:
-    """Run SHAP with the appropriate explainer for the model type."""
+def _real_shap(model, X_instance: np.ndarray, feature_names: list, background: Optional[np.ndarray] = None) -> list[dict]:
+    """TreeExplainer for tree ensembles with native support, otherwise KernelExplainer against a real training background."""
     import shap
 
     model_type = type(model).__name__
-
-    # Pick explainer based on model type
     if model_type in ("XGBClassifier", "GradientBoostingClassifier"):
         explainer = shap.TreeExplainer(model)
-    elif model_type == "AdaBoostClassifier":
-        # AdaBoost doesn't have native tree-path support in SHAP.
-        # Use KernelExplainer with a small background summary.
-        background = shap.sample(X_instance, min(10, X_instance.shape[0]))
-        explainer = shap.KernelExplainer(model.predict_proba, background)
+        shap_values = explainer.shap_values(X_instance)
     else:
-        # Generic fallback — try TreeExplainer first
-        try:
-            explainer = shap.TreeExplainer(model)
-        except Exception:
-            background = shap.sample(X_instance, min(10, X_instance.shape[0]))
-            explainer = shap.KernelExplainer(model.predict_proba, background)
+        if background is None or len(background) < 2:
+            raise ValueError("a multi-row training background is required for this model type")
+        ref = shap.sample(background, min(50, len(background)), random_state=0)
+        explainer = shap.KernelExplainer(model.predict_proba, ref)
+        shap_values = explainer.shap_values(X_instance, silent=True)
 
-    shap_values = explainer.shap_values(X_instance)
-
-    # For binary classifiers, shap_values may be [neg_class, pos_class]
-    if isinstance(shap_values, list):
-        sv = shap_values[1]  # positive class
+    if isinstance(shap_values, list):               # [negative class, positive class]
+        sv = np.asarray(shap_values[1])
     else:
-        sv = shap_values
+        sv = np.asarray(shap_values)
+        if sv.ndim == 3:                            # (n, features, classes) in newer shap versions
+            sv = sv[:, :, 1]
 
-    # Build result list
     results = []
     for i, name in enumerate(feature_names):
         if i >= sv.shape[1]:
             break
         val = float(sv[0][i])
-        results.append({
-            "feature": name,
-            "shap_value": round(val, 4),
-            "direction": "positive" if val > 0 else "negative",
-        })
-
-    # Sort by absolute value descending, keep top K
-    results.sort(key=lambda r: abs(r["shap_value"]), reverse=True)
-    return results[:TOP_K]
-
-
-def _mock_shap(X_instance: np.ndarray, feature_names: list) -> list[dict]:
-    """
-    Generate plausible mock SHAP values when no model is available.
-    Uses actual feature values to produce proportional importances.
-    """
-    vals = X_instance.flatten()
-    total = max(float(np.abs(vals).sum()), 1.0)
-
-    results = []
-    for i, name in enumerate(feature_names):
-        v = float(vals[i]) if i < len(vals) else 0.0
-        # Scale so total absolute SHAP is ~0.7
-        shap_val = round((v / total) * 0.7, 4) if total > 0 else 0.0
-        # Add a small random-ish perturbation from feature index to vary signs
-        if v <= 0 and i % 3 == 0:
-            shap_val = -abs(shap_val)
-        results.append({
-            "feature": name,
-            "shap_value": shap_val,
-            "direction": "positive" if shap_val > 0 else "negative",
-        })
-
+        results.append({"feature": name, "shap_value": round(val, 4), "direction": "positive" if val > 0 else "negative"})
     results.sort(key=lambda r: abs(r["shap_value"]), reverse=True)
     return results[:TOP_K]

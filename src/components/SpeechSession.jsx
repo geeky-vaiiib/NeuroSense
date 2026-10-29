@@ -291,8 +291,9 @@ export default function SpeechSession({ onComplete, onSkip }) {
             marginBottom: '6px',
           }}
         >
-          We will record <strong>20 seconds</strong> of speech to analyse vocal
-          patterns. You do not need to say anything specific. You can describe
+          We will record <strong>20 seconds</strong> of speech and measure acoustic
+          features (pitch, loudness, speech rate). These measurements are shown for information; no validated speech
+          classifier exists, so they do not affect the screening result. You do not need to say anything specific. You can describe
           what you did today, or read the prompt shown on screen.
         </p>
         <p

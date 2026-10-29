@@ -7,10 +7,10 @@ import numpy as np
 
 try:
     from .config import CATEGORY_MODEL_CONFIG, LEGACY_ADULT_ARTIFACTS
-    from .preprocessor import encode_aq10_scores, preprocess_for_inference
+    from .preprocessor import preprocess_for_inference
 except ImportError:  # pragma: no cover - fallback for backend cwd execution
     from ml.config import CATEGORY_MODEL_CONFIG, LEGACY_ADULT_ARTIFACTS
-    from ml.preprocessor import encode_aq10_scores, preprocess_for_inference
+    from ml.preprocessor import preprocess_for_inference
 
 
 def _load_bundle(category: str) -> dict:
@@ -58,7 +58,9 @@ def load_models() -> dict:
     """
     print("[NeuroSense] Loading model registry...")
     registry = {}
-    for category in CATEGORY_MODEL_CONFIG:
+    for category, cfg in CATEGORY_MODEL_CONFIG.items():
+        if cfg.get("legacy"):
+            continue                      # superseded models are never loaded
         registry[category] = _load_bundle(category)
     return registry
 
@@ -68,77 +70,25 @@ def get_bundle(registry: dict, category: str) -> dict:
     return registry.get(category, {"model": None, "encoders": None, "category": category})
 
 
-def predict(category: str, bundle: dict, demo: dict, answers: dict) -> dict:
-    """
-    Run inference on a single screening submission.
+def predict(category: str, bundle: dict, demo: dict, answers: dict):
+    """Output of the questionnaire ML model for one submission, or ``None`` when no model is loaded.
 
-    Args:
-        category:  'adult', 'child', or 'toddler'
-        bundle:    { 'model': clf, 'encoders': {...}, 'category': str }
-        demo:      demographics dict
-        answers:   AQ-10 / Q-CHAT-10 answers dict (A1–A10)
-
-    Returns:
-        { 'probability', 'risk_level', 'prediction', 'mock', 'model_used' }
+    There is no mock/proxy fallback: the screening result does not depend on this output (it is computed from the
+    score in ml/questionnaire_score.py).  The model was trained on labels that are a threshold on the item total, so
+    its output reproduces the scoring rule and is NOT an independently validated probability.
     """
     clf = bundle.get("model")
-    encoders = bundle.get("encoders")
-
-    # Build feature vector
-    X = preprocess_for_inference(demo, answers, encoders, category=category)
-
-    model_type = type(clf).__name__ if clf else "MockProxy"
-    model_used = f"{category}_{model_type}"
-
     if clf is None:
-        # Mock mode — use AQ-10 / Q-CHAT-10 sum as a rough proxy
-        aq_sum = sum(encode_aq10_scores(answers, category=category))
-        if category == "toddler":
-            # Q-CHAT-10 threshold is ≥3, so scale more aggressively
-            mock_prob = min(aq_sum / 10.0 * 1.4, 1.0)
-        elif category == "child":
-            mock_prob = min(aq_sum / 10.0 * 1.15, 1.0)
-        else:
-            mock_prob = min(aq_sum / 10.0 * 1.1, 1.0)
-        return {
-            "probability": round(mock_prob, 4),
-            "risk_level": _classify_risk(mock_prob, category=category),
-            "prediction": 1 if mock_prob >= 0.5 else 0,
-            "mock": True,
-            "model_used": model_used,
-        }
-
-    # Real model inference
+        return None
+    X = preprocess_for_inference(demo, answers, bundle.get("encoders"), category=category)
     if hasattr(clf, "predict_proba"):
         proba = clf.predict_proba(X)[0]
-        positive_prob = float(proba[1]) if len(proba) > 1 else float(proba[0])
+        positive = float(proba[1]) if len(proba) > 1 else float(proba[0])
     else:
-        decision = float(clf.predict(X)[0])
-        positive_prob = decision
-
+        positive = float(clf.predict(X)[0])
     return {
-        "probability": round(positive_prob, 4),
-        "risk_level": _classify_risk(positive_prob, category=category),
-        "prediction": int(clf.predict(X)[0]),
-        "mock": False,
-        "model_used": model_used,
+        "probability": round(positive, 4), "prediction": int(clf.predict(X)[0]),
+        "model_used": f"{category}_{type(clf).__name__}",
+        "role": "model of the scoring rule; shown for transparency, does not affect the result",
+        "validated_against_clinical_labels": False,
     }
-
-
-def _classify_risk(prob: float, category: str = "adult") -> str:
-    """Map probability to risk level string (category-aware thresholds)."""
-    if category == "toddler":
-        # Q-CHAT-10 is more sensitive — lower thresholds
-        if prob >= 0.55:
-            return "High"
-        elif prob >= 0.30:
-            return "Moderate"
-        else:
-            return "Low"
-    else:
-        if prob >= 0.7:
-            return "High"
-        elif prob >= 0.4:
-            return "Moderate"
-        else:
-            return "Low"

@@ -1,0 +1,1118 @@
+{
+ "head_slopes_fit_on_dev": [
+  -0.7697872053294732,
+  0.4600250289449337
+ ],
+ "lstm": {
+  "A gaze only": {
+   "cv": {
+    "roc_auc": {
+     "mean": 0.9103174603174603,
+     "sd_over_repeats": 0.0639935551995657,
+     "sd_over_folds": 0.1668715671690455
+    },
+    "accuracy": {
+     "mean": 0.8484848484848485,
+     "sd_over_repeats": 0.06180629713445795,
+     "sd_over_folds": 0.13952562949359196
+    },
+    "recall_sensitivity": {
+     "mean": 0.894047619047619,
+     "sd_over_repeats": 0.06229274024738631,
+     "sd_over_folds": 0.18505683382688612
+    },
+    "specificity": {
+     "mean": 0.7555555555555555,
+     "sd_over_repeats": 0.09654526220545975,
+     "sd_over_folds": 0.24241582476968257
+    },
+    "f1": {
+     "mean": 0.8796591970121382,
+     "sd_over_repeats": 0.060784899261545,
+     "sd_over_folds": 0.14277872398359834
+    }
+   },
+   "features": [
+    "gaze_angle_x",
+    "gaze_angle_y"
+   ],
+   "center_session": false,
+   "coverage": {
+    "mean_inside_range": 1.0,
+    "std_inside_range": 0.375,
+    "std_ratio_webcam_over_dasd_median": {
+     "gaze_angle_x": 0.103,
+     "gaze_angle_y": 0.533
+    }
+   },
+   "webcam_probability_final_fit": [
+    0.993,
+    0.992,
+    0.948,
+    0.377
+   ]
+  },
+  "B gaze+vel": {
+   "cv": {
+    "roc_auc": {
+     "mean": 0.9047619047619048,
+     "sd_over_repeats": 0.04210091177738045,
+     "sd_over_folds": 0.14549482903487715
+    },
+    "accuracy": {
+     "mean": 0.8884848484848485,
+     "sd_over_repeats": 0.029740228233661337,
+     "sd_over_folds": 0.11761948577656439
+    },
+    "recall_sensitivity": {
+     "mean": 0.9571428571428573,
+     "sd_over_repeats": 0.031542003094028,
+     "sd_over_folds": 0.07598558760587118
+    },
+    "specificity": {
+     "mean": 0.7277777777777779,
+     "sd_over_repeats": 0.08314794192830983,
+     "sd_over_folds": 0.26434171674156265
+    },
+    "f1": {
+     "mean": 0.9249019607843137,
+     "sd_over_repeats": 0.019803112647686767,
+     "sd_over_folds": 0.07973632537310803
+    }
+   },
+   "features": [
+    "gaze_angle_x",
+    "gaze_angle_y",
+    "gaze_vel_x",
+    "gaze_vel_y"
+   ],
+   "center_session": false,
+   "coverage": {
+    "mean_inside_range": 1.0,
+    "std_inside_range": 0.375,
+    "std_ratio_webcam_over_dasd_median": {
+     "gaze_angle_x": 0.104,
+     "gaze_angle_y": 0.529,
+     "gaze_vel_x": 0.258,
+     "gaze_vel_y": 0.468
+    }
+   },
+   "webcam_probability_final_fit": [
+    0.997,
+    0.997,
+    0.958,
+    0.185
+   ]
+  },
+  "C gaze+head": {
+   "cv": {
+    "roc_auc": {
+     "mean": 0.9357142857142856,
+     "sd_over_repeats": 0.018002057495577414,
+     "sd_over_folds": 0.12398872867116008
+    },
+    "accuracy": {
+     "mean": 0.8848484848484849,
+     "sd_over_repeats": 0.022676711434993464,
+     "sd_over_folds": 0.10213514876577404
+    },
+    "recall_sensitivity": {
+     "mean": 0.9476190476190475,
+     "sd_over_repeats": 0.020481726826291898,
+     "sd_over_folds": 0.06437383730759894
+    },
+    "specificity": {
+     "mean": 0.7611111111111111,
+     "sd_over_repeats": 0.10304020550550785,
+     "sd_over_folds": 0.2579597059165311
+    },
+    "f1": {
+     "mean": 0.9197572362278246,
+     "sd_over_repeats": 0.014929080006451744,
+     "sd_over_folds": 0.06995937283554918
+    }
+   },
+   "features": [
+    "gaze_angle_x",
+    "gaze_angle_y",
+    "head_pose_x",
+    "head_pose_y",
+    "head_pose_z"
+   ],
+   "center_session": false,
+   "coverage": {
+    "mean_inside_range": 1.0,
+    "std_inside_range": 0.25,
+    "std_ratio_webcam_over_dasd_median": {
+     "gaze_angle_x": 0.103,
+     "gaze_angle_y": 0.533,
+     "head_pose_x": 0.251,
+     "head_pose_y": 0.028,
+     "head_pose_z": 0.061
+    }
+   },
+   "webcam_probability_final_fit": [
+    0.993,
+    0.992,
+    0.913,
+    0.091
+   ]
+  },
+  "D all 7 (current)": {
+   "cv": {
+    "roc_auc": {
+     "mean": 0.9511904761904763,
+     "sd_over_repeats": 0.01994417757639531,
+     "sd_over_folds": 0.07706590322025324
+    },
+    "accuracy": {
+     "mean": 0.8933333333333334,
+     "sd_over_repeats": 0.00869860611782264,
+     "sd_over_folds": 0.08556837464933266
+    },
+    "recall_sensitivity": {
+     "mean": 0.9464285714285715,
+     "sd_over_repeats": 0.02041241452319308,
+     "sd_over_folds": 0.0658538889806635
+    },
+    "specificity": {
+     "mean": 0.75,
+     "sd_over_repeats": 0.06236095644623232,
+     "sd_over_folds": 0.23372982186625144
+    },
+    "f1": {
+     "mean": 0.9272869831693361,
+     "sd_over_repeats": 0.007425715340770938,
+     "sd_over_folds": 0.057667305305507024
+    }
+   },
+   "features": [
+    "gaze_angle_x",
+    "gaze_angle_y",
+    "gaze_vel_x",
+    "gaze_vel_y",
+    "head_pose_x",
+    "head_pose_y",
+    "head_pose_z"
+   ],
+   "center_session": false,
+   "coverage": {
+    "mean_inside_range": 1.0,
+    "std_inside_range": 0.2857142857142857,
+    "std_ratio_webcam_over_dasd_median": {
+     "gaze_angle_x": 0.104,
+     "gaze_angle_y": 0.529,
+     "gaze_vel_x": 0.258,
+     "gaze_vel_y": 0.468,
+     "head_pose_x": 0.249,
+     "head_pose_y": 0.028,
+     "head_pose_z": 0.06
+    }
+   },
+   "webcam_probability_final_fit": [
+    0.983,
+    0.983,
+    0.965,
+    0.541
+   ]
+  },
+  "D + session-centred": {
+   "cv": {
+    "roc_auc": {
+     "mean": 0.934126984126984,
+     "sd_over_repeats": 0.012686005843766491,
+     "sd_over_folds": 0.049585711211616236
+    },
+    "accuracy": {
+     "mean": 0.8684848484848485,
+     "sd_over_repeats": 0.014109632396148824,
+     "sd_over_folds": 0.07847490284474518
+    },
+    "recall_sensitivity": {
+     "mean": 0.8773809523809524,
+     "sd_over_repeats": 0.013780758217607414,
+     "sd_over_folds": 0.08961052031694673
+    },
+    "specificity": {
+     "mean": 0.8388888888888889,
+     "sd_over_repeats": 0.020786985482077427,
+     "sd_over_folds": 0.17864372434237252
+    },
+    "f1": {
+     "mean": 0.9039966242907419,
+     "sd_over_repeats": 0.011773613021913168,
+     "sd_over_folds": 0.05528546678661756
+    }
+   },
+   "features": [
+    "gaze_angle_x",
+    "gaze_angle_y",
+    "gaze_vel_x",
+    "gaze_vel_y",
+    "head_pose_x",
+    "head_pose_y",
+    "head_pose_z"
+   ],
+   "center_session": true,
+   "coverage": {
+    "mean_inside_range": 1.0,
+    "std_inside_range": 0.2857142857142857,
+    "std_ratio_webcam_over_dasd_median": {
+     "gaze_angle_x": 0.104,
+     "gaze_angle_y": 0.529,
+     "gaze_vel_x": 0.258,
+     "gaze_vel_y": 0.468,
+     "head_pose_x": 0.249,
+     "head_pose_y": 0.028,
+     "head_pose_z": 0.06
+    }
+   },
+   "webcam_probability_final_fit": [
+    0.036,
+    0.027,
+    0.086,
+    0.027
+   ]
+  },
+  "E head only": {
+   "cv": {
+    "roc_auc": {
+     "mean": 0.9194444444444446,
+     "sd_over_repeats": 0.02756722925866406,
+     "sd_over_folds": 0.10108226395699549
+    },
+    "accuracy": {
+     "mean": 0.8545454545454545,
+     "sd_over_repeats": 0.025712973861329036,
+     "sd_over_folds": 0.09847319278346617
+    },
+    "recall_sensitivity": {
+     "mean": 0.9309523809523809,
+     "sd_over_repeats": 0.02693740118805891,
+     "sd_over_folds": 0.09491014965711786
+    },
+    "specificity": {
+     "mean": 0.6833333333333332,
+     "sd_over_repeats": 0.11626916409142411,
+     "sd_over_folds": 0.3106146832998747
+    },
+    "f1": {
+     "mean": 0.8997678018575851,
+     "sd_over_repeats": 0.017984220705368065,
+     "sd_over_folds": 0.06682273249492998
+    }
+   },
+   "features": [
+    "head_pose_x",
+    "head_pose_y",
+    "head_pose_z"
+   ],
+   "center_session": false,
+   "coverage": {
+    "mean_inside_range": 1.0,
+    "std_inside_range": 0.16666666666666666,
+    "std_ratio_webcam_over_dasd_median": {
+     "head_pose_x": 0.251,
+     "head_pose_y": 0.028,
+     "head_pose_z": 0.061
+    }
+   },
+   "webcam_probability_final_fit": [
+    0.503,
+    0.375,
+    0.91,
+    0.029
+   ]
+  },
+  "F eye-in-head only (rel gaze + vel)": {
+   "cv": {
+    "roc_auc": {
+     "mean": 0.7890873015873016,
+     "sd_over_repeats": 0.008589230484886277,
+     "sd_over_folds": 0.1486382612366404
+    },
+    "accuracy": {
+     "mean": 0.7254545454545456,
+     "sd_over_repeats": 0.006470956516382634,
+     "sd_over_folds": 0.11969658611369303
+    },
+    "recall_sensitivity": {
+     "mean": 0.7880952380952381,
+     "sd_over_repeats": 0.03883215816738116,
+     "sd_over_folds": 0.16089496017158766
+    },
+    "specificity": {
+     "mean": 0.5888888888888889,
+     "sd_over_repeats": 0.10030816714037659,
+     "sd_over_folds": 0.2517837598583258
+    },
+    "f1": {
+     "mean": 0.795203141085494,
+     "sd_over_repeats": 0.005782016067592656,
+     "sd_over_folds": 0.10274179696687812
+    }
+   },
+   "features": [
+    "gaze_rel_x",
+    "gaze_rel_y",
+    "gaze_rel_vel_x",
+    "gaze_rel_vel_y"
+   ],
+   "center_session": false,
+   "coverage": {
+    "mean_inside_range": 0.9375,
+    "std_inside_range": 0.75,
+    "std_ratio_webcam_over_dasd_median": {
+     "gaze_rel_x": 0.372,
+     "gaze_rel_y": 0.652,
+     "gaze_rel_vel_x": 0.389,
+     "gaze_rel_vel_y": 0.547
+    }
+   },
+   "webcam_probability_final_fit": [
+    0.987,
+    0.924,
+    0.926,
+    0.714
+   ]
+  },
+  "G eye-in-head + head pose": {
+   "cv": {
+    "roc_auc": {
+     "mean": 0.9380952380952382,
+     "sd_over_repeats": 0.0042369358142981765,
+     "sd_over_folds": 0.0707240386625848
+    },
+    "accuracy": {
+     "mean": 0.8884848484848485,
+     "sd_over_repeats": 0.028951687060596774,
+     "sd_over_folds": 0.06919184546187916
+    },
+    "recall_sensitivity": {
+     "mean": 0.955952380952381,
+     "sd_over_repeats": 0.045767578063669226,
+     "sd_over_folds": 0.06249716546860328
+    },
+    "specificity": {
+     "mean": 0.7277777777777779,
+     "sd_over_repeats": 0.02078698548207747,
+     "sd_over_folds": 0.22457092146008598
+    },
+    "f1": {
+     "mean": 0.9239754363283775,
+     "sd_over_repeats": 0.022795454133241043,
+     "sd_over_folds": 0.046658724596398755
+    }
+   },
+   "features": [
+    "gaze_rel_x",
+    "gaze_rel_y",
+    "gaze_rel_vel_x",
+    "gaze_rel_vel_y",
+    "head_pose_x",
+    "head_pose_y",
+    "head_pose_z"
+   ],
+   "center_session": false,
+   "coverage": {
+    "mean_inside_range": 0.9642857142857143,
+    "std_inside_range": 0.5,
+    "std_ratio_webcam_over_dasd_median": {
+     "gaze_rel_x": 0.372,
+     "gaze_rel_y": 0.652,
+     "gaze_rel_vel_x": 0.389,
+     "gaze_rel_vel_y": 0.547,
+     "head_pose_x": 0.249,
+     "head_pose_y": 0.028,
+     "head_pose_z": 0.06
+    }
+   },
+   "webcam_probability_final_fit": [
+    0.988,
+    0.987,
+    0.972,
+    0.853
+   ]
+  },
+  "G + session-centred": {
+   "cv": {
+    "roc_auc": {
+     "mean": 0.9035714285714288,
+     "sd_over_repeats": 0.012409917278660176,
+     "sd_over_folds": 0.07906291685976044
+    },
+    "accuracy": {
+     "mean": 0.8684848484848486,
+     "sd_over_repeats": 0.014870114116830665,
+     "sd_over_folds": 0.07847490284474515
+    },
+    "recall_sensitivity": {
+     "mean": 0.9023809523809523,
+     "sd_over_repeats": 0.013780758217607414,
+     "sd_over_folds": 0.09125603760350856
+    },
+    "specificity": {
+     "mean": 0.7999999999999999,
+     "sd_over_repeats": 0.02721655269759086,
+     "sd_over_folds": 0.1715938356831167
+    },
+    "f1": {
+     "mean": 0.9047392803275156,
+     "sd_over_repeats": 0.009631896846845308,
+     "sd_over_folds": 0.0585410199771673
+    }
+   },
+   "features": [
+    "gaze_rel_x",
+    "gaze_rel_y",
+    "gaze_rel_vel_x",
+    "gaze_rel_vel_y",
+    "head_pose_x",
+    "head_pose_y",
+    "head_pose_z"
+   ],
+   "center_session": true,
+   "coverage": {
+    "mean_inside_range": 1.0,
+    "std_inside_range": 0.5,
+    "std_ratio_webcam_over_dasd_median": {
+     "gaze_rel_x": 0.372,
+     "gaze_rel_y": 0.652,
+     "gaze_rel_vel_x": 0.389,
+     "gaze_rel_vel_y": 0.547,
+     "head_pose_x": 0.249,
+     "head_pose_y": 0.028,
+     "head_pose_z": 0.06
+    }
+   },
+   "webcam_probability_final_fit": [
+    0.071,
+    0.032,
+    0.107,
+    0.035
+   ]
+  },
+  "F + session-centred": {
+   "cv": {
+    "roc_auc": {
+     "mean": 0.7837301587301587,
+     "sd_over_repeats": 0.01930220080478617,
+     "sd_over_folds": 0.1415226469933097
+    },
+    "accuracy": {
+     "mean": 0.735151515151515,
+     "sd_over_repeats": 0.05143308971945966,
+     "sd_over_folds": 0.12254719298590076
+    },
+    "recall_sensitivity": {
+     "mean": 0.8142857142857144,
+     "sd_over_repeats": 0.10313949341566896,
+     "sd_over_folds": 0.20284959744518466
+    },
+    "specificity": {
+     "mean": 0.5888888888888889,
+     "sd_over_repeats": 0.0831479419283098,
+     "sd_over_folds": 0.3435472185275623
+    },
+    "f1": {
+     "mean": 0.8002460611284139,
+     "sd_over_repeats": 0.06391243447173629,
+     "sd_over_folds": 0.12189716497252678
+    }
+   },
+   "features": [
+    "gaze_rel_x",
+    "gaze_rel_y",
+    "gaze_rel_vel_x",
+    "gaze_rel_vel_y"
+   ],
+   "center_session": true,
+   "coverage": {
+    "mean_inside_range": 1.0,
+    "std_inside_range": 0.75,
+    "std_ratio_webcam_over_dasd_median": {
+     "gaze_rel_x": 0.372,
+     "gaze_rel_y": 0.652,
+     "gaze_rel_vel_x": 0.389,
+     "gaze_rel_vel_y": 0.547
+    }
+   },
+   "webcam_probability_final_fit": [
+    0.162,
+    0.196,
+    0.439,
+    0.417
+   ]
+  }
+ },
+ "summary": {
+  "S1 5ch abs+motion (LR)": {
+   "cv": {
+    "roc_auc": {
+     "mean": 0.8492063492063492,
+     "sd_over_repeats": 0.0174242050794445,
+     "sd_over_folds": 0.1466859054241006
+    },
+    "accuracy": {
+     "mean": 0.6545454545454544,
+     "sd_over_repeats": 0.014845392380504113,
+     "sd_over_folds": 0.1110927441201416
+    },
+    "recall_sensitivity": {
+     "mean": 0.5297619047619048,
+     "sd_over_repeats": 0.016060401860990513,
+     "sd_over_folds": 0.16387976068971674
+    },
+    "specificity": {
+     "mean": 0.9388888888888888,
+     "sd_over_repeats": 0.007856742013183886,
+     "sd_over_folds": 0.12347839317162705
+    },
+    "f1": {
+     "mean": 0.6658600658600659,
+     "sd_over_repeats": 0.019501480105998958,
+     "sd_over_folds": 0.13558744071999362
+    }
+   },
+   "features": [
+    "gaze_angle_x",
+    "gaze_angle_y",
+    "head_pose_x",
+    "head_pose_y",
+    "head_pose_z"
+   ],
+   "with_abs": true,
+   "model": "lr",
+   "coverage": {
+    "mean_inside_range": 1.0,
+    "std_inside_range": 0.25,
+    "std_ratio_webcam_over_dasd_median": {
+     "gaze_angle_x": 0.103,
+     "gaze_angle_y": 0.533,
+     "head_pose_x": 0.251,
+     "head_pose_y": 0.028,
+     "head_pose_z": 0.061
+    }
+   },
+   "top_coefficients": [
+    [
+     "head_pose_x:iqr",
+     2.4
+    ],
+    [
+     "head_pose_z:mean|v|",
+     1.86
+    ],
+    [
+     "gaze_angle_x:std",
+     1.59
+    ],
+    [
+     "gaze_angle_y:mean",
+     -1.19
+    ],
+    [
+     "gaze_angle_y:std",
+     0.91
+    ],
+    [
+     "head_pose_x:mean",
+     0.87
+    ]
+   ],
+   "webcam_probability_final_fit": [
+    0.069,
+    0.048,
+    0.071,
+    0.033
+   ]
+  },
+  "S2 5ch motion-only (LR)": {
+   "cv": {
+    "roc_auc": {
+     "mean": 0.8742063492063492,
+     "sd_over_repeats": 0.02725702343027685,
+     "sd_over_folds": 0.14085680657919084
+    },
+    "accuracy": {
+     "mean": 0.6424242424242425,
+     "sd_over_repeats": 0.008570991287109643,
+     "sd_over_folds": 0.1172065430655377
+    },
+    "recall_sensitivity": {
+     "mean": 0.513095238095238,
+     "sd_over_repeats": 0.014677176197545173,
+     "sd_over_folds": 0.17586843154875606
+    },
+    "specificity": {
+     "mean": 0.9388888888888888,
+     "sd_over_repeats": 0.007856742013183886,
+     "sd_over_folds": 0.12347839317162705
+    },
+    "f1": {
+     "mean": 0.648079698079698,
+     "sd_over_repeats": 0.02268987123707403,
+     "sd_over_folds": 0.15416238477849578
+    }
+   },
+   "features": [
+    "gaze_angle_x",
+    "gaze_angle_y",
+    "head_pose_x",
+    "head_pose_y",
+    "head_pose_z"
+   ],
+   "with_abs": false,
+   "model": "lr",
+   "coverage": {
+    "mean_inside_range": 1.0,
+    "std_inside_range": 0.25,
+    "std_ratio_webcam_over_dasd_median": {
+     "gaze_angle_x": 0.103,
+     "gaze_angle_y": 0.533,
+     "head_pose_x": 0.251,
+     "head_pose_y": 0.028,
+     "head_pose_z": 0.061
+    }
+   },
+   "top_coefficients": [
+    [
+     "head_pose_x:iqr",
+     2.39
+    ],
+    [
+     "head_pose_z:mean|v|",
+     1.91
+    ],
+    [
+     "gaze_angle_x:std",
+     1.56
+    ],
+    [
+     "gaze_angle_y:std",
+     0.96
+    ],
+    [
+     "head_pose_x:mean|v|",
+     -0.83
+    ],
+    [
+     "head_pose_y:std",
+     -0.81
+    ]
+   ],
+   "webcam_probability_final_fit": [
+    0.014,
+    0.014,
+    0.024,
+    0.015
+   ]
+  },
+  "S3 gaze-only abs+motion (LR)": {
+   "cv": {
+    "roc_auc": {
+     "mean": 0.8400793650793652,
+     "sd_over_repeats": 0.01763977045308962,
+     "sd_over_folds": 0.13127425569821635
+    },
+    "accuracy": {
+     "mean": 0.5575757575757576,
+     "sd_over_repeats": 0.017141982574219287,
+     "sd_over_folds": 0.14795824988768128
+    },
+    "recall_sensitivity": {
+     "mean": 0.38809523809523805,
+     "sd_over_repeats": 0.021494607244366387,
+     "sd_over_folds": 0.2161099598334816
+    },
+    "specificity": {
+     "mean": 0.9388888888888888,
+     "sd_over_repeats": 0.007856742013183886,
+     "sd_over_folds": 0.12347839317162705
+    },
+    "f1": {
+     "mean": 0.5084848484848484,
+     "sd_over_repeats": 0.04176191945111344,
+     "sd_over_folds": 0.25224020123882124
+    }
+   },
+   "features": [
+    "gaze_angle_x",
+    "gaze_angle_y"
+   ],
+   "with_abs": true,
+   "model": "lr",
+   "coverage": {
+    "mean_inside_range": 1.0,
+    "std_inside_range": 0.375,
+    "std_ratio_webcam_over_dasd_median": {
+     "gaze_angle_x": 0.103,
+     "gaze_angle_y": 0.533
+    }
+   },
+   "top_coefficients": [
+    [
+     "gaze_angle_y:std",
+     1.73
+    ],
+    [
+     "gaze_angle_x:std",
+     1.36
+    ],
+    [
+     "gaze_angle_x:p95|v|",
+     -0.59
+    ],
+    [
+     "gaze_angle_y:mean",
+     -0.46
+    ],
+    [
+     "gaze_angle_y:range",
+     -0.44
+    ],
+    [
+     "gaze_angle_x:mean",
+     0.43
+    ]
+   ],
+   "webcam_probability_final_fit": [
+    0.021,
+    0.025,
+    0.14,
+    0.036
+   ]
+  },
+  "S4 head-only motion (LR)": {
+   "cv": {
+    "roc_auc": {
+     "mean": 0.8634920634920634,
+     "sd_over_repeats": 0.019302200804786222,
+     "sd_over_folds": 0.14507971240971243
+    },
+    "accuracy": {
+     "mean": 0.6666666666666666,
+     "sd_over_repeats": 0.008570991287109643,
+     "sd_over_folds": 0.14342011595393012
+    },
+    "recall_sensitivity": {
+     "mean": 0.5309523809523811,
+     "sd_over_repeats": 0.006734350297014766,
+     "sd_over_folds": 0.18970827347520536
+    },
+    "specificity": {
+     "mean": 0.9777777777777777,
+     "sd_over_repeats": 0.031426968052735496,
+     "sd_over_folds": 0.08314794192830982
+    },
+    "f1": {
+     "mean": 0.6688189588189588,
+     "sd_over_repeats": 0.009822832636779714,
+     "sd_over_folds": 0.18002335110517992
+    }
+   },
+   "features": [
+    "head_pose_x",
+    "head_pose_y",
+    "head_pose_z"
+   ],
+   "with_abs": false,
+   "model": "lr",
+   "coverage": {
+    "mean_inside_range": 1.0,
+    "std_inside_range": 0.16666666666666666,
+    "std_ratio_webcam_over_dasd_median": {
+     "head_pose_x": 0.251,
+     "head_pose_y": 0.028,
+     "head_pose_z": 0.061
+    }
+   },
+   "top_coefficients": [
+    [
+     "head_pose_x:iqr",
+     2.41
+    ],
+    [
+     "head_pose_z:mean|v|",
+     1.84
+    ],
+    [
+     "head_pose_x:mean|v|",
+     -1.07
+    ],
+    [
+     "head_pose_x:std",
+     0.86
+    ],
+    [
+     "head_pose_x:p95|v|",
+     -0.71
+    ],
+    [
+     "head_pose_z:iqr",
+     -0.57
+    ]
+   ],
+   "webcam_probability_final_fit": [
+    0.013,
+    0.012,
+    0.012,
+    0.012
+   ]
+  },
+  "S5 eye-in-head motion (LR)": {
+   "cv": {
+    "roc_auc": {
+     "mean": 0.8190476190476191,
+     "sd_over_repeats": 0.002571722499368155,
+     "sd_over_folds": 0.13921956100994018
+    },
+    "accuracy": {
+     "mean": 0.503030303030303,
+     "sd_over_repeats": 0.008570991287109643,
+     "sd_over_folds": 0.09310479694386191
+    },
+    "recall_sensitivity": {
+     "mean": 0.3107142857142857,
+     "sd_over_repeats": 0.017737695744942085,
+     "sd_over_folds": 0.11642345884188238
+    },
+    "specificity": {
+     "mean": 0.9388888888888888,
+     "sd_over_repeats": 0.007856742013183886,
+     "sd_over_folds": 0.12347839317162705
+    },
+    "f1": {
+     "mean": 0.4528282828282828,
+     "sd_over_repeats": 0.01860030912395955,
+     "sd_over_folds": 0.12591221409349476
+    }
+   },
+   "features": [
+    "gaze_rel_x",
+    "gaze_rel_y"
+   ],
+   "with_abs": false,
+   "model": "lr",
+   "coverage": {
+    "mean_inside_range": 0.875,
+    "std_inside_range": 0.75,
+    "std_ratio_webcam_over_dasd_median": {
+     "gaze_rel_x": 0.368,
+     "gaze_rel_y": 0.652
+    }
+   },
+   "top_coefficients": [
+    [
+     "gaze_rel_y:std",
+     1.36
+    ],
+    [
+     "gaze_rel_y:p95|v|",
+     0.96
+    ],
+    [
+     "gaze_rel_y:mean|v|",
+     0.7
+    ],
+    [
+     "gaze_rel_y:range",
+     -0.66
+    ],
+    [
+     "gaze_rel_y:iqr",
+     0.57
+    ],
+    [
+     "gaze_rel_x:iqr",
+     0.54
+    ]
+   ],
+   "webcam_probability_final_fit": [
+    0.018,
+    0.027,
+    0.244,
+    0.178
+   ]
+  },
+  "S6 eye-in-head + head motion (LR)": {
+   "cv": {
+    "roc_auc": {
+     "mean": 0.8317460317460318,
+     "sd_over_repeats": 0.012153486373899675,
+     "sd_over_folds": 0.15052921676379402
+    },
+    "accuracy": {
+     "mean": 0.6909090909090908,
+     "sd_over_repeats": 0.025712973861329064,
+     "sd_over_folds": 0.1039177466635288
+    },
+    "recall_sensitivity": {
+     "mean": 0.5797619047619047,
+     "sd_over_repeats": 0.029498837365152013,
+     "sd_over_folds": 0.1705167549504179
+    },
+    "specificity": {
+     "mean": 0.9388888888888888,
+     "sd_over_repeats": 0.007856742013183886,
+     "sd_over_folds": 0.12347839317162705
+    },
+    "f1": {
+     "mean": 0.7069772819772818,
+     "sd_over_repeats": 0.019850105233706228,
+     "sd_over_folds": 0.12836256644865046
+    }
+   },
+   "features": [
+    "gaze_rel_x",
+    "gaze_rel_y",
+    "head_pose_x",
+    "head_pose_y",
+    "head_pose_z"
+   ],
+   "with_abs": false,
+   "model": "lr",
+   "coverage": {
+    "mean_inside_range": 0.95,
+    "std_inside_range": 0.4,
+    "std_ratio_webcam_over_dasd_median": {
+     "gaze_rel_x": 0.368,
+     "gaze_rel_y": 0.652,
+     "head_pose_x": 0.251,
+     "head_pose_y": 0.028,
+     "head_pose_z": 0.061
+    }
+   },
+   "top_coefficients": [
+    [
+     "head_pose_x:iqr",
+     1.99
+    ],
+    [
+     "head_pose_z:mean|v|",
+     1.88
+    ],
+    [
+     "head_pose_x:mean|v|",
+     -1.27
+    ],
+    [
+     "head_pose_x:p95|v|",
+     -0.99
+    ],
+    [
+     "gaze_rel_y:std",
+     0.96
+    ],
+    [
+     "gaze_rel_y:p95|v|",
+     0.91
+    ]
+   ],
+   "webcam_probability_final_fit": [
+    0.01,
+    0.011,
+    0.047,
+    0.036
+   ]
+  },
+  "S7 5ch motion-only (GB)": {
+   "cv": {
+    "roc_auc": {
+     "mean": 0.8920634920634921,
+     "sd_over_repeats": 0.019448493261655334,
+     "sd_over_folds": 0.11291478223583966
+    },
+    "accuracy": {
+     "mean": 0.8606060606060607,
+     "sd_over_repeats": 0.03090314856722906,
+     "sd_over_folds": 0.0931047969438619
+    },
+    "recall_sensitivity": {
+     "mean": 0.9464285714285715,
+     "sd_over_repeats": 0.0029160592175990112,
+     "sd_over_folds": 0.08401085125893976
+    },
+    "specificity": {
+     "mean": 0.6666666666666666,
+     "sd_over_repeats": 0.09813067629253161,
+     "sd_over_folds": 0.20861092617242877
+    },
+    "f1": {
+     "mean": 0.9026651344298404,
+     "sd_over_repeats": 0.02197702190224844,
+     "sd_over_folds": 0.06865164782768038
+    }
+   },
+   "features": [
+    "gaze_angle_x",
+    "gaze_angle_y",
+    "head_pose_x",
+    "head_pose_y",
+    "head_pose_z"
+   ],
+   "with_abs": false,
+   "model": "gb",
+   "coverage": {
+    "mean_inside_range": 1.0,
+    "std_inside_range": 0.25,
+    "std_ratio_webcam_over_dasd_median": {
+     "gaze_angle_x": 0.103,
+     "gaze_angle_y": 0.533,
+     "head_pose_x": 0.251,
+     "head_pose_y": 0.028,
+     "head_pose_z": 0.061
+    }
+   }
+  },
+  "S8 5ch abs+motion (GB)": {
+   "cv": {
+    "roc_auc": {
+     "mean": 0.9460317460317461,
+     "sd_over_repeats": 0.027257023430276778,
+     "sd_over_folds": 0.09731045558902604
+    },
+    "accuracy": {
+     "mean": 0.9212121212121213,
+     "sd_over_repeats": 0.022676711434993592,
+     "sd_over_folds": 0.09884549351697026
+    },
+    "recall_sensitivity": {
+     "mean": 0.9904761904761905,
+     "sd_over_repeats": 0.013468700594029532,
+     "sd_over_folds": 0.03563483225498992
+    },
+    "specificity": {
+     "mean": 0.7666666666666666,
+     "sd_over_repeats": 0.04714045207910316,
+     "sd_over_folds": 0.2638742686008426
+    },
+    "f1": {
+     "mean": 0.9473420479302833,
+     "sd_over_repeats": 0.016056304924523448,
+     "sd_over_folds": 0.06625818582901757
+    }
+   },
+   "features": [
+    "gaze_angle_x",
+    "gaze_angle_y",
+    "head_pose_x",
+    "head_pose_y",
+    "head_pose_z"
+   ],
+   "with_abs": true,
+   "model": "gb",
+   "coverage": {
+    "mean_inside_range": 1.0,
+    "std_inside_range": 0.25,
+    "std_ratio_webcam_over_dasd_median": {
+     "gaze_angle_x": 0.103,
+     "gaze_angle_y": 0.533,
+     "head_pose_x": 0.251,
+     "head_pose_y": 0.028,
+     "head_pose_z": 0.061
+    }
+   }
+  }
+ }
+}

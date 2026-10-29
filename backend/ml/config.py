@@ -47,6 +47,7 @@ CATEGORY_MODEL_CONFIG = {
         "background_path": ML_DIR / "background_child.npy",
     },
     "toddler": {
+        "legacy": True,   # superseded by ml/toddler_service.py (Polish Q-CHAT cohort model); kept on disk for provenance, not loaded
         "label": "Toddler",
         "dataset_paths": [
             DATA_DIR / "asd_screening_toddler.csv",

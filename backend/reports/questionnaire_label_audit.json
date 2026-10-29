@@ -1,0 +1,104 @@
+{
+ "adult": {
+  "dataset": "/Users/vaibhavjp/neuro-sense-main/backend/data/asd_screening_adult.csv",
+  "rows": 704,
+  "positive_rate": 0.2684659090909091,
+  "published_cutoff": "dataset providers' labelling rule; the instrument manual's own cut-off may differ - verify before clinical use",
+  "threshold_rule": {
+   "best_threshold_total_ge": 7,
+   "agreement": 1.0,
+   "neighbours": {
+    "6": 0.9005681818181818,
+    "8": 0.9190340909090909
+   },
+   "rows_disagreeing": 0
+  },
+  "item_free_model_cv": {
+   "features": [
+    "age",
+    "gender",
+    "ethnicity",
+    "jaundice",
+    "austism"
+   ],
+   "auc": 0.6961421893460727,
+   "accuracy": 0.7173295454545454
+  },
+  "total_alone_auc": 1.0,
+  "shipped_model": {
+   "agrees_with_threshold_rule": 0.9971590909090909,
+   "agrees_with_label": 0.9971590909090909,
+   "within_total_max_probability_range": 0.7707042694091797,
+   "within_total_mean_probability_std": 0.027041573077440262,
+   "variance_of_probability_explained_by_total": 0.9832600317895412
+  }
+ },
+ "child": {
+  "dataset": "/Users/vaibhavjp/neuro-sense-main/backend/data/asd_screening_child.csv",
+  "rows": 292,
+  "positive_rate": 0.4828767123287671,
+  "published_cutoff": "dataset providers' labelling rule; the instrument manual's own cut-off may differ - verify before clinical use",
+  "threshold_rule": {
+   "best_threshold_total_ge": 7,
+   "agreement": 1.0,
+   "neighbours": {
+    "6": 0.863013698630137,
+    "8": 0.8493150684931506
+   },
+   "rows_disagreeing": 0
+  },
+  "item_free_model_cv": {
+   "features": [
+    "age",
+    "gender",
+    "ethnicity",
+    "jaundice",
+    "austism"
+   ],
+   "auc": 0.5782959936123244,
+   "accuracy": 0.5547945205479452
+  },
+  "total_alone_auc": 1.0,
+  "shipped_model": {
+   "agrees_with_threshold_rule": 0.9554794520547946,
+   "agrees_with_label": 0.9554794520547946,
+   "within_total_max_probability_range": 0.2503668538764425,
+   "within_total_mean_probability_std": 0.034771867872154076,
+   "variance_of_probability_explained_by_total": 0.9362777150583182
+  }
+ },
+ "toddler": {
+  "dataset": "/Users/vaibhavjp/neuro-sense-main/backend/data/asd_screening_toddler.csv",
+  "rows": 1054,
+  "positive_rate": 0.6907020872865275,
+  "published_cutoff": "dataset providers' labelling rule; the instrument manual's own cut-off may differ - verify before clinical use",
+  "threshold_rule": {
+   "best_threshold_total_ge": 4,
+   "agreement": 1.0,
+   "neighbours": {
+    "3": 0.9089184060721063,
+    "5": 0.8956356736242884
+   },
+   "rows_disagreeing": 0
+  },
+  "item_free_model_cv": {
+   "features": [
+    "Age_Mons",
+    "Sex",
+    "Jaundice",
+    "Family_mem_with_ASD",
+    "Ethnicity"
+   ],
+   "auc": 0.646316490258208,
+   "accuracy": 0.6925996204933587
+  },
+  "total_alone_auc": 1.0,
+  "shipped_model": {
+   "agrees_with_threshold_rule": 0.9962049335863378,
+   "agrees_with_label": 0.9962049335863378,
+   "within_total_max_probability_range": 0.6505635380744934,
+   "within_total_mean_probability_std": 0.024719642475247383,
+   "variance_of_probability_explained_by_total": 0.9880918134003878
+  }
+ }
+}

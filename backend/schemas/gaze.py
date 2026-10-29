@@ -29,7 +29,7 @@ class GazeAnalyzeResponse(BaseModel):
     model_config = ConfigDict(protected_namespaces=())
 
     modality: str = "gaze"
-    status: str                         # success | insufficient_quality | unavailable
+    status: str                         # success | insufficient_quality | out_of_domain | unavailable
     model_status: str                   # available | unavailable
     probability: Optional[float] = Field(default=None, ge=0.0, le=1.0)
     prediction: Optional[str] = None    # asd_signal | typical_signal
@@ -44,6 +44,9 @@ class GazeAnalyzeResponse(BaseModel):
     quality: Optional[GazeQuality] = None
     features: dict = {}
     explanation: Optional[dict] = None
+    domain: Optional[dict] = None
+    descriptive: Optional[dict] = None
+    timings_s: Optional[dict] = None
     fusion_eligible: bool = False
     fusion_reason: Optional[str] = None
     interpretation: str = ""

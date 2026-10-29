@@ -58,9 +58,11 @@ def test_feature_order_regression():
                 else:
                     aq_scores.append(1 - is_agree)
         else:
-            # For adult/child, A1, A7, A8, A10 agree=1, others disagree=1
+            # Independent copy of the instrument contracts (not imported from production code):
+            #   adult AQ-10 : agree scores on A1, A7, A8, A10
+            #   child AQ-10 (caregiver form shown in the UI): agree scores on A1, A5, A7, A10
             aq_scores = []
-            trait_ids = {1, 7, 8, 10}
+            trait_ids = {1, 7, 8, 10} if cat == "adult" else {1, 5, 7, 10}
             for i in range(1, 11):
                 raw = answers[f"A{i}"]
                 is_agree = 1 if raw in ["Definitely agree", "Slightly agree"] else 0

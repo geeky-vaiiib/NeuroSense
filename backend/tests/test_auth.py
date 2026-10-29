@@ -317,12 +317,13 @@ def test_startup_config_fails_clearly(monkeypatch, env, msg):
         load_settings()
 
 
-def test_missing_model_is_503_not_a_fabricated_probability(app_client, monkeypatch):
+def test_missing_ml_model_does_not_block_or_change_the_score_based_result(app_client, monkeypatch):
+    """The result comes from the score rule; with no ML model the response says so and nothing is fabricated."""
     import backend.routers.screening as scr
-    monkeypatch.setattr(scr, "predict", lambda *a, **k: {
-        "probability": 0.9, "risk_level": "High", "prediction": 1, "mock": True, "model_used": "mock"})
-    monkeypatch.delenv("NEUROSENSE_ALLOW_MOCK_INFERENCE", raising=False)
+    monkeypatch.setattr(scr, "predict", lambda *a, **k: None)
     c = app_client(); register(c)
-    r = c.post("/screening/screen", json=screening_body())
-    assert r.status_code == 503
-    assert c.get("/cases/").json() == []            # nothing was stored
+    r = c.post("/screening/screen", json=screening_body(points=8))
+    assert r.status_code == 200
+    d = r.json()
+    assert d["questionnaireProbability"] is None and d["modelOutput"] is None and d["modelUsed"] == "score_rule"
+    assert d["riskLevel"] == "High" and d["aq10Score"] == 8 and any("No questionnaire ML model" in w for w in d["warnings"])

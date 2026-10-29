@@ -1,0 +1,79 @@
+{
+ "openface_available": true,
+ "stages": {
+  "normalize_video_s": {
+   "median": 2.8625763339999963,
+   "all": [
+    2.8958,
+    2.8244,
+    2.8626
+   ]
+  },
+  "openface_s": {
+   "median": 14.372044416999998,
+   "all": [
+    14.2541,
+    14.372,
+    14.585
+   ]
+  },
+  "parse_csv_s": {
+   "median": 0.021613874999999894,
+   "all": [
+    0.029,
+    0.0216,
+    0.0201
+   ]
+  },
+  "preprocess_s": {
+   "median": 0.0033978339999976015,
+   "all": [
+    0.0063,
+    0.0034,
+    0.0034
+   ]
+  },
+  "quality_domain_s": {
+   "median": 0.0001675829999996381,
+   "all": [
+    0.0002,
+    0.0002,
+    0.0001
+   ]
+  },
+  "model_inference_s": {
+   "median": 0.003333292000000654,
+   "all": [
+    0.0228,
+    0.0033,
+    0.0029
+   ]
+  },
+  "explanation_ablation_s": {
+   "median": 0.0044123330000047645,
+   "all": [
+    0.0044,
+    0.0044,
+    0.0048
+   ]
+  }
+ },
+ "equivalence": {
+  "v640_30": {
+   "openface_s": 15.42,
+   "frames": 900,
+   "mean_confidence": 0.9561666666666667,
+   "session_std": {
+    "gaze_angle_x": 0.030129867794820027,
+    "gaze_angle_y": 0.02597239218007374
+   },
+   "model_probability": 0.034701632410287855,
+   "role": "reference"
+  }
+ },
+ "docker_container_startup_s": 0.18641016700000002,
+ "frames": 900,
+ "windows": 25,
+ "per_frame_openface_ms": 15.968938241111108,
+ "python_cold_import_and_model_load_s": null
+}

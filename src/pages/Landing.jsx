@@ -54,8 +54,8 @@ export default function Landing() {
               Understanding behavior through <span className="ns-hero__accent">intelligent signals.</span>
             </h1>
             <p className="ns-lede ns-reveal" data-delay="2" style={{ color: '#A9B8CF', marginTop: 22 }}>
-              NeuroSense brings a questionnaire, gaze and speech signals together to support early risk
-              assessment — with a clear account of what each signal contributed and how reliable it was.
+              NeuroSense scores a screening questionnaire on the server and records experimental gaze, speech and
+              facial measurements alongside it — with a clear account of what is used for the result, what is experimental, and what is unavailable.
             </p>
             <div className="ns-reveal" data-delay="3" style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginTop: 34 }}>
               <Link to="/app/screening" id="hero-cta-primary" className="btn btn-signal btn-lg">Start Screening</Link>

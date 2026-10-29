@@ -1,0 +1,632 @@
+{
+ "pipeline": {
+  "openface_dasd": "OpenFace 2.0 (README); full output incl. AUs and 68 landmarks",
+  "openface_webcam": "algebr/openface docker image (OpenFace 2.x build), flags -gaze -pose",
+  "dasd_columns": 714,
+  "webcam_columns": 299,
+  "webcam_columns_missing_in_dasd": [],
+  "shared_columns_same_order": true,
+  "timestamp_units": "seconds in both (frame/fps)",
+  "dasd_example": {
+   "rows": 676,
+   "fps": 24.74,
+   "dt_median_s": 0.04,
+   "dt_max_s": 0.24,
+   "first_timestamp": 0.0,
+   "success_mean": 1.0,
+   "confidence_mean": 0.9611538461538464,
+   "confidence_cap": 0.98
+  },
+  "webcam_example": {
+   "rows": 900,
+   "fps": 29.99,
+   "dt_median_s": 0.033,
+   "dt_max_s": 0.034,
+   "first_timestamp": 0.0,
+   "success_mean": 1.0,
+   "confidence_mean": 0.9800000000000002,
+   "confidence_cap": 0.98
+  },
+  "dasd_fps_range": [
+   13.69,
+   25.0
+  ],
+  "webcam_fps": [
+   29.99,
+   30.0,
+   30.0,
+   30.0
+  ],
+  "camera_intrinsics": "OpenFace defaults (fx=fy=500*(w/640)) unless -fx given; not recorded for DASD, default in webcam run",
+  "success_filter": "DASD CSVs contain only success==1 rows (pre-filtered); webcam rows are kept and filtered by clean_frames",
+  "dup_rows_dasd": 0.0011995698246396226,
+  "dup_rows_webcam": [
+   0.01668520578420467,
+   0.0055617352614015575,
+   0.002224694104560623,
+   0.00778642936596218
+  ]
+ },
+ "per_session_position": {
+  "gaze_angle_x_mean": {
+   "dasd_min": -0.38271157945736434,
+   "dasd_median": 0.030287260233918117,
+   "dasd_max": 0.5706934523809523,
+   "webcam": [
+    -0.0631,
+    -0.0849,
+    -0.0052,
+    -0.0495
+   ],
+   "webcam_pctl_in_dasd": [
+    23,
+    15,
+    44,
+    26
+   ],
+   "webcam_inside_dasd_range": [
+    true,
+    true,
+    true,
+    true
+   ]
+  },
+  "gaze_angle_x_std": {
+   "dasd_min": 0.0831195479747887,
+   "dasd_median": 0.31085410116189505,
+   "dasd_max": 0.5847209159087813,
+   "webcam": [
+    0.0284,
+    0.032,
+    0.0309,
+    0.0253
+   ],
+   "webcam_pctl_in_dasd": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "webcam_inside_dasd_range": [
+    false,
+    false,
+    false,
+    false
+   ]
+  },
+  "gaze_angle_x_iqr": {
+   "dasd_min": 0.09,
+   "dasd_median": 0.41362500000000024,
+   "dasd_max": 1.1709999999999998,
+   "webcam": [
+    0.0408,
+    0.0245,
+    0.0418,
+    0.0236
+   ],
+   "webcam_pctl_in_dasd": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "webcam_inside_dasd_range": [
+    false,
+    false,
+    false,
+    false
+   ]
+  },
+  "gaze_angle_y_mean": {
+   "dasd_min": 0.06170784883720931,
+   "dasd_median": 0.39796394830659537,
+   "dasd_max": 0.6394642671854733,
+   "webcam": [
+    0.0754,
+    0.1089,
+    0.108,
+    0.2434
+   ],
+   "webcam_pctl_in_dasd": [
+    1,
+    2,
+    2,
+    11
+   ],
+   "webcam_inside_dasd_range": [
+    true,
+    true,
+    true,
+    true
+   ]
+  },
+  "gaze_angle_y_std": {
+   "dasd_min": 0.021959944117831077,
+   "dasd_median": 0.11931004422695315,
+   "dasd_max": 0.2874413383928855,
+   "webcam": [
+    0.0428,
+    0.0372,
+    0.0774,
+    0.0663
+   ],
+   "webcam_pctl_in_dasd": [
+    2,
+    1,
+    27,
+    21
+   ],
+   "webcam_inside_dasd_range": [
+    true,
+    true,
+    true,
+    true
+   ]
+  },
+  "gaze_angle_y_iqr": {
+   "dasd_min": 0.02799999999999997,
+   "dasd_median": 0.15599999999999897,
+   "dasd_max": 0.5833124999999999,
+   "webcam": [
+    0.0755,
+    0.0355,
+    0.0898,
+    0.0596
+   ],
+   "webcam_pctl_in_dasd": [
+    21,
+    1,
+    32,
+    9
+   ],
+   "webcam_inside_dasd_range": [
+    true,
+    true,
+    true,
+    true
+   ]
+  },
+  "gaze_vel_x_mean": {
+   "dasd_min": -0.11198198198198198,
+   "dasd_median": 0.0007910848549946293,
+   "dasd_max": 0.1063375796178344,
+   "webcam": [
+    -0.0013,
+    -0.0002,
+    -0.001,
+    0.0004
+   ],
+   "webcam_pctl_in_dasd": [
+    44,
+    46,
+    44,
+    46
+   ],
+   "webcam_inside_dasd_range": [
+    true,
+    true,
+    true,
+    true
+   ]
+  },
+  "gaze_vel_x_std": {
+   "dasd_min": 0.1444490340817173,
+   "dasd_median": 0.4884641190108546,
+   "dasd_max": 1.3945656460314015,
+   "webcam": [
+    0.0801,
+    0.1221,
+    0.2387,
+    0.1195
+   ],
+   "webcam_pctl_in_dasd": [
+    0,
+    0,
+    5,
+    0
+   ],
+   "webcam_inside_dasd_range": [
+    false,
+    false,
+    true,
+    false
+   ]
+  },
+  "gaze_vel_x_iqr": {
+   "dasd_min": 0.13999999999999985,
+   "dasd_median": 0.38687500000002495,
+   "dasd_max": 0.8099999999999953,
+   "webcam": [
+    0.0757,
+    0.12,
+    0.2269,
+    0.0758
+   ],
+   "webcam_pctl_in_dasd": [
+    0,
+    0,
+    15,
+    0
+   ],
+   "webcam_inside_dasd_range": [
+    false,
+    false,
+    true,
+    false
+   ]
+  },
+  "gaze_vel_y_mean": {
+   "dasd_min": -0.032419354838709696,
+   "dasd_median": 0.0016250923872875266,
+   "dasd_max": 0.13145833333333332,
+   "webcam": [
+    0.0054,
+    0.0033,
+    -0.0011,
+    0.0051
+   ],
+   "webcam_pctl_in_dasd": [
+    61,
+    56,
+    40,
+    61
+   ],
+   "webcam_inside_dasd_range": [
+    true,
+    true,
+    true,
+    true
+   ]
+  },
+  "gaze_vel_y_std": {
+   "dasd_min": 0.14623905890450484,
+   "dasd_median": 0.4496953703576458,
+   "dasd_max": 0.863366135067687,
+   "webcam": [
+    0.0748,
+    0.1257,
+    0.3363,
+    0.2503
+   ],
+   "webcam_pctl_in_dasd": [
+    0,
+    0,
+    30,
+    13
+   ],
+   "webcam_inside_dasd_range": [
+    false,
+    false,
+    true,
+    true
+   ]
+  },
+  "gaze_vel_y_iqr": {
+   "dasd_min": 0.129999999999999,
+   "dasd_median": 0.32875000000000165,
+   "dasd_max": 0.7199999999999573,
+   "webcam": [
+    0.077,
+    0.09,
+    0.2375,
+    0.1002
+   ],
+   "webcam_pctl_in_dasd": [
+    0,
+    0,
+    28,
+    0
+   ],
+   "webcam_inside_dasd_range": [
+    false,
+    false,
+    true,
+    false
+   ]
+  },
+  "head_pose_x_mean": {
+   "dasd_min": -0.09244144144144142,
+   "dasd_median": 0.2801403582905555,
+   "dasd_max": 0.7931164010624173,
+   "webcam": [
+    0.0142,
+    -0.0029,
+    -0.0727,
+    0.1915
+   ],
+   "webcam_pctl_in_dasd": [
+    6,
+    5,
+    2,
+    33
+   ],
+   "webcam_inside_dasd_range": [
+    true,
+    true,
+    true,
+    true
+   ]
+  },
+  "head_pose_x_std": {
+   "dasd_min": 0.021317239968812927,
+   "dasd_median": 0.1605673736976739,
+   "dasd_max": 0.8235209054750641,
+   "webcam": [
+    0.066,
+    0.0331,
+    0.0379,
+    0.0183
+   ],
+   "webcam_pctl_in_dasd": [
+    11,
+    1,
+    2,
+    0
+   ],
+   "webcam_inside_dasd_range": [
+    true,
+    true,
+    true,
+    false
+   ]
+  },
+  "head_pose_x_iqr": {
+   "dasd_min": 0.02799999999999997,
+   "dasd_median": 0.19237500000000002,
+   "dasd_max": 0.9538125000000001,
+   "webcam": [
+    0.1219,
+    0.025,
+    0.0751,
+    0.0285
+   ],
+   "webcam_pctl_in_dasd": [
+    33,
+    0,
+    13,
+    1
+   ],
+   "webcam_inside_dasd_range": [
+    true,
+    false,
+    true,
+    true
+   ]
+  },
+  "head_pose_y_mean": {
+   "dasd_min": -0.6719325396825396,
+   "dasd_median": 0.0025771311581610857,
+   "dasd_max": 0.45825973837209305,
+   "webcam": [
+    0.1181,
+    0.0577,
+    0.0342,
+    0.0289
+   ],
+   "webcam_pctl_in_dasd": [
+    80,
+    67,
+    61,
+    59
+   ],
+   "webcam_inside_dasd_range": [
+    true,
+    true,
+    true,
+    true
+   ]
+  },
+  "head_pose_y_std": {
+   "dasd_min": 0.09652139743333898,
+   "dasd_median": 0.3618742679400245,
+   "dasd_max": 0.8203913841624257,
+   "webcam": [
+    0.0058,
+    0.0083,
+    0.0109,
+    0.0117
+   ],
+   "webcam_pctl_in_dasd": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "webcam_inside_dasd_range": [
+    false,
+    false,
+    false,
+    false
+   ]
+  },
+  "head_pose_y_iqr": {
+   "dasd_min": 0.08625,
+   "dasd_median": 0.47500000000000014,
+   "dasd_max": 1.3115000000000014,
+   "webcam": [
+    0.0078,
+    0.007,
+    0.013,
+    0.0194
+   ],
+   "webcam_pctl_in_dasd": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "webcam_inside_dasd_range": [
+    false,
+    false,
+    false,
+    false
+   ]
+  },
+  "head_pose_z_mean": {
+   "dasd_min": -0.34885317460317455,
+   "dasd_median": -0.017785294769503565,
+   "dasd_max": 0.5250688405797099,
+   "webcam": [
+    -0.0446,
+    -0.0317,
+    -0.047,
+    0.0347
+   ],
+   "webcam_pctl_in_dasd": [
+    33,
+    41,
+    32,
+    67
+   ],
+   "webcam_inside_dasd_range": [
+    true,
+    true,
+    true,
+    true
+   ]
+  },
+  "head_pose_z_std": {
+   "dasd_min": 0.03165352330716815,
+   "dasd_median": 0.14912547962982098,
+   "dasd_max": 0.8730749380300433,
+   "webcam": [
+    0.008,
+    0.0064,
+    0.0085,
+    0.0117
+   ],
+   "webcam_pctl_in_dasd": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "webcam_inside_dasd_range": [
+    false,
+    false,
+    false,
+    false
+   ]
+  },
+  "head_pose_z_iqr": {
+   "dasd_min": 0.045500000000000006,
+   "dasd_median": 0.17281249999999995,
+   "dasd_max": 0.9912500000000001,
+   "webcam": [
+    0.0073,
+    0.007,
+    0.013,
+    0.0131
+   ],
+   "webcam_pctl_in_dasd": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "webcam_inside_dasd_range": [
+    false,
+    false,
+    false,
+    false
+   ]
+  }
+ },
+ "gaze_head_coupling": {
+  "dasd_r_gx_Ry": -0.965476170889834,
+  "dasd_r_gy_Rx": 0.7160135866239618,
+  "dasd_slope_gx_Ry": -0.7548899645127908,
+  "dasd_slope_gy_Rx": 0.42350815782802703,
+  "dasd_per_child_r_gx_Ry_median": -0.9691979283859393,
+  "webcam_r_gx_Ry": [
+   -0.4284078237854003,
+   -0.05374968282306014,
+   -0.15097447070427697,
+   -0.5799875456772949
+  ],
+  "webcam_r_gy_Rx": [
+   0.9267709368764482,
+   0.7836230037497657,
+   0.4034329194083268,
+   0.5682195974974392
+  ]
+ },
+ "eye_in_head_residual_std": {
+  "dasd_pctl_0_5_50_95_100_x": [
+   0.022,
+   0.039,
+   0.082,
+   0.138,
+   0.178
+  ],
+  "dasd_pctl_0_5_50_95_100_y": [
+   0.018,
+   0.035,
+   0.075,
+   0.181,
+   0.356
+  ],
+  "webcam_x": [
+   0.027,
+   0.032,
+   0.032,
+   0.022
+  ],
+  "webcam_y": [
+   0.02,
+   0.028,
+   0.073,
+   0.063
+  ]
+ },
+ "distance_and_geometry": {
+  "pose_Tz_mm_dasd_pctl_5_50_95": [
+   282.0,
+   436.0,
+   741.0
+  ],
+  "pose_Tz_mm_webcam": [
+   476.0,
+   456.0,
+   524.0,
+   361.0
+  ]
+ },
+ "velocity_check": {
+  "definition": "gaze_vel = diff(gaze_angle on the 10 Hz grid) * 10 [rad/s]; grid = linear interpolation of cleaned OpenFace frames (point sampling, no smoothing)",
+  "timestamp_units_match": true,
+  "dasd_median_over_children": {
+   "raw_frame_median_abs": 0.275,
+   "raw_frame_p95_abs": 1.5019,
+   "grid10hz_median_abs": 0.1963,
+   "grid10hz_p95_abs": 1.058
+  },
+  "webcam_per_session": {
+   "raw_frame_median_abs": [
+    0.0606,
+    0.0909,
+    0.2353,
+    0.0909
+   ],
+   "raw_frame_p95_abs": [
+    0.303,
+    0.4545,
+    1.0,
+    0.3636
+   ],
+   "grid10hz_median_abs": [
+    0.0379,
+    0.06,
+    0.1133,
+    0.0394
+   ],
+   "grid10hz_p95_abs": [
+    0.1815,
+    0.261,
+    0.5196,
+    0.1759
+   ]
+  },
+  "note": "ratio grid/raw median shows aliasing/interpolation effect; webcam fps 30 vs DASD ~20-25"
+ }
+}

@@ -1,0 +1,7 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    { "name": "neurosense-backend-e2e", "runtimeExecutable": "bash", "runtimeArgs": ["scripts/dev_e2e_backend.sh", "8000"], "port": 8000 },
+    { "name": "neurosense-frontend", "runtimeExecutable": "npm", "runtimeArgs": ["run", "dev", "--", "--host", "127.0.0.1", "--port", "5173"], "port": 5173 }
+  ]
+}

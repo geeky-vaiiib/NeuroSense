@@ -1,0 +1,330 @@
+{
+ "dataset": "Niedźwiecka, A., Pisula, E., Domasiewicz, Z. (2020). Q-CHAT scores of Polish toddlers with autism spectrum disorders and typically developing controls. Mendeley Data, V2. doi:10.17632/tmpkt2mfkg.2 (CC BY 4.0)",
+ "file": "QCHAT_dataset2 mendeley.sav",
+ "sha256_verified": true,
+ "licence": "CC BY 4.0 (attribution required; indicate changes)",
+ "rows": 252,
+ "unique_child_id": 252,
+ "duplicate_ids": [],
+ "class_counts": {
+  "ASD": 135,
+  "control": 117
+ },
+ "count_discrepancy": {
+  "dataset_page_says": "252 toddlers; 135 ASD and 118 TD (135 + 118 = 253)",
+  "file_has": {
+   "ASD": 135,
+   "control": 117
+  },
+  "rows": 252,
+  "resolution": "the file has 252 rows = 135 ASD + 117 controls; the '118' on the page is inconsistent with its own total of 252"
+ },
+ "duplicate_item_patterns": 0,
+ "item_columns": [
+  "qchat1recode",
+  "qchat2recode",
+  "qchat3recode",
+  "qchat4recode",
+  "qchat5recode",
+  "qchat6recode",
+  "qchat7recode",
+  "qchat8recode",
+  "qchat9recode",
+  "qchat10recode",
+  "qchat11recode",
+  "qchat12recode",
+  "qchat13recode",
+  "qchat14recode",
+  "qchat15recode",
+  "qchat16recode",
+  "qchat17recode",
+  "qchat18recode",
+  "qchat19recode",
+  "qchat20recode",
+  "qchat21recode",
+  "qchat22recode",
+  "qchat23recode",
+  "qchat24recode",
+  "qchat25recode"
+ ],
+ "response_scale": "integers 0-4 per item, higher = more atypical (already direction-recoded by the authors; `*recode` columns)",
+ "out_of_range_items": {
+  "qchat4recode": [
+   {
+    "child_id": "bdbp0221",
+    "group": 7.0,
+    "qchat4recode": 11.0
+   }
+  ]
+ },
+ "out_of_range_handling": "values outside 0-4 are set to missing; none of the ten mapped items is affected",
+ "missing_values": {
+  "birthweight": 12,
+  "siblings_yesno": 5,
+  "siblings_number": 23,
+  "mothers_education": 11,
+  "sibling_withASD": 22
+ },
+ "ten_items_missing": 0,
+ "sum_qchat_equals_item_sum": true,
+ "demographic_variables": [
+  "age (months)",
+  "sex",
+  "preterm",
+  "birthweight",
+  "siblings_yesno",
+  "siblings_number",
+  "mothers_education",
+  "sibling_withASD"
+ ],
+ "age_months": {
+  "ASD": {
+   "mean": 20.755555555555556,
+   "std": 2.1352292570352964,
+   "min": 18.0,
+   "max": 24.0
+  },
+  "control": {
+   "mean": 21.418803418803417,
+   "std": 1.9662642517155262,
+   "min": 18.0,
+   "max": 24.0
+  }
+ },
+ "age_values": {
+  "18": 37,
+  "19": 35,
+  "20": 40,
+  "21": 29,
+  "22": 28,
+  "23": 40,
+  "24": 43
+ },
+ "sex_by_group": {
+  "ASD": {
+   "1": 96,
+   "2": 39
+  },
+  "control": {
+   "1": 61,
+   "2": 56
+  }
+ },
+ "sibling_withASD_by_group": {
+  "ASD": {
+   "0.0": 109,
+   "1.0": 25,
+   "nan": 1
+  },
+  "control": {
+   "0.0": 96,
+   "nan": 21
+  }
+ },
+ "mapping_verification": [
+  {
+   "item": "Q1",
+   "qchat25_item": 1,
+   "column": "qchat1recode",
+   "labels_match_expected": true,
+   "dataset_labels": {
+    "0": "zawsze",
+    "1": "zazwyczaj",
+    "2": "czasami",
+    "3": "rzadko",
+    "4": "nigdy"
+   },
+   "note": null
+  },
+  {
+   "item": "Q2",
+   "qchat25_item": 2,
+   "column": "qchat2recode",
+   "labels_match_expected": true,
+   "dataset_labels": {
+    "0": "b.łatwo",
+    "1": "dość łatwo",
+    "2": "dość trudno",
+    "3": "b. trudno",
+    "4": "niemożliwe"
+   },
+   "note": "label 'niemożliwe' (impossible) is attached to value 5 in the file; 5 never occurs; read as 4 (scale maximum)"
+  },
+  {
+   "item": "Q3",
+   "qchat25_item": 5,
+   "column": "qchat5recode",
+   "labels_match_expected": true,
+   "dataset_labels": {
+    "0": "wiele razy/dzień",
+    "1": "kilka razy/dzień",
+    "2": "kilka razy/tydzień",
+    "3": "mniej niż raz/tydzień",
+    "4": "nigdy"
+   },
+   "note": null
+  },
+  {
+   "item": "Q4",
+   "qchat25_item": 6,
+   "column": "qchat6recode",
+   "labels_match_expected": true,
+   "dataset_labels": {
+    "0": "wiele razy/dzień",
+    "1": "kilka razy/dzień",
+    "2": "kilka razy/tydzień",
+    "3": "mniej niż raz/tydzień",
+    "4": "nigdy"
+   },
+   "note": null
+  },
+  {
+   "item": "Q5",
+   "qchat25_item": 9,
+   "column": "qchat9recode",
+   "labels_match_expected": true,
+   "dataset_labels": {
+    "0": "wiele razy/dzień",
+    "1": "kilka razy/dzień",
+    "2": "kilka razy/tydzień",
+    "3": "mniej niż raz/tydzień",
+    "4": "nigdy"
+   },
+   "note": null
+  },
+  {
+   "item": "Q6",
+   "qchat25_item": 10,
+   "column": "qchat10recode",
+   "labels_match_expected": true,
+   "dataset_labels": {
+    "0": "wiele razy/dzień",
+    "1": "kilka razy/dzień",
+    "2": "kilka razy/tydzień",
+    "3": "mniej niż raz/tydzień",
+    "4": "nigdy"
+   },
+   "note": null
+  },
+  {
+   "item": "Q7",
+   "qchat25_item": 15,
+   "column": "qchat15recode",
+   "labels_match_expected": true,
+   "dataset_labels": {
+    "0": "zawsze",
+    "1": "zazwyczaj",
+    "2": "czasami",
+    "3": "rzadko",
+    "4": "nigdy"
+   },
+   "note": null
+  },
+  {
+   "item": "Q8",
+   "qchat25_item": 17,
+   "column": "qchat17recode",
+   "labels_match_expected": true,
+   "dataset_labels": {
+    "0": "b.typowe",
+    "1": "całkiem typowe",
+    "2": "trochę niezwykłe",
+    "3": "b.niezwykłe",
+    "4": "nie mówi"
+   },
+   "note": null
+  },
+  {
+   "item": "Q9",
+   "qchat25_item": 19,
+   "column": "qchat19recode",
+   "labels_match_expected": true,
+   "dataset_labels": {
+    "0": "wiele razy/dzień",
+    "1": "kilka razy/dzień",
+    "2": "kilka razy/tydzień",
+    "3": "mniej niż raz/tydzień",
+    "4": "nigdy"
+   },
+   "note": null
+  },
+  {
+   "item": "Q10",
+   "qchat25_item": 25,
+   "column": "qchat25recode",
+   "labels_match_expected": true,
+   "dataset_labels": {
+    "0": "nigdy",
+    "1": "mniej niż raz/tydzień",
+    "2": "kilka razy/tydzień",
+    "3": "kilka razy/dzień",
+    "4": "wiele razy/dzień"
+   },
+   "note": null
+  }
+ ],
+ "mapping_source": "Allison, Auyeung & Baron-Cohen 2012 JAACAP 51(2):202-212, Table 3 (Q-CHAT-10 = Q-CHAT items 1,2,5,6,9,10,15,17,19,25); wording/scoring: ARC Q-CHAT-10 form",
+ "label_provenance": {
+  "field": "group (1 = ASD, 7 = control)",
+  "dataset_page_statement": "'135 with a community-based diagnosis of autism spectrum disorders (ASD) and ... typically developing toddlers'",
+  "documented_instruments": "NOT stated on the dataset page. The related Polish Q-CHAT paper (Niedźwiecka & Pisula 2022, PMC8910243) studies a different 1,024-child sample whose 252 'ASD-concerns' children had no confirmed diagnosis and does not mention ADOS-2/ADI-R/DSM-5 for it; the dataset's own manuscript was 'under review' and could not be located.",
+  "assessment": "Label is independent of the Q-CHAT (not derived from item totals) but its clinical rigor (ADOS-2/ADI-R/DSM-5) is NOT verified from the sources available here.",
+  "control_definition": "typically developing; recruitment channel/screening of controls not documented"
+ },
+ "target_not_derived_from_items": {
+  "auc_of_item_sum_25": 0.8519784742006964,
+  "separable_by_a_total_threshold": false
+ },
+ "official_qchat10_rule_on_this_data": {
+  ">=2": {
+   "sensitivity": 0.9703703703703703,
+   "specificity": 0.6666666666666666
+  },
+  ">=3": {
+   "sensitivity": 0.9111111111111111,
+   "specificity": 0.8205128205128205
+  },
+  ">=4": {
+   "sensitivity": 0.7851851851851852,
+   "specificity": 0.9145299145299145
+  },
+  ">=5": {
+   "sensitivity": 0.6814814814814815,
+   "specificity": 0.9572649572649573
+  }
+ },
+ "official_qchat10_auc": 0.9369104146881925,
+ "publication_check": "Allison 2012 reports sensitivity 0.91 / specificity 0.89 at cut-point 3 (different samples)",
+ "recruitment_source_by_group": {
+  "#": {
+   "control": 14,
+   "ASD": 50
+  },
+  "A#": {
+   "control": 2,
+   "ASD": 3
+  },
+  "FS/#": {
+   "control": 12,
+   "ASD": 80
+  },
+  "bdbp#": {
+   "control": 89,
+   "ASD": 2
+  }
+ },
+ "source_confound_auc_if_only_source_known": 0.895156695156695,
+ "single_variable_aucs": {
+  "age": 0.40892687559354224,
+  "female": 0.4051282051282051,
+  "birthweight(non-missing)": 0.4656459263392857
+ },
+ "sampling_limitations": [
+  "case-control design: 53.6% ASD; prevalence in the intended population is far lower, so predicted probabilities are not population risk and PPV would be much lower",
+  "recruitment source almost determines the label (bdbp# ids: 89 controls vs 2 ASD; FS/# ids: 80 ASD vs 12 controls): collection context is confounded with diagnosis",
+  "Polish translation of the Q-CHAT, completed by caregivers in Poland; not validated for English-language or other populations",
+  "ages 18-24 months only; sex imbalance (ASD 71% male, controls 52% male)",
+  "ASD labels described as 'community-based diagnosis'; instruments used are not documented on the dataset page",
+  "sibling_withASD is missing/0 for every control (structural), so it must never be a predictor"
+ ]
+}

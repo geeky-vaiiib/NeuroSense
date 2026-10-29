@@ -1,0 +1,283 @@
+{
+  "model_version": "gaze-openface-dasd-v2",
+  "dataset": "DASD",
+  "feature_schema_version": "openface-gaze-1.1.0",
+  "feature_names": [
+    "gaze_angle_x",
+    "gaze_angle_y",
+    "head_pose_x",
+    "head_pose_y",
+    "head_pose_z"
+  ],
+  "feature_order": {
+    "gaze_angle_x": 0,
+    "gaze_angle_y": 1,
+    "head_pose_x": 2,
+    "head_pose_y": 3,
+    "head_pose_z": 4
+  },
+  "sequence_length": 60,
+  "sampling_rate_hz": 10,
+  "preprocess_config": {
+    "feature_names": [
+      "gaze_angle_x",
+      "gaze_angle_y",
+      "head_pose_x",
+      "head_pose_y",
+      "head_pose_z"
+    ],
+    "resample_hz": 10,
+    "window_s": 6.0,
+    "stride_s": 1.0,
+    "min_window_coverage": 0.8,
+    "center_window": false,
+    "center_session": true,
+    "head_slopes": [
+      -0.755,
+      0.424
+    ],
+    "normalization": "global_zscore"
+  },
+  "normalization": {
+    "method": "global_zscore",
+    "mean": [
+      -0.007370032567148594,
+      7.3681764097474e-05,
+      0.0003420136430730744,
+      0.00676338116493269,
+      0.002726326710655957
+    ],
+    "std": [
+      0.32813207623359475,
+      0.14433259817680807,
+      0.24717768019974162,
+      0.4221573628324902,
+      0.21866437674495873
+    ]
+  },
+  "openface_version": "OpenFace 2.x FeatureExtraction (DASD distributes OpenFace 2.0 CSVs)",
+  "openface_flags": [
+    "-gaze",
+    "-pose"
+  ],
+  "architecture": {
+    "type": "BiLSTM(mean+max pool)",
+    "input_size": 5,
+    "hidden_size": 32,
+    "dropout": 0.4
+  },
+  "training_seed": 42,
+  "epochs": 11,
+  "lr": 0.002,
+  "weight_decay": 0.01,
+  "batch_size": 64,
+  "domain_reference": {
+    "gaze_angle_x": {
+      "median_log_std": -1.24764967641863,
+      "sigma": 0.6661786343866114,
+      "median_std": 0.28717896778999885,
+      "min_std": 0.0856559711190616,
+      "max_std": 0.584403789776074
+    },
+    "gaze_angle_y": {
+      "median_log_std": -2.274707901456616,
+      "sigma": 0.6063707454809857,
+      "median_std": 0.102826939648328,
+      "min_std": 0.038489641122815346,
+      "max_std": 0.28828432991855113
+    },
+    "head_pose_x": {
+      "median_log_std": -1.9491198641204646,
+      "sigma": 0.7549610917504211,
+      "median_std": 0.1423993472233489,
+      "min_std": 0.03732450866088678,
+      "max_std": 0.6004724625978848
+    },
+    "head_pose_y": {
+      "median_log_std": -1.0568137519386862,
+      "sigma": 0.5664355313233013,
+      "median_std": 0.34756146499366675,
+      "min_std": 0.09702632583110822,
+      "max_std": 0.6629973341150598
+    },
+    "head_pose_z": {
+      "median_log_std": -1.9783388601638334,
+      "sigma": 0.7414480431793872,
+      "median_std": 0.138298780219791,
+      "min_std": 0.03151788805767594,
+      "max_std": 0.5883723268889051
+    }
+  },
+  "domain_gate": {
+    "z_in": 3.0,
+    "z_out": 6.0,
+    "children": 55,
+    "in_domain": 1.0,
+    "marginal": 0.0,
+    "out_of_domain": 0.0,
+    "note": "in-sample false-reject rate of the gate on DASD training children"
+  },
+  "decision_threshold": 0.5,
+  "session_aggregation": "mean of window probabilities",
+  "validation_strategy": "5-fold stratified participant-level CV x3 repeats on the official train split (55 participants). v1 used the test split once; v2 (this model) is the second and last use, after a redesign driven only by dev CV and unlabelled webcam diagnostics",
+  "participants": {
+    "train": 55,
+    "test": 27,
+    "ASD": 57,
+    "TD": 25
+  },
+  "metrics": {
+    "cv_selected_variant": "gaze+head, session-centred",
+    "cv_summary": {
+      "accuracy": {
+        "mean": 0.8666666666666666,
+        "std": 0.08698606117822619
+      },
+      "precision": {
+        "mean": 0.9313131313131314,
+        "std": 0.10057862390069051
+      },
+      "recall_sensitivity": {
+        "mean": 0.886904761904762,
+        "std": 0.08265026170337991
+      },
+      "specificity": {
+        "mean": 0.8388888888888888,
+        "std": 0.26081543542901114
+      },
+      "f1": {
+        "mean": 0.9022425722425724,
+        "std": 0.05994054142566006
+      },
+      "roc_auc": {
+        "mean": 0.9238095238095239,
+        "std": 0.07428800362772713
+      }
+    },
+    "cv_all_variants": {
+      "gaze+head, session-centred": {
+        "accuracy": {
+          "mean": 0.8666666666666666,
+          "std": 0.08698606117822619
+        },
+        "precision": {
+          "mean": 0.9313131313131314,
+          "std": 0.10057862390069051
+        },
+        "recall_sensitivity": {
+          "mean": 0.886904761904762,
+          "std": 0.08265026170337991
+        },
+        "specificity": {
+          "mean": 0.8388888888888888,
+          "std": 0.26081543542901114
+        },
+        "f1": {
+          "mean": 0.9022425722425724,
+          "std": 0.05994054142566006
+        },
+        "roc_auc": {
+          "mean": 0.9238095238095239,
+          "std": 0.07428800362772713
+        }
+      },
+      "gaze+vel+head, session-centred": {
+        "accuracy": {
+          "mean": 0.8272727272727273,
+          "std": 0.10002754441589216
+        },
+        "precision": {
+          "mean": 0.9073713323713324,
+          "std": 0.11599680637404298
+        },
+        "recall_sensitivity": {
+          "mean": 0.861904761904762,
+          "std": 0.09963083787098895
+        },
+        "specificity": {
+          "mean": 0.7722222222222221,
+          "std": 0.2894225839473579
+        },
+        "f1": {
+          "mean": 0.8756430606430607,
+          "std": 0.06943235858162185
+        },
+        "roc_auc": {
+          "mean": 0.9089285714285714,
+          "std": 0.09797529845878337
+        }
+      },
+      "eye-in-head+vel+head, session-centred": {
+        "accuracy": {
+          "mean": 0.8527272727272728,
+          "std": 0.1179811816716977
+        },
+        "precision": {
+          "mean": 0.9026094276094276,
+          "std": 0.12713910155144
+        },
+        "recall_sensitivity": {
+          "mean": 0.9047619047619049,
+          "std": 0.0902723267148994
+        },
+        "specificity": {
+          "mean": 0.7666666666666667,
+          "std": 0.3045944480416178
+        },
+        "f1": {
+          "mean": 0.8966442816442817,
+          "std": 0.08170057082761892
+        },
+        "roc_auc": {
+          "mean": 0.907142857142857,
+          "std": 0.09370794597216395
+        }
+      }
+    },
+    "train_resubstitution": {
+      "n": 55,
+      "accuracy": 0.9636363636363636,
+      "precision": 1.0,
+      "recall_sensitivity": 0.9473684210526315,
+      "specificity": 1.0,
+      "f1": 0.972972972972973,
+      "roc_auc": 0.9767801857585139,
+      "confusion_matrix": {
+        "tn": 17,
+        "fp": 0,
+        "fn": 2,
+        "tp": 36
+      }
+    },
+    "test": {
+      "n": 27,
+      "accuracy": 0.8888888888888888,
+      "precision": 0.8636363636363636,
+      "recall_sensitivity": 1.0,
+      "specificity": 0.625,
+      "f1": 0.926829268292683,
+      "roc_auc": 0.9671052631578947,
+      "confusion_matrix": {
+        "tn": 5,
+        "fp": 3,
+        "fn": 0,
+        "tp": 19
+      },
+      "window_level_accuracy": 0.8537349009571231
+    },
+    "baselines_dev": {
+      "duration_only_auc_dev": 0.891640866873065,
+      "logreg_window_summary_cv_auc": {
+        "mean": 0.9285714285714285,
+        "std": 0.05868455973269638
+      }
+    }
+  },
+  "trained_at": "2026-10-01T17:26:55.741015+00:00",
+  "limitations": [
+    "82 children; official test set has 8 TD participants (very wide CIs)",
+    "DASD stimulus/task and recording setup unknown; differs from NeuroSense 30 s task",
+    "ASD/TD recording duration and frame rate differ in DASD (controlled by fixed windows)",
+    "not validated on webcam data with ground-truth labels"
+  ]
+}

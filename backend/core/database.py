@@ -145,6 +145,11 @@ def ensure_indexes_on(db: Database) -> None:
     revoked = db["revoked_tokens"]
     revoked.create_index([("jti", ASCENDING)], unique=True, name="idx_revoked_jti_unique")
     revoked.create_index([("expires_at", ASCENDING)], expireAfterSeconds=0, name="idx_revoked_ttl")
+    try:
+        from ..ml.gaze.jobs import ensure_indexes as _gaze_job_indexes
+    except ImportError:  # pragma: no cover
+        from ml.gaze.jobs import ensure_indexes as _gaze_job_indexes
+    _gaze_job_indexes(db)
     logger.info("[NeuroSense] MongoDB indexes verified ✓")
 
 

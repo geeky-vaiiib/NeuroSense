@@ -1,0 +1,127 @@
+{
+  "passed": false,
+  "checked_at": "2026-10-29T07:26:48.698586+00:00",
+  "n_sessions": 3,
+  "n_quality_valid": 3,
+  "domain_counts": {
+    "in_domain": 0,
+    "marginal": 3,
+    "out_of_domain": 0
+  },
+  "in_domain_fraction": 0.0,
+  "checks": {
+    "quality_valid_sessions>=10": false,
+    "in_domain_fraction>=0.8": false
+  },
+  "sessions": [
+    {
+      "file": "s0.csv",
+      "quality_valid": true,
+      "quality_reason": null,
+      "duration_s": 17.96,
+      "mean_confidence": 0.95,
+      "data_quality_score": 0.97,
+      "domain": {
+        "status": "marginal",
+        "max_abs_z": 3.59,
+        "z": {
+          "gaze_angle_x": -2.54,
+          "gaze_angle_y": -3.59,
+          "head_pose_x": -2.6,
+          "head_pose_y": -3.42,
+          "head_pose_z": -2.91
+        },
+        "direction": "below",
+        "session_std": {
+          "gaze_angle_x": 0.0734,
+          "gaze_angle_y": 0.0154,
+          "head_pose_x": 0.0176,
+          "head_pose_y": 0.0465,
+          "head_pose_z": 0.0174
+        },
+        "dasd_median_std": {
+          "gaze_angle_x": 0.3111,
+          "gaze_angle_y": 0.1208,
+          "head_pose_x": 0.1619,
+          "head_pose_y": 0.3604,
+          "head_pose_z": 0.1486
+        }
+      }
+    },
+    {
+      "file": "s1.csv",
+      "quality_valid": true,
+      "quality_reason": null,
+      "duration_s": 17.96,
+      "mean_confidence": 0.95,
+      "data_quality_score": 0.97,
+      "domain": {
+        "status": "marginal",
+        "max_abs_z": 3.53,
+        "z": {
+          "gaze_angle_x": -1.79,
+          "gaze_angle_y": -1.63,
+          "head_pose_x": -2.48,
+          "head_pose_y": -3.53,
+          "head_pose_z": -2.95
+        },
+        "direction": "below",
+        "session_std": {
+          "gaze_angle_x": 0.1128,
+          "gaze_angle_y": 0.0474,
+          "head_pose_x": 0.0194,
+          "head_pose_y": 0.0435,
+          "head_pose_z": 0.0168
+        },
+        "dasd_median_std": {
+          "gaze_angle_x": 0.3111,
+          "gaze_angle_y": 0.1208,
+          "head_pose_x": 0.1619,
+          "head_pose_y": 0.3604,
+          "head_pose_z": 0.1486
+        }
+      }
+    },
+    {
+      "file": "s2.csv",
+      "quality_valid": true,
+      "quality_reason": null,
+      "duration_s": 17.96,
+      "mean_confidence": 0.95,
+      "data_quality_score": 0.97,
+      "domain": {
+        "status": "marginal",
+        "max_abs_z": 3.9,
+        "z": {
+          "gaze_angle_x": -2.59,
+          "gaze_angle_y": -3.9,
+          "head_pose_x": -2.64,
+          "head_pose_y": -3.48,
+          "head_pose_z": -2.92
+        },
+        "direction": "below",
+        "session_std": {
+          "gaze_angle_x": 0.0715,
+          "gaze_angle_y": 0.0129,
+          "head_pose_x": 0.0169,
+          "head_pose_y": 0.0449,
+          "head_pose_z": 0.0173
+        },
+        "dasd_median_std": {
+          "gaze_angle_x": 0.3111,
+          "gaze_angle_y": 0.1208,
+          "head_pose_x": 0.1619,
+          "head_pose_y": 0.3604,
+          "head_pose_z": 0.1486
+        }
+      }
+    }
+  ],
+  "model_version": "gaze-openface-dasd-v3",
+  "gate": {
+    "z_in": 3.0,
+    "z_out": 6.0
+  },
+  "scope": "technical applicability check only; no ASD/TD ground truth, not clinical evidence",
+  "reason": "failed: quality_valid_sessions>=10, in_domain_fraction>=0.8"
+}

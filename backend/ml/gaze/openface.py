@@ -149,3 +149,26 @@ def extract_from_video(video: Path, duration_s: Optional[float] = None) -> tuple
         info = normalize_video(video, norm, duration_s)
         out = tmp / "of"; out.mkdir()
         return parse_output(run_openface(norm, out)), info
+
+
+def warmup() -> Optional[float]:
+    """Run OpenFace once on a tiny synthetic clip so the first real session does not pay the one-off
+    cold-start cost (container start / emulator code translation).  Returns seconds, or None if unavailable."""
+    if os.environ.get("GAZE_WARMUP", "1") != "1" or not is_available():
+        return None
+    import time
+    import numpy as np
+    import cv2
+    t0 = time.perf_counter()
+    with tempfile.TemporaryDirectory(prefix="ns_warm_") as tmp:
+        tmp = Path(tmp); vid = tmp / "warm.avi"
+        w = cv2.VideoWriter(str(vid), cv2.VideoWriter_fourcc(*"MJPG"), 15, (160, 120))
+        for _ in range(8):
+            w.write(np.full((120, 160, 3), 100, np.uint8))
+        w.release()
+        out = tmp / "of"; out.mkdir()
+        try:
+            run_openface(vid, out, timeout_s=600)
+        except Exception:
+            pass                                   # a blank frame has no face; only the start-up matters
+    return time.perf_counter() - t0

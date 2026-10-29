@@ -1,0 +1,218 @@
+{
+ "openface_available": true,
+ "stages": {
+  "normalize_video_s": {
+   "median": 0.9118676669999992,
+   "all": [
+    1.0297,
+    0.8849,
+    0.9119
+   ]
+  },
+  "openface_s": {
+   "median": 4.782458708,
+   "all": [
+    4.7109,
+    4.7825,
+    5.0019
+   ]
+  },
+  "parse_csv_s": {
+   "median": 0.012985041000000308,
+   "all": [
+    0.0264,
+    0.0128,
+    0.013
+   ]
+  },
+  "preprocess_s": {
+   "median": 0.003251709000000602,
+   "all": [
+    0.0049,
+    0.0024,
+    0.0033
+   ]
+  },
+  "quality_domain_s": {
+   "median": 0.00025233299999882775,
+   "all": [
+    0.0002,
+    0.0003,
+    0.0003
+   ]
+  },
+  "model_inference_s": {
+   "median": 0.0017242089999989219,
+   "all": [
+    0.0066,
+    0.0017,
+    0.0017
+   ]
+  },
+  "explanation_ablation_s": {
+   "median": 0.005551290999999736,
+   "all": [
+    0.0055,
+    0.0056,
+    0.0056
+   ]
+  }
+ },
+ "equivalence": {
+  "v640_30": {
+   "openface_s": 4.94,
+   "frames": 300,
+   "mean_confidence": 0.9543333333333336,
+   "session_std": {
+    "gaze_angle_x": 0.02998112072621702,
+    "gaze_angle_y": 0.02653707595045091,
+    "head_pose_x": 0.04188994628786243,
+    "head_pose_y": 0.032179223110572454,
+    "head_pose_z": 0.08917258547333928
+   },
+   "model_probability": 0.050601876527071,
+   "role": "reference"
+  },
+  "v480_30": {
+   "openface_s": 4.56,
+   "frames": 300,
+   "mean_confidence": 0.9329999999999999,
+   "session_std": {
+    "gaze_angle_x": 0.03140871694291252,
+    "gaze_angle_y": 0.035002678468940056,
+    "head_pose_x": 0.04186146079629806,
+    "head_pose_y": 0.032984558508490004,
+    "head_pose_z": 0.08926518022162953
+   },
+   "model_probability": 0.05608721524477005,
+   "pearson_r_vs_ref": {
+    "gaze_angle_x": 0.9851545060617871,
+    "gaze_angle_y": 0.9489230984856558,
+    "head_pose_x": 0.9984941931335928,
+    "head_pose_y": 0.996176558637021,
+    "head_pose_z": 0.9994697349949097
+   },
+   "mae_rad_vs_ref": {
+    "gaze_angle_x": 0.004434600000000001,
+    "gaze_angle_y": 0.010651400000000002,
+    "head_pose_x": 0.0018463999999999993,
+    "head_pose_y": 0.0023370000000000005,
+    "head_pose_z": 0.0023488000000000024
+   },
+   "mae_over_dasd_median_std": {
+    "gaze_angle_x": 0.015441938642396772,
+    "gaze_angle_y": 0.10358569492030192,
+    "head_pose_x": 0.012966351573957561,
+    "head_pose_y": 0.006723990532271997,
+    "head_pose_z": 0.016983519278096146
+   }
+  },
+  "v320_30": {
+   "openface_s": 4.38,
+   "frames": 300,
+   "mean_confidence": 0.93,
+   "session_std": {
+    "gaze_angle_x": 0.03189190963238169,
+    "gaze_angle_y": 0.03413110604712364,
+    "head_pose_x": 0.0425071982139496,
+    "head_pose_y": 0.033010216600319366,
+    "head_pose_z": 0.08952920138144872
+   },
+   "model_probability": 0.05632032230496407,
+   "pearson_r_vs_ref": {
+    "gaze_angle_x": 0.9802758035321946,
+    "gaze_angle_y": 0.9469448555585448,
+    "head_pose_x": 0.996989566984848,
+    "head_pose_y": 0.994874313815436,
+    "head_pose_z": 0.9991618562865928
+   },
+   "mae_rad_vs_ref": {
+    "gaze_angle_x": 0.005259800000000001,
+    "gaze_angle_y": 0.010041599999999998,
+    "head_pose_x": 0.0026916000000000075,
+    "head_pose_y": 0.0025199999999999997,
+    "head_pose_z": 0.0029385999999999943
+   },
+   "mae_over_dasd_median_std": {
+    "gaze_angle_x": 0.018315408125034623,
+    "gaze_angle_y": 0.09765534240679191,
+    "head_pose_x": 0.018901772040979356,
+    "head_pose_y": 0.0072505161066861055,
+    "head_pose_z": 0.021248198974205205
+   }
+  },
+  "v640_15": {
+   "openface_s": 2.83,
+   "frames": 150,
+   "mean_confidence": 0.9510000000000002,
+   "session_std": {
+    "gaze_angle_x": 0.030377917966839002,
+    "gaze_angle_y": 0.027690388224075147,
+    "head_pose_x": 0.04197144862880003,
+    "head_pose_y": 0.03229474376736871,
+    "head_pose_z": 0.08838918075760177
+   },
+   "model_probability": 0.05052071213722229,
+   "pearson_r_vs_ref": {
+    "gaze_angle_x": 0.9831033884342935,
+    "gaze_angle_y": 0.9694378538284424,
+    "head_pose_x": 0.9958532564835226,
+    "head_pose_y": 0.9897192438511399,
+    "head_pose_z": 0.9983899454107852
+   },
+   "mae_rad_vs_ref": {
+    "gaze_angle_x": 0.004176800000000006,
+    "gaze_angle_y": 0.005056400000000003,
+    "head_pose_x": 0.002853000000000003,
+    "head_pose_y": 0.0037306,
+    "head_pose_z": 0.0039203999999999975
+   },
+   "mae_over_dasd_median_std": {
+    "gaze_angle_x": 0.014544240590259078,
+    "gaze_angle_y": 0.04917388397722505,
+    "head_pose_x": 0.02003520420304429,
+    "head_pose_y": 0.010733641026826663,
+    "head_pose_z": 0.028347321601604233
+   }
+  },
+  "v640_10": {
+   "openface_s": 2.09,
+   "frames": 100,
+   "mean_confidence": 0.9535000000000002,
+   "session_std": {
+    "gaze_angle_x": 0.029802770005487745,
+    "gaze_angle_y": 0.02939762575447208,
+    "head_pose_x": 0.042102820570598345,
+    "head_pose_y": 0.033112443280434625,
+    "head_pose_z": 0.08727309952098643
+   },
+   "model_probability": 0.051360172033309934,
+   "pearson_r_vs_ref": {
+    "gaze_angle_x": 0.9489736964170151,
+    "gaze_angle_y": 0.9609353011258178,
+    "head_pose_x": 0.9868877414717142,
+    "head_pose_y": 0.9551226348523035,
+    "head_pose_z": 0.9935882077242685
+   },
+   "mae_rad_vs_ref": {
+    "gaze_angle_x": 0.007405400000000001,
+    "gaze_angle_y": 0.006022399999999999,
+    "head_pose_x": 0.004997000000000001,
+    "head_pose_y": 0.007458000000000009,
+    "head_pose_z": 0.007572599999999998
+   },
+   "mae_over_dasd_median_std": {
+    "gaze_angle_x": 0.02578670735182543,
+    "gaze_angle_y": 0.05856830924460879,
+    "head_pose_x": 0.03509145299776103,
+    "head_pose_y": 0.02145807504907343,
+    "head_pose_z": 0.05475536362623923
+   }
+  }
+ },
+ "docker_container_startup_s": 0.18530041700000055,
+ "frames": 300,
+ "windows": 5,
+ "per_frame_openface_ms": 15.941529026666666,
+ "python_cold_import_and_model_load_s": null
+}
