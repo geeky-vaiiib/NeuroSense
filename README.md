@@ -17,14 +17,15 @@ Four different things are kept apart everywhere (README, UI, reports):
 | **3 Evaluated on labelled data** | a model has been measured against labelled examples with a leakage-safe protocol |
 | **4 Validated for the intended population** | evidence exists for the children/setting NeuroSense is meant for |
 
-Nothing here reaches level 4. Only gaze reaches level 3 (82 children, DASD) and even there the evidence is weak (see below).
+Nothing here reaches level 4. Level 3 is reached only by the **toddler Q-CHAT-10 cohort model** (252 Polish children, preliminary; see below) and, weakly, by gaze (82 children, DASD).
 
 ## What each component is (and is not)
 
 | Component | L1 | L2 | L3 | L4 | Reality |
 |---|---|---|---|---|---|
-| **Questionnaire score** (child AQ-10 caregiver form; adult AQ-10) | yes | yes | no | no | Server scores the 10 items (`backend/ml/questionnaire_score.py`); result = total vs threshold; risk band is a presentation of the score, not a probability. The threshold is the rule found in the training labels (total ≥ 7), not verified against the instrument manual. Toddler (Q-CHAT-10) submissions are refused: its 5-point scale is not representable. |
-| Questionnaire ML model (XGB/AdaBoost) | yes | yes | no | no | Trained on public datasets whose labels are a threshold on the item total (100% of rows; `backend/data/audit_questionnaire_labels.py`). It models the scoring rule, is shown for transparency / SHAP-LIME only, and does not affect the result. |
+| **Questionnaire score** (child AQ-10 caregiver form; adult AQ-10) | yes | yes | no | no | Server scores the 10 items (`backend/ml/questionnaire_score.py`); result = total vs threshold; risk band is a presentation of the score, not a probability. The threshold is the rule found in the training labels (total ≥ 7), not verified against the instrument manual. Toddler uses its own Q-CHAT-10 scoring (next row); the legacy agree/disagree toddler format is no longer accepted. |
+| **Toddler Q-CHAT-10 questionnaire** (18–24 months) | yes | yes | yes (one Polish cohort) | no | Official deterministic Q-CHAT-10 score (`backend/ml/qchat10.py`: 10 items × 5 options A–E, Q1–9 score on C/D/E, Q10 on A/B/C, "3 or above") decides the result. A separate **preliminary** logistic model (`toddler-qchat10-polish-v1`, trained on the Polish Mendeley cohort, 252 children) is shown beside it: holdout AUC 0.935 (95% CI 0.87–0.98, n = 63) but **not shown to beat the official score** (ΔAUC CI −0.006…0.048), trained on a ~54% ASD case-control sample with a diagnostic label of unverified rigour and recruitment-source confounding. Its output is a calibrated *similarity to that cohort*, not a probability of autism. Report: `backend/reports/toddler_qchat/evaluation_report.md`. |
+| Questionnaire ML model (XGB/AdaBoost, child/adult) | yes | yes | no | no | Trained on public datasets whose labels are a threshold on the item total (100% of rows; `backend/data/audit_questionnaire_labels.py`). It models the scoring rule, is shown for transparency / SHAP-LIME only, and does not affect the result. |
 | **Eye gaze** (OpenFace → BiLSTM `gaze-openface-dasd-v3`; v2 frozen baseline) | yes | yes | weak | no | Experimental. Trained on DASD (82 children). Metadata alone (duration etc.) scores as well on the same folds; the model ignores temporal order; webcam adults sit far below the training movement range (`backend/reports/`). Displayed as experimental output + quality + movement statistics; excluded from the result. |
 | **Speech** | measurement only | yes | no | no | Acoustic features (pitch, loudness, rate) are extracted and shown. **No classifier exists**: the old CNN was a synthetic proxy and the heuristic "flags" were removed. Status `model_unavailable`. |
 | **Facial** | detection only | yes | no | no | Face detection + image quality. No landmarks, no expression model, no ASD classifier. Status `model_unavailable`. |
@@ -67,7 +68,7 @@ Results:  GET /cases/{id} (stored result, owner-scoped) · GET /explain/{id} (sc
   "gazeAnalysisId": "<job id from POST /gaze/analyze>", "gazeSkipped": false,
   "audioBase64": "…", "audioMimeType": "audio/webm", "speechSkipped": false, "facialImageBase64": "…", "facialSkipped": false }
 ```
-Answers must be exactly one of the four options (case-insensitive); anything else, a missing item, age outside 4–11 (child) / 18+ (adult), or `category: "toddler"` is a 422 and nothing is stored.
+Answers must be exactly one of the four options (case-insensitive); anything else, a missing item, or an age outside 4–11 (child) / 18+ (adult) is a 422 and nothing is stored.
 `aq10Score` is still *accepted* for backwards compatibility but **ignored**; a differing value yields a warning. `riskLevel`, `fusionScore`, probabilities, user ids etc. in the body are ignored.
 
 | Response field | Meaning |
@@ -78,6 +79,18 @@ Answers must be exactly one of the four options (case-insensitive); anything els
 | `modelOutput`, `questionnaireProbability` | ML model output (nullable), explicitly not a validated probability |
 | `fusionScore`, `heuristicSignal`, `modalityBreakdown` | **deprecated, always null** |
 | `warnings[]` | e.g. client total mismatch, no ML model loaded |
+
+### Toddler request (`category: "toddler"`)
+```json
+{ "category": "toddler",
+  "demo": { "ageMonths": 20, "gender": "Prefer not to say", "subjectName": "optional" },
+  "answers": { "Q1": "D", "Q2": "C", "Q3": "A", "Q4": "D", "Q5": "A", "Q6": "B", "Q7": "A", "Q8": "A", "Q9": "C", "Q10": "E" },
+  "gazeSkipped": true, "speechSkipped": true, "facialSkipped": true }
+```
+`answers` are the printed option letters A–E of the official Q-CHAT-10 form for the ten items (all ten required; unknown keys, other values, or an age outside **18–24 months** → 422).
+The server derives the 0–4 recode (Q10's option order is reversed) and the official point; client totals/probabilities are ignored.
+`questionnaireBasis` is the official score (total, threshold 3, per-item points, interpretation, source); `modelOutput` is the separate preliminary model block (`available`, `value` = cohort similarity, `decision_threshold`, evaluation summary with CIs, caveats, `validated_for_deployment: false`) or `null` with a warning when the checkpoint is unavailable — the official score is then unaffected.
+`riskLevel` for toddlers is only an internal flag (`High` = score ≥ 3); the UI shows "At or above / Below threshold", not risk tiers. Item wording, option labels and the frontend config are generated from `backend/ml/qchat10.py` (`backend/data/export_qchat10_config.py` → `src/data/qchat10.config.json`; a test fails if stale).
 
 ## Running
 
@@ -100,6 +113,14 @@ python3 -m backend.data.train_model --category child     # prints a leakage warn
 python3 -m backend.data.audit_dasd | train_gaze_openface_dasd | compare_gaze_models | train_gaze_v3 | audit_gaze_leakage | benchmark_gaze_runtime
 python3 -m backend.data.train_speech_asd --manifest corpus.csv --dataset-name … --license …   # refuses without a participant-labelled corpus
 ```
+
+### Toddler training and reports
+```bash
+PYTHONPATH=backend python3 backend/data/audit_qchat_polish.py     # dataset audit + mapping check against the dataset's own value labels
+PYTHONPATH=backend python3 backend/data/train_toddler_qchat.py    # protocol, checkpoint, predictions
+PYTHONPATH=backend python3 backend/data/write_toddler_report.py   # evaluation_report.md from the artefacts
+```
+Dataset licence/attribution: `backend/data/DATASET_ATTRIBUTION.md` (CC BY 4.0; the Q-CHAT-10 wording itself is © ARC and **not yet cleared** for use beyond research). Plan for gaze/speech/facial toddler data: `backend/data/TODDLER_MODALITY_DATA_REQUIREMENTS.md`.
 
 ## Verification
 ```bash
