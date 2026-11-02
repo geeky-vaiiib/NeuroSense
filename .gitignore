@@ -46,3 +46,6 @@ Eye-Tracking Dataset/
 # DASD dataset may not be redistributed (see its README)
 DASD-main/
 backend/data/webcam_validation/
+
+test-results/
+playwright-report/

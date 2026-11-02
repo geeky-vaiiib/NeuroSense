@@ -28,6 +28,7 @@ export function routeForAge(value, unit) {
   if (months >= AGE_MIN && months <= AGE_MAX) return { track: 'toddler', path: '/app/screening/toddler' };
   const years = months / 12;
   if (years >= 4 && years <= 11) return { track: 'child', path: '/app/screening/child' };
+  if (years >= 18 && years <= 120) return { track: 'adult', path: '/app/screening/adult' };
   if (months < AGE_MIN) return { track: null, message: `We don’t have a questionnaire for children under ${AGE_MIN} months yet.` };
-  return { track: null, message: `We don’t have a questionnaire for this age yet. Toddler (${AGE_MIN}–${AGE_MAX} months) and child (4–11 years) screenings are available.` };
+  return { track: null, message: `We don’t have a questionnaire for this age yet. Toddler (${AGE_MIN}–${AGE_MAX} months) child (4–11 years), and adult (18+ years) screenings are available.` };
 }

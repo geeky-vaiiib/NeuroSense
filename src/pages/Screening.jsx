@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import CategoryBadge from '../components/CategoryBadge';
 import ProgressIndicator from '../components/ui/ProgressIndicator';
 import QuestionFlow from '../components/screening/QuestionFlow';
@@ -53,12 +53,14 @@ function FormField({ label, children }) {
 
 export default function Screening() {
   const navigate = useNavigate();
+  const { category: routeCategory } = useParams();
   const { submit, loading, error } = useScreening();
 
   const [step, setStep] = useState(1);
   const [consents, setConsents] = useState(BASE_CONSENTS);
-  const [demo, setDemo] = useState(BASE_DEMO);
+  const [demo, setDemo] = useState(() => ({ ...BASE_DEMO, respondentRelationship: routeCategory === 'adult' ? 'Self' : BASE_DEMO.respondentRelationship }));
   const [answers, setAnswers] = useState({});
+  const [editingQuestion, setEditingQuestion] = useState(null);
   const [gazeSession, setGazeSession] = useState(null);
   const [gazeAnalysis, setGazeAnalysis] = useState(null);
   const [gazeSkipped, setGazeSkipped] = useState(false);
@@ -70,7 +72,7 @@ export default function Screening() {
   const [facialSkipped, setFacialSkipped] = useState(false);
   const [validationMessage, setValidationMessage] = useState('');
 
-  const category = 'child';
+  const category = routeCategory === 'adult' ? 'adult' : 'child';
   const content = getCategoryContent(category);
   const questions = QUESTION_BANK[category];
   const answeredCount = useMemo(() => questions.filter((q) => answers[q.id]).length, [answers, questions]);
@@ -155,7 +157,9 @@ export default function Screening() {
     }
     if (step === 3) {
       if (!questionnaireReady) { setValidationMessage('Please answer all ten questionnaire items before continuing.'); return; }
-      setValidationMessage(''); setStep(hasGaze ? GAZE_STEP : REVIEW_STEP); return;
+      setValidationMessage('');
+      if (editingQuestion !== null) { setEditingQuestion(null); setStep(REVIEW_STEP); return; }
+      setStep(hasGaze ? GAZE_STEP : REVIEW_STEP); return;
     }
 
     if (step === REVIEW_STEP) {
@@ -163,7 +167,7 @@ export default function Screening() {
         let audioBase64 = null;
         if (audioBlob) {
           if (audioBlob.size > 2_000_000) {
-            setSpeechSkipped(true); setAudioBlob(null);
+            setValidationMessage('Speech recording is too large. Go back to retry or explicitly skip it.'); return;
           } else {
             const arrayBuffer = await audioBlob.arrayBuffer();
             const uint8 = new Uint8Array(arrayBuffer);
@@ -197,6 +201,7 @@ export default function Screening() {
   }
 
   function handleBack() {
+    if (step === 3 && editingQuestion !== null) { setEditingQuestion(null); setStep(REVIEW_STEP); return; }
     if (step <= 1) {
       setStep(0); navigate('/app/screening', { replace: true }); return;
     }
@@ -263,7 +268,7 @@ export default function Screening() {
               <section className="panel">
                 <h2 style={{ marginTop: 0, color: 'var(--ns-n900)', fontSize: 'var(--ts-h3)' }}>Demographics and context</h2>
                 <p style={{ color: 'var(--ns-n600)', lineHeight: 'var(--lh-body)', marginBottom: 'var(--sp-5)' }}>
-                  These details stay attached to the case record and influence the AI's explanation.
+                  These details are saved with the case and may be used by the supplementary model. Only questionnaire item points determine the result.
                 </p>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 'var(--sp-4)' }}>
                   <FormField label={content.demographics.subjectNameLabel}>
@@ -282,7 +287,7 @@ export default function Screening() {
                     />
                   </FormField>
                   <FormField label={content.demographics.ageLabel}>
-                    <input className="field-input" type="number" min='4' max='11' value={demo.age} onChange={(e) => updateDemo('age', e.target.value)} />
+                    <input className="field-input" type="number" min={category === 'adult' ? 18 : 4} max={category === 'adult' ? 120 : 11} value={demo.age} onChange={(e) => updateDemo('age', e.target.value)} />
                   </FormField>
                   <FormField label={content.demographics.genderLabel}>
                     <select className="field-select" value={demo.gender} onChange={(e) => updateDemo('gender', e.target.value)}>
@@ -313,7 +318,7 @@ export default function Screening() {
             {step === 3 && (
               <section className="ns-card" style={{ padding: 'clamp(20px, 4vw, 36px)' }}>
                 <p style={{ color: 'var(--ns-n600)', lineHeight: 1.6, marginBottom: 24, fontSize: '0.92rem', maxWidth: 'none' }}>{content.questionnaireDescription}</p>
-                <QuestionFlow questions={questions} answers={answers} onAnswer={updateAnswer} options={ANSWER_OPTIONS} />
+                <QuestionFlow key={editingQuestion ?? 'new'} startAt={editingQuestion ?? undefined} questions={questions} answers={answers} onAnswer={updateAnswer} options={ANSWER_OPTIONS} />
               </section>
             )}
 
@@ -348,6 +353,13 @@ export default function Screening() {
                 <h2 style={{ marginTop: 0, color: 'var(--ns-n900)', fontSize: 'var(--ts-h3)' }}>{content.reviewTitle}</h2>
                 <p style={{ color: 'var(--ns-n600)', lineHeight: 'var(--lh-body)', marginBottom: 'var(--sp-5)' }}>{content.reviewDescription}</p>
                 
+                <ol aria-label="Answers to review" style={{ paddingLeft: 20 }}>
+                  {questions.map((q, index) => <li key={q.id} style={{ marginBottom: 14 }}>
+                    <p>{q.prompt}</p><strong>{answers[q.id]}</strong>{' '}
+                    <button type="button" className="btn btn-ghost btn-sm" aria-label={`Change answer to question ${index + 1}`}
+                      onClick={() => { setEditingQuestion(index); setStep(3); }}>Change</button>
+                  </li>)}
+                </ol>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 'var(--sp-3)' }}>
                   {summaryRows.map(([label, value]) => {
                     const isMultimodal = ['Eye Gaze', 'Speech Sample', 'Facial Check'].includes(label);
@@ -386,12 +398,12 @@ export default function Screening() {
             )}
 
             {(validationMessage || error) && (
-              <div className="panel" style={{ borderColor: 'var(--ns-risk-high-border)', backgroundColor: 'var(--ns-risk-high-bg)', color: 'var(--ns-risk-high)', fontWeight: 'var(--fw-medium)' }}>
+              <div role="alert" className="panel" style={{ borderColor: 'var(--ns-risk-high-border)', backgroundColor: 'var(--ns-risk-high-bg)', color: 'var(--ns-risk-high)', fontWeight: 'var(--fw-medium)' }}>
                 {validationMessage || error}
               </div>
             )}
 
-            {!(step === REVIEW_STEP && loading) && (
+            {(step <= 3 || step === REVIEW_STEP) && !(step === REVIEW_STEP && loading) && (
             <div style={{ display: 'flex', justifyContent: 'space-between', gap: 'var(--sp-3)', flexWrap: 'wrap', alignItems: 'center', marginTop: 'var(--sp-4)' }}>
               <button type="button" onClick={handleBack} className="btn btn-secondary">
                 {step === 1 ? 'Change track' : 'Back'}

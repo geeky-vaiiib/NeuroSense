@@ -90,10 +90,11 @@ def normalize_case_record(record: dict[str, Any]) -> dict[str, Any]:
         default=demo_raw.get("familyAsd") or demo_raw.get("family_asd"),
     )
 
-    risk_level = str(_first(record, "risk_level", "riskLevel", default="Low"))
+    risk_level = _first(record, "risk_level", "riskLevel", default=None)
     _rs = _first(record, "risk_score", "riskScore", default=None)
     risk_score = None if _rs is None else float(_rs)          # legacy cases only; new cases carry the screening score
-    aq10_score = int(_first(record, "aq10_score", "aq10Score", default=0) or 0)
+    _aq = _first(record, "aq10_score", "aq10Score", default=None)
+    aq10_score = int(_aq) if _aq is not None else None
 
     created_at = str(_first(record, "created_at", "createdAt", default=""))
     updated_at = str(_first(record, "updated_at", "updatedAt", default=created_at))
@@ -102,7 +103,7 @@ def normalize_case_record(record: dict[str, Any]) -> dict[str, Any]:
     )
     referral_date = _iso_date(_first(record, "referral_date", "referralDate", default=""))
 
-    model_used = str(_first(record, "model_used", "modelUsed", default="score_rule" if record.get("scoring_version") else f"{category}_MockProxy"))
+    model_used = str(_first(record, "model_used", "modelUsed", default="score_rule" if record.get("scoring_version") else "unavailable"))
     if "is_mock" in record:
         is_mock = bool(record["is_mock"])
     elif "isMock" in record:
@@ -110,7 +111,7 @@ def normalize_case_record(record: dict[str, Any]) -> dict[str, Any]:
     else:
         is_mock = "Mock" in model_used
     data_source = str(
-        _first(record, "data_source", "dataSource", default="mock" if is_mock else "model")
+        _first(record, "data_source", "dataSource", default="mock" if is_mock else "unknown")
     )
 
     screening_tool = str(
@@ -132,13 +133,13 @@ def normalize_case_record(record: dict[str, Any]) -> dict[str, Any]:
     )
     tags = list(_first(record, "tags", default=[]) or [])
     if not tags:
-        tags = build_case_tags(category, risk_level, is_mock)
+        tags = build_case_tags(category, risk_level or "Unknown", is_mock)
 
     interpretation = str(
-        _first(record, "interpretation", default=build_interpretation(category, risk_level))
+        _first(record, "interpretation", default=build_interpretation(category, risk_level) if risk_level is not None else "Stored interpretation unavailable.")
     )
     diagnosis = str(
-        _first(record, "diagnosis", default=build_diagnosis_summary(category, risk_level))
+        _first(record, "diagnosis", default=build_diagnosis_summary(category, risk_level) if risk_level is not None else "Stored screening outcome unavailable.")
     )
     notes = str(_first(record, "notes", default=build_initial_notes(category, age)))
     clinician = str(_first(record, "clinician", default="Awaiting clinician assignment"))
@@ -217,6 +218,7 @@ def normalize_case_record(record: dict[str, Any]) -> dict[str, Any]:
         "jaundice": jaundice,
         "family_asd": family_asd,
         "risk_level": risk_level,
+        "result_status": "available" if risk_level is not None else "unavailable",
         "risk_score": risk_score,
         "questionnaire_probability": questionnaire_probability,
         "questionnaire_basis": questionnaire_basis,
@@ -343,6 +345,7 @@ def case_summary(record: dict[str, Any]) -> dict[str, Any]:
         "age": normalized["age"],
         "gender": normalized["gender"],
         "risk_level": normalized["risk_level"],
+        "result_status": normalized["result_status"],
         "risk_score": normalized["risk_score"],
         "screening_date": normalized["screening_date"],
         "status": normalized["status"],
@@ -462,11 +465,8 @@ def dashboard_summary(user_id: str, category: str | None = None) -> dict[str, An
 
     _scores = [r["risk_score"] for r in records if r["risk_score"] is not None]      # legacy model outputs only
     avg_risk = round(sum(_scores) / len(_scores), 2) if _scores else None
-    avg_aq10 = (
-        round(sum(r["aq10_score"] for r in records) / total_cases, 1)
-        if total_cases
-        else 0.0
-    )
+    available_totals = [r["aq10_score"] for r in records if r["aq10_score"] is not None]
+    avg_aq10 = round(sum(available_totals) / len(available_totals), 1) if available_totals else None
 
     return {
         "category_filter": category or "all",

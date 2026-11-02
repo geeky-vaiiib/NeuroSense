@@ -2,7 +2,7 @@
 
 import pytest
 
-from backend.ml.questionnaire_score import (AnswerError, LABEL_RULE_THRESHOLD, TRAIT_AGREE_IDS, normalise_answer,
+from backend.ml.questionnaire_score import (AnswerError, INSTRUMENT_THRESHOLD, TRAIT_AGREE_IDS, normalise_answer,
                                             risk_band, score_items, score_questionnaire)
 from backend.tests.conftest import CSRF, answers_scoring, screening_body
 
@@ -54,9 +54,9 @@ def test_answers_are_case_and_space_insensitive_but_canonical():
 @pytest.mark.parametrize("pts", range(0, 11))
 def test_total_and_band_follow_the_threshold(category, pts):
     s = score_questionnaire(category, answers_scoring(pts, category))
-    thr = LABEL_RULE_THRESHOLD[category]
+    thr = INSTRUMENT_THRESHOLD[category]
     assert s["total_score"] == pts and s["threshold"] == thr and s["meets_threshold"] == (pts >= thr)
-    assert s["risk_band"] == risk_band(category, pts) == ("High" if pts >= thr else "Moderate" if pts == thr - 1 else "Low")
+    assert s["risk_band"] == risk_band(category, pts) == ("High" if pts >= thr else "Low")
     assert sum(i["points"] for i in s["items"]) == pts and s["validated_against_clinical_labels"] is False
 
 
@@ -72,7 +72,7 @@ def test_client_total_and_tampered_fields_are_ignored(app_client):
     d = r.json()
     assert d["aq10Score"] == 2 and d["questionnaireBasis"]["total_score"] == 2
     assert d["riskLevel"] == "Low" and d["result"]["risk_level"] == "Low" and d["result"]["total_score"] == 2
-    assert d["fusionScore"] is None and d["result"]["composite_probability"] is None and d["scoringVersion"] == 2
+    assert d["fusionScore"] is None and d["result"]["composite_probability"] is None and d["scoringVersion"] == 3
     assert any("differs from the server-computed total" in w for w in d["warnings"])
     assert d["result"]["modalities_in_result"] == ["questionnaire"]
 
@@ -83,7 +83,7 @@ def test_response_case_and_list_use_the_same_canonical_score(app_client):
     case = c.get(f"/cases/{d['caseId']}").json()
     assert d["aq10Score"] == case["aq10Score"] == case["questionnaire_basis"]["total_score"] == case["screening_result"]["total_score"] == 7
     assert d["riskLevel"] == case["riskLevel"] == case["screening_result"]["risk_level"] == "High"
-    assert case["scoring_version"] == 2 and case["fusion_score"] is None and case["riskScore"] is None
+    assert case["scoring_version"] == 3 and case["fusion_score"] is None and case["riskScore"] is None
     listed = next(x for x in c.get("/cases/").json() if x["id"] == d["caseId"])
     assert listed["riskLevel"] == "High" and listed["riskScore"] is None
 

@@ -98,7 +98,7 @@ describe('login / register / logout', () => {
     expect(authApi.register.mock.calls[0][0]).not.toHaveProperty('role');
   });
 
-  it('logout calls the server and clears the user, even if the server call fails', async () => {
+  it('logout reports a network failure without claiming server revocation', async () => {
     authApi.login.mockResolvedValue({ user: USER });
     authApi.logout.mockRejectedValue(new Error('offline'));
     mount();
@@ -106,9 +106,10 @@ describe('login / register / logout', () => {
     await userEvent.click(screen.getByText('login'));
     await waitFor(() => expect(screen.getByTestId('state')).toHaveTextContent('in'));
     await userEvent.click(screen.getByText('logout'));
-    await waitFor(() => expect(screen.getByTestId('state')).toHaveTextContent('out'));
+    await waitFor(() => expect(screen.getByTestId('err')).toHaveTextContent('Sign-out could not be confirmed'));
+    expect(screen.getByTestId('state')).toHaveTextContent('in');
     expect(authApi.logout).toHaveBeenCalledTimes(1);
-    expect(screen.getByTestId('name')).toHaveTextContent('');
+    expect(screen.getByTestId('name')).toHaveTextContent(USER.name);
   });
 });
 

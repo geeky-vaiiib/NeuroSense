@@ -78,7 +78,7 @@ const NAV_ITEMS = [
 ];
 
 export default function Sidebar({ isOpen, onClose }) {
-  const { user, logout } = useAuth();
+  const { user, logout, error: authError } = useAuth();
   const { isOnline, isChecking } = useBackendStatus();
   const navigate = useNavigate();
   const [caseCount, setCaseCount] = useState(null);
@@ -88,7 +88,8 @@ export default function Sidebar({ isOpen, onClose }) {
   }, []);
 
   const handleLogout = async () => {
-    await logout();
+    const confirmed = await logout();
+    if (confirmed === false) return;
     navigate('/', { replace: true });
   };
 
@@ -195,6 +196,7 @@ export default function Sidebar({ isOpen, onClose }) {
         </div>
 
         {/* Logout button */}
+        {authError && <p role="alert">{authError}</p>}
         <button
           id="sidebar-logout-btn"
           onClick={handleLogout}

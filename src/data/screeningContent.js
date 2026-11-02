@@ -1,4 +1,5 @@
-export const CATEGORY_ORDER = ['child'];
+import aq10 from "./aq10.config.json";
+export const CATEGORY_ORDER = ['child', 'adult'];
 
 export const ANSWER_OPTIONS = [
   'Definitely disagree',
@@ -34,7 +35,7 @@ export const CATEGORY_CONTENT = {
     accentSoft: 'rgba(230, 126, 34, 0.10)',
     accentBorder: '#F8DAB8',
     entryTitle: 'Child caregiver screening',
-    entryDescription: 'For a parent or guardian completing an ASD screening for a child under 18.',
+    entryDescription: 'For a parent or guardian completing an ASD screening for a child aged 4 to 11.',
     introTitle: 'Caregiver-guided child intake',
     introDescription:
       'This track assumes a caregiver is answering on behalf of a child and needs child-context interpretation.',
@@ -44,7 +45,7 @@ export const CATEGORY_CONTENT = {
     consentItems: [
       'I am the parent, guardian, or primary caregiver for the child being screened.',
       'I understand this child screening is a triage tool and not a diagnosis.',
-      'I understand my responses will be processed by the child screening model.',
+      'I understand my answers determine a server-computed questionnaire score; any model output is supplementary.',
       'I have read the privacy notice and understand how the child’s data is used.',
     ],
     demographics: {
@@ -63,7 +64,7 @@ export const CATEGORY_CONTENT = {
       'Answer each item based on what you regularly observe in the child’s communication, play, and daily routines.',
     reviewTitle: 'Review your child screening',
     reviewDescription:
-      'Confirm your details and answers before we run the child model pipeline.',
+      'Confirm your details and answers before the server scores the questionnaire.',
     resultsTitle: 'Child Screening Result',
     riskCopy: {
       High:
@@ -83,20 +84,7 @@ export const CATEGORY_CONTENT = {
   }
 };
 
-export const QUESTION_BANK = {
-  child: [
-    { id: 'A1', prompt: 'S/he often notices small sounds when others do not.', featureLabel: 'Child notices small sounds' },
-    { id: 'A2', prompt: 'S/he usually concentrates more on the whole picture, rather than the small details.', featureLabel: 'Child focuses on whole picture' },
-    { id: 'A3', prompt: 'In a social group, s/he can easily keep track of several different people\'s conversations.', featureLabel: 'Child tracks multiple conversations' },
-    { id: 'A4', prompt: 'S/he finds it easy to go back and forth between different activities.', featureLabel: 'Child switches activities easily' },
-    { id: 'A5', prompt: 'S/he doesn\'t know how to keep a conversation going with his/her peers.', featureLabel: 'Child struggles keeping conversation' },
-    { id: 'A6', prompt: 'S/he is good at social chit-chat.', featureLabel: 'Child good at social chit-chat' },
-    { id: 'A7', prompt: 'When s/he is read a story, s/he finds it difficult to work out the character\'s intentions or feelings.', featureLabel: 'Child struggles interpreting characters' },
-    { id: 'A8', prompt: 'When s/he was in preschool, s/he used to enjoy playing games involving pretending with other children.', featureLabel: 'Child enjoyed pretend play' },
-    { id: 'A9', prompt: 'S/he finds it easy to work out what someone is thinking or feeling just by looking at their face.', featureLabel: 'Child reads facial cues' },
-    { id: 'A10', prompt: 'S/he finds it hard to make new friends.', featureLabel: 'Child struggles making friends' },
-  ]
-};
+export const QUESTION_BANK = Object.fromEntries(Object.entries(aq10).map(([category, config]) => [category, config.questions]));
 
 // Scoring is done by the server (backend/ml/questionnaire_score.py); the browser never computes a total or a risk level.
 
@@ -108,12 +96,24 @@ export function getCategoryContent(category) {
   return CATEGORY_CONTENT[category] ?? CATEGORY_CONTENT.child;
 }
 
-export function deriveCategoryFromAge() {
-  return 'child';
+export function deriveCategoryFromAge(age) {
+  return age >= 18 ? 'adult' : age >= 4 && age <= 11 ? 'child' : null;
 }
 
 export function validateCategoryAge(category, age) {
-  if (age < 4 || age > 11)
-    return { valid: false, message: 'Child screening is intended for individuals aged 4 to 11 years.' };
+  const cfg = aq10[category];
+  if (!cfg || !Number.isInteger(age) || age < cfg.ageMin || age > cfg.ageMax)
+    return { valid: false, message: category === 'adult' ? 'Adult screening requires a whole-number age from 18 to 120 years.' : 'Child screening is intended for individuals aged 4 to 11 years.' };
   return { valid: true, message: '' };
 }
+
+CATEGORY_CONTENT.adult = {
+  ...CATEGORY_CONTENT.child,
+  label: 'Adult', shortLabel: 'Adult Track', screeningTool: 'Adult AQ-10', trackSummary: 'Self-report',
+  introTitle: 'Adult self-report', introDescription: 'AQ-10 for adults aged 18 or older without a learning disability. Research prototype; not a diagnosis.',
+  consentTitle: 'Adult consent and privacy', consentDescription: 'Review before completing your questionnaire.',
+  consentItems: ['I am completing this questionnaire about myself.', 'I understand screening is not a diagnosis.', 'I understand the server computes the score and optional models do not determine the result.', 'I understand my answers and derived measurements are saved to my account.'],
+  demographics: { ...CATEGORY_CONTENT.child.demographics, subjectNameLabel: 'Your name', respondentNameLabel: 'Respondent name', respondentRelationshipValue: 'Self', respondentRelationshipLabel: 'Respondent relationship', ageLabel: 'Your age', genderLabel: 'Your gender', ethnicityLabel: 'Your ethnicity' },
+  questionnaireTitle: 'Adult AQ-10 questionnaire', questionnaireDescription: 'Choose one answer per item about yourself.',
+  reviewTitle: 'Review your screening', reviewDescription: 'Check the answers before sending them to the server.',
+};

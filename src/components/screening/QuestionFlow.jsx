@@ -4,9 +4,9 @@
  */
 import { useEffect, useRef, useState } from 'react';
 
-export default function QuestionFlow({ questions, answers, onAnswer, options }) {
+export default function QuestionFlow({ questions, answers, onAnswer, options, startAt }) {
   const firstOpen = questions.findIndex((q) => !answers[q.id]);
-  const [index, setIndex] = useState(firstOpen === -1 ? 0 : firstOpen);
+  const [index, setIndex] = useState(startAt ?? (firstOpen === -1 ? 0 : firstOpen));
   const headingRef = useRef(null);
   const advanceTimer = useRef(null);
   const q = questions[index];
@@ -14,6 +14,8 @@ export default function QuestionFlow({ questions, answers, onAnswer, options }) 
 
   useEffect(() => () => clearTimeout(advanceTimer.current), []);
   useEffect(() => { headingRef.current?.focus({ preventScroll: true }); }, [index]);
+
+  const goTo = (next) => { clearTimeout(advanceTimer.current); setIndex(next); };
 
   const choose = (opt) => {
     onAnswer(q.id, opt);
@@ -40,7 +42,7 @@ export default function QuestionFlow({ questions, answers, onAnswer, options }) 
         style={{ display: 'flex', gap: 4, marginBottom: 28 }}>
         {questions.map((x, i) => (
           <button
-            key={x.id} type="button" onClick={() => setIndex(i)} aria-label={`Go to question ${i + 1}${answers[x.id] ? ' (answered)' : ''}`} aria-current={i === index ? 'step' : undefined}
+            key={x.id} type="button" onClick={() => goTo(i)} aria-label={`Go to question ${i + 1}${answers[x.id] ? ' (answered)' : ''}`} aria-current={i === index ? 'step' : undefined}
             style={{
               flex: 1, height: 6, borderRadius: 6, transition: 'background var(--ease-base)',
               background: answers[x.id] ? 'var(--ns-instrument)' : 'var(--ns-n200)',
@@ -73,8 +75,8 @@ export default function QuestionFlow({ questions, answers, onAnswer, options }) 
       </div>
 
       <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 26 }}>
-        <button type="button" className="btn btn-ghost btn-sm" disabled={index === 0} onClick={() => setIndex((i) => i - 1)}>← Previous</button>
-        <button type="button" className="btn btn-ghost btn-sm" disabled={index === questions.length - 1} onClick={() => setIndex((i) => i + 1)}>Next →</button>
+        <button type="button" className="btn btn-ghost btn-sm" disabled={index === 0} onClick={() => goTo(index - 1)}>← Previous</button>
+        <button type="button" className="btn btn-ghost btn-sm" disabled={index === questions.length - 1} onClick={() => goTo(index + 1)}>Next →</button>
       </div>
 
       <style>{`

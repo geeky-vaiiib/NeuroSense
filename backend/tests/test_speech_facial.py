@@ -104,3 +104,9 @@ def test_facial_module_has_no_classifier_or_emotion_model():
     from backend.ml import modality_status as MS
     st = MS.facial_state({"status": "model_unavailable", "features": {"face_detected": True}}, False)
     assert st["status"] == "model_unavailable" and st["output"] is None and st["in_result"] is False
+
+
+def test_unvoiced_pitch_is_null_not_zero():
+    features = SF.extract_features(np.zeros(22050 * 5), 22050)
+    assert features['pitch_mean'] is None and features['pitch_std'] is None
+    assert features['pitch_status'] == 'unavailable_no_voiced_frames'

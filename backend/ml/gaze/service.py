@@ -19,7 +19,6 @@ from . import preprocess as P
 from . import quality as Q
 
 WEBCAM_VALIDATION_PATH = M.MODELS_DIR / "gaze_openface_webcam_validation.json"
-MIN_FUSION_CV_AUC = 0.70
 
 
 class GazeService:
@@ -64,15 +63,7 @@ class GazeService:
             return {"passed": False, "reason": "no webcam domain validation has been run"}
 
     def fusion_eligibility(self) -> tuple[bool, str]:
-        if not self.available:
-            return False, "model unavailable"
-        auc = self.meta.get("metrics", {}).get("cv_summary", {}).get("roc_auc", {}).get("mean")
-        if auc is None or auc < MIN_FUSION_CV_AUC:
-            return False, f"participant-level CV AUC below {MIN_FUSION_CV_AUC}"
-        v = self.webcam_validation()
-        if not v.get("passed"):
-            return False, "webcam/OpenFace domain validation has not passed: " + str(v.get("reason", ""))
-        return True, "ok"
+        return False, "experimental gaze is excluded from the screening result; domain checks do not establish clinical validity"
 
     def status(self) -> dict:
         ok, why = self.fusion_eligibility()

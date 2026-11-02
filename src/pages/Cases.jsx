@@ -237,7 +237,7 @@ export default function Cases() {
             {RISK_FILTERS.map((filter) => (
               <FilterChip
                 key={filter}
-                label={filter === 'all' ? 'All risk levels' : filter}
+                label={filter === 'all' ? 'All results' : filter === 'High' ? 'At or above threshold' : filter === 'Low' ? 'Below threshold' : 'Historical intermediate band'}
                 active={riskFilter === filter}
                 onClick={() => setRiskFilter(filter)}
               />

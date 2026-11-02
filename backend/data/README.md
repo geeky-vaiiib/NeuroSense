@@ -1,5 +1,7 @@
 # NeuroSense — Dataset Setup
 
+> These legacy CSV class labels are score-derived training targets, not independent clinical diagnoses or proof of official instrument cutoffs. Current instrument scoring and evidence limitations: `../../docs/SCORING_AND_EVIDENCE.md`. Do not run training as part of setup.
+
 ## Required Files
 
 Place these CSV files in the `backend/data/` directory:

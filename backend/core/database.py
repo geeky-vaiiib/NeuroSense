@@ -138,6 +138,8 @@ def ensure_indexes_on(db: Database) -> None:
     col.create_index([("status", ASCENDING)], name="idx_status")
     # Ownership: every list/detail query is scoped by user_id
     col.create_index([("user_id", ASCENDING), ("screening_date", ASCENDING)], name="idx_case_user_id")
+    col.create_index([("user_id", 1), ("idempotency_key", 1)], unique=True,
+                     partialFilterExpression={"idempotency_key": {"$type": "string"}}, name="idx_case_submission_unique")
     users = db["users"]
     users.create_index([("email", ASCENDING)], unique=True, name="idx_user_email_unique")
     users.create_index([("user_id", ASCENDING)], unique=True, name="idx_user_id_unique")

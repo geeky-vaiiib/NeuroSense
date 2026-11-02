@@ -1,0 +1,13 @@
+{
+  "selected": "BiLSTM / gaze-only",
+  "dev_auc_recomputed_repeat_mean": 0.8955108359133128,
+  "deployed_feature_names": [
+    "gaze_angle_x",
+    "gaze_angle_y"
+  ],
+  "scope": "saved metric arithmetic and split inventory only; no training reproduction",
+  "n_discovered": 82,
+  "dev": 55,
+  "test": 27,
+  "participant_id_overlap": 0
+}

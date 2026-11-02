@@ -1,7 +1,7 @@
 fastapi==0.115.0
 uvicorn[standard]==0.30.0
-scikit-learn==1.5.2
-xgboost==2.1.1
+scikit-learn==1.6.1
+xgboost==2.1.4
 pandas==2.2.3
 numpy==1.26.4
 shap==0.46.0
@@ -10,19 +10,23 @@ imbalanced-learn==0.12.4
 pydantic==2.9.2
 joblib==1.4.2
 python-multipart==0.0.12
-librosa>=0.10.0
-soundfile>=0.12.0
-scipy>=1.11.0
+librosa==0.11.0
+soundfile==0.13.1
+scipy==1.15.3
 # ── OpenCV (headless — no GUI/display deps) ────────────────────────────────
-opencv-python-headless>=4.8.0
+opencv-python-headless==4.11.0.86
 # ── MongoDB Atlas ──────────────────────────────────────────────────────────────
 pymongo[srv]==4.10.1
 python-dotenv==1.0.1
 # ── Authentication ─────────────────────────────────────────────────────────────
-PyJWT>=2.8.0
-argon2-cffi>=23.1.0
+PyJWT==2.10.1
+argon2-cffi==25.1.0
 # ── Tests only ─────────────────────────────────────────────────────────────────
-mongomock>=4.1.2
-pytest>=8.0
-# ── Deep-learning models (gaze BiLSTM, speech CNN, facial CNN) ────────────────
-torch>=2.2.0
+mongomock==4.3.0
+pytest==8.4.2
+# ── Experimental gaze BiLSTM only (no speech/facial CNN loaded) ────────────────
+torch==2.6.0
+
+# TestClient and read-only dataset audit dependencies
+httpx==0.28.1
+pyreadstat==1.3.1

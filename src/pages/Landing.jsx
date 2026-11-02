@@ -19,7 +19,7 @@ const ico = { width: 22, height: 22, viewBox: '0 0 24 24', fill: 'none', stroke:
 const CAPABILITIES = [
   {
     title: 'Explainable by design',
-    desc: 'Every result comes with the factors that pushed it up or down (SHAP and LIME), written for a clinician and a caregiver alike.',
+    desc: 'Item points explain the questionnaire score. Optional SHAP/LIME explain the supplementary model only when available.',
     icon: <svg {...ico}><path d="M4 19V9M10 19V5M16 19v-7M22 19H2" /></svg>,
   },
   {
@@ -34,7 +34,7 @@ const CAPABILITIES = [
   },
   {
     title: 'Private by default',
-    desc: 'Video is never recorded or stored. Only derived gaze coordinates and features are analysed, and each case belongs to the account that created it.',
+    desc: 'Optional gaze records and uploads a short video for server analysis. Temporary video is deleted after processing; derived measurements and cases belong to your account.',
     icon: <svg {...ico}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /><path d="M9 12l2 2 4-4" /></svg>,
   },
 ];
@@ -104,11 +104,11 @@ export default function Landing() {
         <div className="ns-container ns-about">
           <SectionHeader
             tone="dark" eyebrow="About" title="Built to support clinicians, not replace them"
-            description="NeuroSense estimates screening risk from questionnaire, gaze and speech signals. It does not diagnose autism or any other condition. Results are indicators for a qualified professional to interpret alongside clinical judgement."
+            description="Only the server-computed questionnaire score determines the screening result. Optional gaze is experimental; speech and facial analysis provide measurements. This research prototype does not diagnose autism."
           />
           <ul className="ns-about__list">
             {[
-              ['Research-grade models', 'Signal models are trained on published datasets and shown with their validation status; models that have not met their validation threshold are displayed but do not change the final indicator.'],
+              ['Research limitations', 'Supplementary models have limited dataset evidence and no clinical validation for this application. They never change the questionnaire result.'],
               ['Transparent quality', 'Calibration quality, usable-sample counts and model versions are reported next to every signal.'],
               ['One source of truth', 'The final indicator is computed on the server. What you see on screen is what was stored with the case.'],
             ].map(([t, d]) => (

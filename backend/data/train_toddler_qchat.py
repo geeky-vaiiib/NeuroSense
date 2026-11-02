@@ -8,7 +8,8 @@ total.  Predictors: the ten Q-CHAT-10 items (recoded 0-4, higher = more atypical
 [config C - never deployable].  `Sum_QCHAT`, ids, the recruitment-source proxy and `sibling_withASD` are never predictors.
 
 PROTOCOL (declared before the first run)
-  * Prior influence: no earlier report/artifact in this repository used this dataset (verified by grep), so a holdout is untouched.
+  * Historical limitation: the holdout was inspected before development-only recalibration was added and the protocol rerun.
+    It is not an untouched confirmatory test; see evaluation_report.md.
   * Participant = row (ids unique, no duplicates).  A stratified 25% holdout (strata = class x recruitment-source group) is carved
     once with a fixed seed and NOT used for selection of model, features, hyper-parameters or threshold.
   * Development: nested cross-validation (outer 5 folds x 5 repeats, stratified; inner 5-fold grid search on ROC-AUC) for five

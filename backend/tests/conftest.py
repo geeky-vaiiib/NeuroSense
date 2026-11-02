@@ -6,19 +6,23 @@ import mongomock
 import pytest
 
 # Test-only values (not secrets). Set before backend modules read the environment.
+os.environ["MONGODB_URI"] = "mongomock://tests"
+os.environ["MONGODB_DB_NAME"] = "neurosense_test"
 os.environ["JWT_SECRET"] = "test-only-secret-0123456789abcdef0123456789abcdef"
 os.environ["JWT_ALGORITHM"] = "HS256"
 os.environ["JWT_ACCESS_TOKEN_EXPIRE_MINUTES"] = "30"
 os.environ["COOKIE_SECURE"] = "false"
+os.environ["CORS_ALLOWED_ORIGINS"] = "http://localhost:5173,http://127.0.0.1:5173"
 os.environ["GAZE_WARMUP"] = "0"          # never start OpenFace containers from tests
 
 
 @pytest.fixture(autouse=True)
-def mongo(monkeypatch):
+def mongo(monkeypatch, tmp_path):
     """Fresh in-memory MongoDB per test, with the production indexes."""
     from backend.core import database
     from backend.routers import auth as auth_router
 
+    monkeypatch.setenv("NS_RECORDING_TMP_DIR", str(tmp_path / "recording-spool"))
     client = mongomock.MongoClient()
     db = client["neurosense_test"]
     database.ensure_indexes_on(db)

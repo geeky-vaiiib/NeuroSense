@@ -32,3 +32,14 @@ describe('PDF report', () => {
     expect(texts.some((t) => t.startsWith('SAVED:'))).toBe(true);
   });
 });
+
+it('exports toddler provenance and unavailable model without risk tiers or fabricated explanations', async()=>{
+  texts.length=0;
+  await generatePDF({id:'T',category:'toddler',age_months:20,scoring_version:3,
+    questionnaire_basis:{instrument:'Q-CHAT-10',total_score:3,max_score:10,threshold:3,scoring_version:3,meets_threshold:true,items:[]},
+    questionnaire_model:null,modality_states:[{id:'gaze',status:'skipped'}]},null);
+  const all=texts.join('\n');
+  expect(all).toContain('20 months'); expect(all).toContain('threshold >= 3');
+  expect(all).toContain('Model output unavailable'); expect(all).toContain('skipped');
+  expect(all).not.toMatch(/HIGH RISK|Clinical Use Only|top reasons.*risk classification|NaN/);
+});

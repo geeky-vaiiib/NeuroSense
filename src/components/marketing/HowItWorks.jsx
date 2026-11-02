@@ -48,7 +48,7 @@ function SpeechVisual({ anim }) {
   );
 }
 function FusionVisual({ anim }) {
-  const src = [[10, 14], [10, 42], [10, 70], [34, 28], [34, 56]];
+  const src = [[10, 42]];
   return (
     <Frame>
       {src.map(([x, y], i) => (<path key={i} d={`M${x} ${y} C 60 ${y}, 70 42, 96 42`} fill="none" stroke={F} strokeWidth="1.3" opacity="0.6" className={anim ? 'ns-signal-path' : undefined} />))}
@@ -60,10 +60,10 @@ function FusionVisual({ anim }) {
 }
 
 const STAGES = [
-  { id: 'questionnaire', n: '01', title: 'Questionnaire', text: 'A structured AQ-10 / Q-CHAT-10 questionnaire scored by a trained model.', color: Q, Visual: QuestionnaireVisual },
-  { id: 'gaze', n: '02', title: 'Gaze', text: 'Calibrated webcam gaze paths and fixations while viewing a short picture task.', color: G, Visual: GazeVisual },
+  { id: 'questionnaire', n: '01', title: 'Questionnaire', text: 'A structured AQ-10 / Q-CHAT-10 questionnaire scored deterministically on the server.', color: Q, Visual: QuestionnaireVisual },
+  { id: 'gaze', n: '02', title: 'Gaze', text: 'Optional video analysed by OpenFace; experimental model output is excluded from the result.', color: G, Visual: GazeVisual },
   { id: 'speech', n: '03', title: 'Speech', text: 'A short voice sample analysed for prosody and acoustic patterns.', color: S, Visual: SpeechVisual },
-  { id: 'fusion', n: '04', title: 'AI fusion', text: 'Signals that pass quality checks are combined; unavailable ones are never guessed.', color: F, Visual: FusionVisual },
+  { id: 'fusion', n: '04', title: 'Stored result', text: 'The questionnaire score determines the result. Other outputs are shown separately with their status.', color: F, Visual: FusionVisual },
 ];
 
 export default function HowItWorks() {

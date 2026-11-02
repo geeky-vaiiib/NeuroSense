@@ -18,7 +18,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 
 try:
     from ..core.auth import CurrentUser, get_current_user
-    from ..core.categories import build_interpretation, category_label, feature_label
+    from ..core.categories import category_label, feature_label
     from ..core.cases_store import get_case_record
     from ..ml.lime_engine import compute_lime
     from ..ml.model import get_bundle
@@ -29,7 +29,7 @@ try:
     from ..schemas.screening import CombinedExplainResponse
 except ImportError:  # pragma: no cover - fallback for backend cwd execution
     from core.auth import CurrentUser, get_current_user
-    from core.categories import build_interpretation, category_label, feature_label
+    from core.categories import category_label, feature_label
     from core.cases_store import get_case_record
     from ml.lime_engine import compute_lime
     from ml.model import get_bundle
@@ -58,7 +58,7 @@ def _score_explanation(case_data: dict, category: str, answers: dict) -> tuple[d
 
 
 @router.get("/{case_id}", response_model=CombinedExplainResponse)
-async def explain_case(case_id: str, request: Request, user: CurrentUser = Depends(get_current_user)):
+def explain_case(case_id: str, request: Request, user: CurrentUser = Depends(get_current_user)):
     """Score explanation + (when a model is loaded) SHAP and LIME for the model output."""
     registry = request.app.state.model_registry or {}
     case_data = get_case_record(case_id, user.user_id)         # ownership is checked before any model work
@@ -72,7 +72,7 @@ async def explain_case(case_id: str, request: Request, user: CurrentUser = Depen
     bundle = get_bundle(registry, category)
     clf = bundle.get("model")
     score_exp, score_note = _score_explanation(case_data, category, answers)
-    interpretation = build_interpretation(category, case_data.get("risk_level", "Low"))
+    interpretation = case_data.get("interpretation") or "Stored interpretation unavailable."
     base = dict(caseId=case_id, category=category, categoryLabel=category_label(category),
                 modelUsed=case_data.get("model_used") or "", isMock=False,
                 dataSource=case_data.get("data_source", "score_rule"),
@@ -105,14 +105,14 @@ async def explain_case(case_id: str, request: Request, user: CurrentUser = Depen
     shap_out = [{"feature": feature_label(i["feature"], category), "shapValue": i["shap_value"], "direction": i["direction"]}
                 for i in (shap_raw or [])]
     lime_out = [{"feature": feature_label(i["feature"], category), "weight": i["weight"], "direction": i["direction"],
-                 "plainEnglish": i["plain_english"]} for i in (lime_raw or [])]
+                 "plainEnglish": f"{feature_label(i['feature'], category)}: contribution {i['weight']:+.4f} to the supplementary model output, not the questionnaire result."} for i in (lime_raw or [])]
     summary = interpretation
     if shap_out:
         summary += " Model-explanation top features: " + ", ".join(i["feature"] for i in shap_out[:2]) + "."
     return CombinedExplainResponse(**base, shap=shap_out, lime=lime_out, summary=summary, modelExplanation={
         "available": True, "scope": MODEL_SCOPE, "methods": {"shap": bool(shap_raw), "lime": bool(lime_raw)},
         "explains": "questionnaire ML model output (probability of the scoring-rule label)", "feature_values": "item features are 0/1 points, not raw answers",
-        "note": score_note})
+        "note": score_note, "model_basis": "currently loaded questionnaire model; not a historical model snapshot"})
 
 
 TODDLER_SCOPE = ("Local SHAP explanation of the toddler questionnaire model's output for this one submission. Contributions are "
@@ -121,7 +121,7 @@ TODDLER_SCOPE = ("Local SHAP explanation of the toddler questionnaire model's ou
 
 
 def _explain_toddler(case_id: str, case_data: dict, demo: dict, answers: dict) -> CombinedExplainResponse:
-    interpretation = build_interpretation("toddler", case_data.get("risk_level", "Low"))
+    interpretation = case_data.get("interpretation") or "Stored interpretation unavailable."
     base = dict(caseId=case_id, category="toddler", categoryLabel=category_label("toddler"), modelUsed=case_data.get("model_used") or "",
                 isMock=False, dataSource=case_data.get("data_source", "score_rule"), scoringVersion=case_data.get("scoring_version"),
                 scoreExplanation=case_data.get("questionnaire_basis") if case_data.get("scoring_version") else None,

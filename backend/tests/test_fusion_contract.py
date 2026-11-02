@@ -92,7 +92,7 @@ def test_combine_does_not_mutate_scores_and_is_deterministic():
     s = _screening(6)
     before = copy.deepcopy(s)
     a, b = combine(s, _states(s)), combine(s, _states(s))
-    assert s == before and a == b and a["risk_level"] == "Moderate"
+    assert s == before and a == b and a["risk_level"] == "High"
 
 
 def test_api_ignores_a_gaze_result_that_claims_fusion_eligibility(app_client, monkeypatch):

@@ -53,12 +53,12 @@ export default function Results() {
   const [notesSaved, setNotesSaved] = useState(false);
 
   async function handleDownloadPDF() {
-    if (!selectedCase || !explanation) return;
+    if (!selectedCase) return;
     setPdfLoading(true);
     try {
       await generatePDF(selectedCase, explanation);
     } catch (err) {
-      console.error('PDF generation failed:', err);
+      setPageError(`PDF export failed: ${err.message}`);
     } finally {
       setPdfLoading(false);
     }
@@ -239,7 +239,7 @@ export default function Results() {
     ? [
         ['Case ID', selectedCase.id],
         ['Screening tool', selectedCase.screeningTool],
-        ['Instrument score', qBasis ? `${qBasis.total_score}/${qBasis.max_score} (threshold ≥ ${qBasis.threshold})` : `${selectedCase.aq10Score ?? 0}/10 (older record)`],
+        ['Instrument score', qBasis ? `${qBasis.total_score}/${qBasis.max_score} (threshold ≥ ${qBasis.threshold})` : `${selectedCase.aq10Score ?? 'Unavailable'}/10 (older record)`],
         ['Scoring', serverScored ? 'Server-computed' : 'Older record (not re-scored)'],
         ['ML model (explanation only)', selectedCase.modelUsed],
         ['Status', selectedCase.status],
@@ -269,7 +269,7 @@ export default function Results() {
               support for a qualified reviewer — not a diagnosis.
             </p>
           </div>
-          <button id="download-pdf-btn" onClick={handleDownloadPDF} disabled={pdfLoading || !selectedCase || !explanation || selectedCase?.category === 'toddler'} className="btn btn-secondary">
+          <button id="download-pdf-btn" onClick={handleDownloadPDF} disabled={pdfLoading || !selectedCase} className="btn btn-secondary">
             {pdfLoading ? (
               <>
                 <span style={{ width: 14, height: 14, borderRadius: '50%', border: '2px solid var(--ns-n300)', borderTopColor: 'var(--ns-instrument)', animation: 'spin 0.7s linear infinite', display: 'inline-block' }} />
@@ -383,7 +383,7 @@ export default function Results() {
                 ? <ScoreMeter basis={qBasis} level={selectedCase.riskLevel} />
                 : <RiskGauge value={legacyProbability} level={selectedCase.riskLevel} size={280} />}
               <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center', marginTop: 4 }}>
-                <RiskBadge level={selectedCase.riskLevel} size="lg" />
+                <RiskBadge level={selectedCase.riskLevel} category={selectedCase.category} size="lg" />
                 <CategoryBadge category={selectedCase.category} size="lg" />
               </div>
             </div>
@@ -468,7 +468,7 @@ export default function Results() {
             </h3>
             {qBasis && (
               <p role="note" style={{ margin: '0 0 14px', color: 'var(--ns-n600)', fontSize: '0.88rem', lineHeight: 1.6 }}>
-                <strong>{qBasis.instrument} total: {qBasis.total_score}/{qBasis.max_score}</strong> (the training labels flag totals of {qBasis.threshold} or more). {qBasis.notice}
+                <strong>{qBasis.instrument} total: {qBasis.total_score}/{qBasis.max_score}</strong> (the stored scoring basis uses a threshold of {qBasis.threshold}). {qBasis.notice}
               </p>
             )}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px' }}>

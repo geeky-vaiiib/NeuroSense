@@ -1,0 +1,14 @@
+{
+  "participant_overlap": 0,
+  "dev_n": 189,
+  "holdout_n": 63,
+  "holdout_auc": 0.9350912778904665,
+  "official_points_holdout_auc": 0.9158215010141988,
+  "holdout_brier": 0.10326628428783682,
+  "checkpoint_vs_saved_prediction_max_abs_error": 1.6653345369377348e-16,
+  "scope": "stored artifacts only; not independent cohort or training reproduction",
+  "recomputed_holdout_auc_ci95_2000_bootstraps": [
+    0.8676633474706498,
+    0.9808080808080808
+  ]
+}

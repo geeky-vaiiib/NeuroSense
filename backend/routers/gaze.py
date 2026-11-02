@@ -10,11 +10,13 @@ from typing import Optional
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 
 try:
+    from ..core.recordings import spool
     from ..core.auth import CurrentUser, get_current_user, require_roles
     from ..ml.gaze import jobs
     from ..ml.gaze.service import get_gaze_service
     from ..schemas.gaze import GazeJobAccepted, GazeJobStatus
 except ImportError:  # pragma: no cover - backend/ as cwd
+    from core.recordings import spool
     from core.auth import CurrentUser, get_current_user, require_roles
     from ml.gaze import jobs
     from ml.gaze.service import get_gaze_service
@@ -42,7 +44,7 @@ async def analyze_gaze(
     suffix = Path(video.filename or "").suffix.lower() or ".webm"
     if suffix not in ALLOWED_SUFFIX:
         raise HTTPException(status_code=415, detail=f"unsupported video type {suffix}")
-    fd, tmp = tempfile.mkstemp(prefix="ns_upload_", suffix=suffix)
+    fd, tmp = tempfile.mkstemp(prefix="ns_upload_", suffix=suffix, dir=spool())
     size = 0
     try:
         with open(fd, "wb") as fh:
@@ -61,6 +63,11 @@ async def analyze_gaze(
     except jobs.TooManyJobs as exc:
         Path(tmp).unlink(missing_ok=True)
         raise HTTPException(status_code=429, detail=str(exc)) from exc
+    except Exception:
+        Path(tmp).unlink(missing_ok=True)
+        raise
+    finally:
+        await video.close()
     return GazeJobAccepted(job_id=job_id)
 
 
@@ -106,7 +113,7 @@ def lab_sessions(_: CurrentUser = Depends(require_roles("clinician"))) -> dict:
 
 @router.post("/lab/validate")
 def lab_validate(_: CurrentUser = Depends(require_roles("clinician"))) -> dict:
-    """Run the pre-registered domain check on the saved sessions; a pass unlocks gaze in fusion."""
+    """Run the pre-registered domain check on the saved sessions; the result never enables gaze in the screening result."""
     _require_lab()
     from ..data import validate_webcam_domain as V  # noqa: PLC0415
     res = V.main(["--csv-dir", str(jobs.LAB_DIR)])

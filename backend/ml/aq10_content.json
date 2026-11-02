@@ -1,0 +1,114 @@
+{
+  "child": {
+    "ageMin": 4,
+    "ageMax": 11,
+    "questions": [
+      {
+        "id": "A1",
+        "prompt": "S/he often notices small sounds when others do not.",
+        "featureLabel": "Child notices small sounds"
+      },
+      {
+        "id": "A2",
+        "prompt": "S/he usually concentrates more on the whole picture, rather than the small details.",
+        "featureLabel": "Child focuses on whole picture"
+      },
+      {
+        "id": "A3",
+        "prompt": "In a social group, s/he can easily keep track of several different people's conversations.",
+        "featureLabel": "Child tracks multiple conversations"
+      },
+      {
+        "id": "A4",
+        "prompt": "S/he finds it easy to go back and forth between different activities.",
+        "featureLabel": "Child switches activities easily"
+      },
+      {
+        "id": "A5",
+        "prompt": "S/he doesn't know how to keep a conversation going with his/her peers.",
+        "featureLabel": "Child struggles keeping conversation"
+      },
+      {
+        "id": "A6",
+        "prompt": "S/he is good at social chit-chat.",
+        "featureLabel": "Child good at social chit-chat"
+      },
+      {
+        "id": "A7",
+        "prompt": "When s/he is read a story, s/he finds it difficult to work out the character's intentions or feelings.",
+        "featureLabel": "Child struggles interpreting characters"
+      },
+      {
+        "id": "A8",
+        "prompt": "When s/he was in preschool, s/he used to enjoy playing games involving pretending with other children.",
+        "featureLabel": "Child enjoyed pretend play"
+      },
+      {
+        "id": "A9",
+        "prompt": "S/he finds it easy to work out what someone is thinking or feeling just by looking at their face.",
+        "featureLabel": "Child reads facial cues"
+      },
+      {
+        "id": "A10",
+        "prompt": "S/he finds it hard to make new friends.",
+        "featureLabel": "Child struggles making friends"
+      }
+    ]
+  },
+  "adult": {
+    "ageMin": 18,
+    "ageMax": 120,
+    "questions": [
+      {
+        "id": "A1",
+        "prompt": "I often notice small sounds when others do not.",
+        "featureLabel": "Adult AQ-10 item 1"
+      },
+      {
+        "id": "A2",
+        "prompt": "I usually concentrate more on the whole picture, rather than the small details.",
+        "featureLabel": "Adult AQ-10 item 2"
+      },
+      {
+        "id": "A3",
+        "prompt": "I find it easy to do more than one thing at once.",
+        "featureLabel": "Adult AQ-10 item 3"
+      },
+      {
+        "id": "A4",
+        "prompt": "If there is an interruption, I can switch back to what I was doing very quickly.",
+        "featureLabel": "Adult AQ-10 item 4"
+      },
+      {
+        "id": "A5",
+        "prompt": "I find it easy to 'read between the lines' when someone is talking to me.",
+        "featureLabel": "Adult AQ-10 item 5"
+      },
+      {
+        "id": "A6",
+        "prompt": "I know how to tell if someone listening to me is getting bored.",
+        "featureLabel": "Adult AQ-10 item 6"
+      },
+      {
+        "id": "A7",
+        "prompt": "When I'm reading a story I find it difficult to work out the characters' intentions.",
+        "featureLabel": "Adult AQ-10 item 7"
+      },
+      {
+        "id": "A8",
+        "prompt": "I like to collect information about categories of things (e.g. types of car, types of bird, types of train, types of plant etc).",
+        "featureLabel": "Adult AQ-10 item 8"
+      },
+      {
+        "id": "A9",
+        "prompt": "I find it easy to work out what someone is thinking or feeling just by looking at their face.",
+        "featureLabel": "Adult AQ-10 item 9"
+      },
+      {
+        "id": "A10",
+        "prompt": "I find it difficult to work out people's intentions.",
+        "featureLabel": "Adult AQ-10 item 10"
+      }
+    ]
+  }
+}

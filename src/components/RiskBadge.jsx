@@ -119,7 +119,7 @@ const TODDLER_LABEL = { High: 'At or above threshold', Low: 'Below threshold' };
 
 export default function RiskBadge({ risk, level, size = 'md', showScore = false, score, category }) {
   const label = normalizeRisk(level ?? risk);
-  const toddlerText = category === 'toddler' ? (TODDLER_LABEL[label] ?? 'Q-CHAT-10 result') : null;
+  const toddlerText = category ? (TODDLER_LABEL[label] ?? (label === 'Moderate' ? 'Historical intermediate band' : 'Questionnaire result')) : null;
   const cfg = CONFIG[label] ?? FALLBACK;
   const metric = SIZE_MAP[size] ?? SIZE_MAP.md;
   const showNumericScore = showScore && Number.isFinite(score);
@@ -127,7 +127,7 @@ export default function RiskBadge({ risk, level, size = 'md', showScore = false,
   return (
     <span
       role="status"
-      aria-label={toddlerText ? `Q-CHAT-10: ${toddlerText}` : `Risk level: ${label}`}
+      aria-label={toddlerText ? `Questionnaire: ${toddlerText}` : `Risk level: ${label}`}
       style={{
         display: 'inline-flex',
         alignItems: 'center',

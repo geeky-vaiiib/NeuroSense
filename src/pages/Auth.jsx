@@ -115,7 +115,7 @@ export default function Auth() {
             Screening support, grounded in <span style={{ color: 'var(--ns-signal)' }}>real signals.</span>
           </h2>
           <p style={{ marginTop: 14, fontSize: '0.95rem', maxWidth: 420, lineHeight: 1.65 }}>
-            Questionnaire, gaze and speech signals — combined, explained, and always labelled when unavailable.
+            Server-scored questionnaires, with separate optional measurements and experimental outputs.
           </p>
           <div style={{ maxWidth: 520, marginTop: 8 }}><SignalVisualization interactive={false} /></div>
         </div>

@@ -31,7 +31,7 @@ def test_label_is_exactly_the_documented_threshold_on_the_item_total(category):
 def test_score_basis_contents():
     b = score_basis("child", {f"A{i}": "Definitely agree" for i in range(1, 11)})
     assert b["max_score"] == 10 and b["total_score"] == 4           # agree scores on A1, A5, A7, A10 only
-    assert b["threshold"] == 7 and b["meets_threshold"] is False and b["validated_against_clinical_labels"] is False
+    assert b["threshold"] == 6 and b["meets_threshold"] is False and b["validated_against_clinical_labels"] is False
     assert b["notice"] == NOTICE and "not an independently validated probability" in NOTICE
 
 
@@ -45,4 +45,4 @@ def test_screening_response_and_case_carry_the_basis(app_client):
     basis = body["questionnaireBasis"]
     assert basis["validated_against_clinical_labels"] is False and basis["total_score"] == 6 == body["aq10Score"]
     case = c.get(f"/cases/{body['caseId']}").json()
-    assert case["questionnaire_basis"]["threshold"] == 7 and case["questionnaire_basis"]["total_score"] == 6
+    assert case["questionnaire_basis"]["threshold"] == 6 and case["questionnaire_basis"]["total_score"] == 6

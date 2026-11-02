@@ -78,7 +78,7 @@ def compute_lime(
     Compute LIME explanation for a single prediction.
 
     Args:
-        model:          trained classifier (or None for mock)
+        model:          trained supplementary classifier (or None when unavailable)
         X_instance:     feature array of shape (1, n_features)
         X_train:        training data for LIME background (or None)
         feature_names:  list of feature name strings
@@ -117,16 +117,18 @@ def _real_lime(
     explainer = lime.lime_tabular.LimeTabularExplainer(
         training_data=X_train,
         feature_names=feature_names,
-        class_names=["No ASD", "ASD"],
+        class_names=["Below legacy score-label threshold", "At or above legacy score-label threshold"],
         mode="classification",
         discretize_continuous=True,
+        random_state=0,
     )
 
     explanation = explainer.explain_instance(
         X_instance.flatten(),
         model.predict_proba,
         num_features=TOP_K,
-        top_labels=1,
+        labels=(1,),
+        top_labels=None,
     )
 
     # Get explanation for positive class (label 1)

@@ -104,7 +104,7 @@ def test_login_throttle(app_client):
 
 # ── every protected route rejects anonymous callers ─────────────────────────
 
-PUBLIC = {("GET", "/"), ("POST", "/auth/register"), ("POST", "/auth/login"),
+PUBLIC = {("GET", "/"), ("GET", "/live"), ("GET", "/ready"), ("POST", "/auth/register"), ("POST", "/auth/login"),
           ("GET", "/docs"), ("GET", "/redoc"), ("GET", "/openapi.json"),
           ("GET", "/docs/oauth2-redirect")}
 

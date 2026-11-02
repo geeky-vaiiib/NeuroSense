@@ -29,8 +29,8 @@ def extract_features(y: np.ndarray, sr: int) -> dict:
     mfccs = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=N_MFCC)
     f0, voiced_flag, _ = librosa.pyin(y, fmin=librosa.note_to_hz("C2"), fmax=librosa.note_to_hz("C7"))
     f0_voiced = f0[voiced_flag] if voiced_flag is not None else np.array([])
-    pitch_mean = float(np.nanmean(f0_voiced)) if len(f0_voiced) > 0 else 0.0
-    pitch_std = float(np.nanstd(f0_voiced)) if len(f0_voiced) > 0 else 0.0
+    pitch_mean = float(np.nanmean(f0_voiced)) if len(f0_voiced) > 0 else None
+    pitch_std = float(np.nanstd(f0_voiced)) if len(f0_voiced) > 0 else None
     voiced_fraction = float(np.sum(voiced_flag) / len(voiced_flag)) if voiced_flag is not None and len(voiced_flag) > 0 else 0.0
     zcr = librosa.feature.zero_crossing_rate(y)[0]
     try:
@@ -43,7 +43,8 @@ def extract_features(y: np.ndarray, sr: int) -> dict:
     return {
         "mfcc_mean": [round(float(v), 4) for v in mfccs.mean(axis=1)],
         "mfcc_std": [round(float(v), 4) for v in mfccs.std(axis=1)],
-        "pitch_mean": round(pitch_mean, 2), "pitch_std": round(pitch_std, 2),
+        "pitch_mean": round(pitch_mean, 2) if pitch_mean is not None else None, "pitch_std": round(pitch_std, 2) if pitch_std is not None else None,
+        "pitch_status": "measured" if pitch_mean is not None else "unavailable_no_voiced_frames",
         "speech_rate": round(speech_rate, 2), "voiced_fraction": round(voiced_fraction, 4),
         "energy_mean": round(float(rms.mean()), 6), "energy_std": round(float(rms.std()), 6),
     }

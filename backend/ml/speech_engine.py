@@ -104,7 +104,12 @@ def analyze_speech(audio_base64: str, mime_type: str = "audio/webm") -> dict:
     duration = len(y) / sr if sr > 0 else 0.0
     if duration < SF.MIN_DURATION_S:
         return _result("insufficient_data", reason="Recording too short for analysis.", code=ERR_TOO_SHORT, duration_s=duration)
-    features = SF.extract_features(y, sr)
+    try:
+        features = SF.extract_features(y, sr)
+    except Exception:
+        import logging
+        logging.getLogger("neurosense.speech").exception("Acoustic measurement failed")
+        return _result("analysis_failed", reason="Acoustic measurement failed; see server logs.", code=ERR_DECODE, duration_s=duration)
     clf, why = load_classifier()
     if clf is None:
         return _result("model_unavailable", reason=why, code=ERR_NO_MODEL, features=features, duration_s=duration)

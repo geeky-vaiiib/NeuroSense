@@ -104,8 +104,11 @@ export function AuthProvider({ children }) {
   const logout = useCallback(async () => {
     try {
       await authApi.logout(); // server revokes the token and clears the cookie
-    } catch {
-      // Already expired/unreachable: the local session is cleared regardless.
+    } catch (err) {
+      if (err.status !== 401) {
+        dispatch({ type: 'ERROR', error: 'Sign-out could not be confirmed by the server. Please retry while connected.' });
+        return false;
+      }
     }
     dispatch({ type: 'ANONYMOUS' });
   }, []);

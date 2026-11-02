@@ -8,15 +8,18 @@ contract in ml/fusion_engine.py; experimental / unavailable modalities are repor
 from __future__ import annotations
 
 import uuid
+import hashlib
+import json
+import re
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 
 try:
+    from ..core import submissions
     from ..core.auth import CurrentUser, get_current_user
-    from ..core.categories import (build_case_tags, build_diagnosis_summary, build_initial_notes, build_interpretation,
+    from ..core.categories import (build_case_tags, build_initial_notes,
                                    category_label, default_respondent_relationship, screening_tool_for_category)
-    from ..core.cases_store import upsert_case_record
     from ..ml.fusion_engine import combine
     from ..ml.gaze import jobs as gaze_jobs
     from ..ml.model import get_bundle, predict
@@ -26,10 +29,10 @@ try:
     from ..ml.questionnaire_score import AnswerError, score_questionnaire
     from ..schemas.screening import ScreeningRequest, ScreeningResponse
 except ImportError:  # pragma: no cover - fallback for backend cwd execution
+    from core import submissions
     from core.auth import CurrentUser, get_current_user
-    from core.categories import (build_case_tags, build_diagnosis_summary, build_initial_notes, build_interpretation,
+    from core.categories import (build_case_tags, build_initial_notes,
                                  category_label, default_respondent_relationship, screening_tool_for_category)
-    from core.cases_store import upsert_case_record
     from ml.fusion_engine import combine
     from ml.gaze import jobs as gaze_jobs
     from ml.model import get_bundle, predict
@@ -43,12 +46,19 @@ router = APIRouter(prefix="/screening", tags=["Screening"])
 
 
 @router.post("/screen", response_model=ScreeningResponse)
-async def run_screening(
+def run_screening(
     body: ScreeningRequest,
     request: Request,
     user: CurrentUser = Depends(get_current_user),
 ):
     """Score a completed questionnaire on the server and persist the case for the authenticated user."""
+    key = request.headers.get("Idempotency-Key")
+    if key is not None and not re.fullmatch(r"[A-Za-z0-9_-]{16,128}", key):
+        raise HTTPException(422, "Invalid Idempotency-Key")
+    digest = hashlib.sha256(json.dumps(body.model_dump(mode="json", by_alias=True), sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+    existing = submissions.replay(user.user_id, key, digest)
+    if existing is not None:
+        return existing
     category = body.category.value
     demo_dict = body.demo.model_dump(by_alias=True, exclude_none=True, mode="json")
     answers_dict = dict(body.answers)                           # validated + canonicalised by the schema
@@ -58,7 +68,6 @@ async def run_screening(
     toddler = None
     try:
         if category == "toddler":
-            from ..ml import qchat10 as _q
             toddler = toddler_service.analyze(answers_dict, body.demo.age_months, {"Female": True, "Male": False}.get(body.demo.gender.value))
             screening = toddler["screening"]
         else:
@@ -105,7 +114,8 @@ async def run_screening(
     # 4. Central result contract
     result = combine(screening, states)
     risk_level = result["risk_level"]
-    interpretation = build_interpretation(category, risk_level)
+    interpretation = (f"{screening['interpretation']}. A screening score is not a diagnosis. "
+                      "Discuss concerns with a qualified health professional; a below-threshold score cannot rule out autism.")
 
     now = datetime.now(timezone.utc)
     case_id = f"NS-{category[0].upper()}-{now.strftime('%Y%m%d')}-{uuid.uuid4().hex[:8].upper()}"
@@ -118,7 +128,7 @@ async def run_screening(
     facial_raw = pre.facial_result or {}
     model_used = model_output["model_used"] if model_output else "score_rule"
 
-    upsert_case_record({
+    record = {
         "id": case_id,
         "user_id": user.user_id,                     # from the verified session, never from the request body
         "category": category, "subject_name": subject_name, "respondent_name": respondent_name,
@@ -134,7 +144,7 @@ async def run_screening(
         "modality_breakdown": [], "modalities_used": 1,
         "confidence_note": result["note"],
         "aq10_score": screening["total_score"],
-        "status": "pending-review", "diagnosis": build_diagnosis_summary(category, risk_level),
+        "status": "pending-review", "diagnosis": screening["interpretation"],
         "screening_date": now.date().isoformat(), "referral_date": now.date().isoformat(),
         "created_at": now.isoformat(), "updated_at": now.isoformat(),
         "clinician": "Awaiting clinician assignment", "screening_tool": screening_tool,
@@ -161,9 +171,9 @@ async def run_screening(
         "speech_interpretation": speech_raw.get("interpretation", "") or "",
         "facial_features": facial_raw.get("features", {}), "facial_skipped": body.facial_skipped or False,
         "facial_interpretation": facial_raw.get("interpretation", "") or "",
-    })
+    }
 
-    return ScreeningResponse(
+    response = ScreeningResponse(
         caseId=case_id, category=category, categoryLabel=category_label(category), status="pending-review",
         riskLevel=risk_level, questionnaireProbability=model_output["probability"] if model_output else None,
         questionnaireBasis=screening, modelOutput=model_output, result=result, modalities=states, warnings=warnings,
@@ -174,4 +184,5 @@ async def run_screening(
         gazeInterpretation=gaze_raw.get("interpretation") or None,
         speechInterpretation=speech_raw.get("interpretation") or None,
         facialInterpretation=facial_raw.get("interpretation") or None, speechFlags=None,
-        submittedAt=now.isoformat())
+        scoringVersion=screening["scoring_version"], submittedAt=now.isoformat())
+    return submissions.save(record, response.model_dump(by_alias=True, mode="json"), key, digest)

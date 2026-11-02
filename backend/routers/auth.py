@@ -7,6 +7,8 @@ import time
 from collections import defaultdict, deque
 from datetime import datetime, timezone
 
+from pymongo.errors import DuplicateKeyError
+
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 
 try:
@@ -119,7 +121,7 @@ def logout(response: Response, user: CurrentUser = Depends(get_current_user)):
             "user_id": user.user_id,
             "expires_at": datetime.fromtimestamp(user.exp, tz=timezone.utc),
         })
-    except Exception:  # already revoked
+    except DuplicateKeyError:  # already revoked
         logger.debug("token already revoked")
     s = get_settings()
     response.delete_cookie(s.cookie_name, path="/", samesite=s.cookie_samesite, secure=s.cookie_secure, httponly=True)

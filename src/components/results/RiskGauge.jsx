@@ -1,5 +1,5 @@
 /**
- * Semi-circular indicator for the backend's final screening value (0-1).
+ * Legacy stored numeric output; new server-scored cases use ScoreMeter.
  * `value` null renders an explicit "Not available" (never a fabricated number).
  * The arc is a plain visual encoding of `value`; nothing is recomputed here.
  */
@@ -20,7 +20,7 @@ export default function RiskGauge({ value, level, size = 260, tone = 'dark' }) {
   return (
     <figure style={{ margin: 0, width: size, maxWidth: '100%' }}>
       <svg viewBox="0 0 240 150" width="100%" role="img"
-        aria-label={has ? `Overall screening indicator ${(v * 100).toFixed(0)} percent${level ? `, ${level} risk level` : ''}` : 'Overall screening indicator not available'}>
+        aria-label={has ? `Legacy stored model output ${(v * 100).toFixed(0)} percent${level ? `, ${level} risk level` : ''}` : 'Legacy stored model output not available'}>
         <path d="M20 130 A100 100 0 0 1 220 130" fill="none" stroke={track} strokeWidth="14" strokeLinecap="round" />
         {has && (
           <path
@@ -29,15 +29,11 @@ export default function RiskGauge({ value, level, size = 260, tone = 'dark' }) {
             style={{ '--gauge-empty': c, '--gauge-offset': c * (1 - v), animation: reduced ? 'none' : 'gauge-fill 1.1s cubic-bezier(.2,.7,.2,1) both', filter: `drop-shadow(0 0 8px ${color}55)` }}
           />
         )}
-        {[0.4, 0.7].map((t) => {              // the backend's default level thresholds, as tick marks
-          const a = Math.PI * (1 - t);
-          return <line key={t} x1={120 + 88 * Math.cos(a)} y1={130 - 88 * Math.sin(a)} x2={120 + 112 * Math.cos(a)} y2={130 - 112 * Math.sin(a)} stroke={sub} strokeOpacity="0.6" strokeWidth="1.5" />;
-        })}
         <text x="120" y="112" textAnchor="middle" fontFamily="var(--font-heading)" fontWeight="600" fontSize={has ? 44 : 22} fill={text} letterSpacing="-1">
           {has ? `${(v * 100).toFixed(0)}` : 'Not available'}
           {has && <tspan fontSize="20" fill={sub} dx="2">%</tspan>}
         </text>
-        <text x="120" y="138" textAnchor="middle" fontFamily="var(--font-data)" fontSize="10.5" letterSpacing="2" fill={sub}>OVERALL INDICATOR</text>
+        <text x="120" y="138" textAnchor="middle" fontFamily="var(--font-data)" fontSize="10.5" letterSpacing="2" fill={sub}>LEGACY MODEL OUTPUT</text>
       </svg>
     </figure>
   );

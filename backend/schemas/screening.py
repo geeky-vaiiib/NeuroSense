@@ -64,8 +64,8 @@ class ModalityComponentResult(BaseModel):
         description="False when the step was skipped or data was insufficient",
     )
 
-    weight: Optional[float] = Field(None, description="Fixed fusion weight of this modality")
-    contribution: Optional[float] = Field(None, description="Share of the final probability (0 when supplemental/unavailable)")
+    weight: Optional[float] = Field(None, description="Legacy field; no modality weights are used")
+    contribution: Optional[float] = Field(None, description="Legacy field; no composite probability is produced")
 
     model_config = ConfigDict(populate_by_name=True, protected_namespaces=())
 
@@ -82,7 +82,7 @@ class ModalityBreakdown(BaseModel):
     confidence_note: str = Field(
         "",
         alias="confidenceNote",
-        description="Plain-English disclosure of what drove the final probability",
+        description="Disclosure of the stored result basis",
     )
 
     model_config = ConfigDict(populate_by_name=True, protected_namespaces=())
@@ -274,7 +274,7 @@ class ScreeningResponse(BaseModel):
     result: dict = Field(default_factory=dict, description="Screening result from the central fusion contract")
     modalities: list[dict] = Field(default_factory=list, description="Per-modality status contract")
     warnings: list[str] = Field(default_factory=list)
-    scoring_version: int = Field(2, alias="scoringVersion")
+    scoring_version: int = Field(3, alias="scoringVersion")
     heuristic_signal: Optional[float] = Field(None, alias="heuristicSignal", description="DEPRECATED, always null")
     confidence_note: str = Field("", alias="confidenceNote")
     modality_breakdown: Optional[ModalityBreakdown] = Field(None, alias="modalityBreakdown", description="DEPRECATED, null: use `modalities`")
@@ -322,7 +322,8 @@ class CaseSummaryResponse(BaseModel):
     respondent_relationship: Optional[str] = Field(None, alias="respondentRelationship", max_length=80)
     age: int
     gender: str
-    risk_level: str = Field(..., alias="riskLevel")
+    risk_level: Optional[str] = Field(None, alias="riskLevel")
+    result_status: str = Field("unavailable", alias="resultStatus")
     risk_score: Optional[float] = Field(None, alias="riskScore", description="Legacy model output of pre-v2 cases; null for server-scored cases")
     screening_date: str = Field(..., alias="screeningDate")
     status: str
@@ -340,7 +341,7 @@ class CaseDetailResponse(CaseSummaryResponse):
     referral_date: str = Field("", alias="referralDate")
     clinician: str = ""
     completed_screenings: list[str] = Field(default_factory=list, alias="completedScreenings")
-    aq10_score: int = Field(..., alias="aq10Score")
+    aq10_score: Optional[int] = Field(None, alias="aq10Score")
     notes: str = ""
     interpretation: str
     demo: Demographics
@@ -433,7 +434,7 @@ class DashboardTotalsResponse(BaseModel):
     awaiting_review: int = Field(..., alias="awaitingReview")
     mock_cases: int = Field(..., alias="mockCases")
     average_risk_score: Optional[float] = Field(None, alias="averageRiskScore")
-    average_aq10_score: float = Field(..., alias="averageAq10Score")
+    average_aq10_score: Optional[float] = Field(None, alias="averageAq10Score")
     toddler_cases: int = Field(0, alias="toddlerCases")
 
     model_config = ConfigDict(populate_by_name=True, protected_namespaces=())

@@ -141,7 +141,7 @@ function AppShell() {
             <Route path="/"                element={<Dashboard />} />
             <Route path="/screening"       element={<ScreeningStart />} />
             <Route path="/screening/toddler" element={<ToddlerScreening />} />
-            <Route path="/screening/:category" element={<Screening />} />
+            <Route path="/screening/:category" element={<Screening key={location.pathname} />} />
             <Route path="/results"         element={<Results />} />
             <Route path="/results/:caseId" element={<Results />} />
             <Route path="/cases"           element={<Cases />} />

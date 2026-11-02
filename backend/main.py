@@ -11,6 +11,8 @@ from starlette.responses import JSONResponse
 
 try:
     from .core import database
+    from .core.recordings import cleanup_expired
+    from .ml.gaze.jobs import shutdown
     from .ml.gaze.service import get_gaze_service
     from .ml.model import load_models
     from .core.config import get_settings
@@ -18,6 +20,8 @@ try:
     from .schemas.screening import HealthResponse
 except ImportError:  # pragma: no cover - fallback for backend cwd execution
     from core import database
+    from core.recordings import cleanup_expired
+    from ml.gaze.jobs import shutdown
     from ml.gaze.service import get_gaze_service
     from ml.model import load_models
     from core.config import get_settings
@@ -88,6 +92,7 @@ async def lifespan(app: FastAPI):
 
     # ── MongoDB Atlas ────────────────────────────────────────────────
     database.init_db()
+    cleanup_expired()
 
     # Prime OpenFace in the background (first run is much slower than later runs); never blocks startup.
     import threading
@@ -101,6 +106,7 @@ async def lifespan(app: FastAPI):
 
     # ── Shutdown ─────────────────────────────────────────────────────
     logger.info("[NeuroSense] Shutting down.")
+    shutdown()
     app.state.model_registry = None
     database.close_db()
 
@@ -191,3 +197,18 @@ async def health():
         database=db,
         version=APP_VERSION,
     )
+
+
+@app.get("/live", tags=["Health"])
+def live():
+    """Process liveness; does not promise database or optional analysis readiness."""
+    return {"status": "alive"}
+
+
+@app.get("/ready", tags=["Health"])
+def ready():
+    """Core readiness is configuration + database; optional models do not gate scoring."""
+    from fastapi.responses import JSONResponse
+    connected = _db_status()["connected"]
+    return JSONResponse(status_code=200 if connected else 503,
+                        content={"ready": connected, "questionnaire_scoring": True, "database_connected": connected})

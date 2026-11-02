@@ -37,8 +37,11 @@ def test_explain_separates_score_explanation_from_model_explanation(app_client):
     e = r.json()
     assert e["scoreExplanation"]["total_score"] == 7 and len(e["scoreExplanation"]["items"]) == 10
     me = e["modelExplanation"]
-    assert me["available"] is True and "not the result" in me["scope"] and "gaze" in me["scope"]
-    assert e["shap"] and e["lime"] and len(e["shap"]) <= 8
+    if me["available"]:
+        assert "not the result" in me["scope"] and "gaze" in me["scope"]
+        assert e["shap"] and e["lime"] and len(e["shap"]) <= 8
+    else:
+        assert me["reason"] and e["shap"] == [] and e["lime"] == []
     assert e["isMock"] is False
 
 
@@ -70,8 +73,9 @@ def test_explain_requires_ownership(app_client):
 # ── gaze jobs ────────────────────────────────────────────────────────────────
 
 def _fake_job(user="u1", state="processing", age_s=0.0):
-    jid = "j" + str(len(jobs._jobs))
+    jid = __import__("uuid").uuid4().hex
     jobs._jobs[jid] = {"id": jid, "user_id": user, "stage": "uploaded", "state": state, "result": None, "created": time.time() - age_s}
+    jobs._persist(jobs._jobs[jid])
     return jid
 
 
@@ -100,7 +104,7 @@ def test_job_results_survive_a_restart_and_unfinished_jobs_are_reported_failed(a
     jobs._jobs.clear()
     done = {"id": "d1", "user_id": "u9", "stage": "complete", "state": "done", "created": time.time(),
             "result": {"modality": "gaze", "status": "success", "probability": 0.3, "quality": {"valid": True}}}
-    running = {"id": "r1", "user_id": "u9", "stage": "running_model", "state": "processing", "created": time.time(), "result": None}
+    running = {"lease_until": 0, "id": "r1", "user_id": "u9", "stage": "running_model", "state": "processing", "created": time.time(), "result": None}
     jobs._persist(done); jobs._persist(running)
     assert get_db()["gaze_jobs"].count_documents({}) == 2
     jobs._jobs.clear()                                         # simulate a new process

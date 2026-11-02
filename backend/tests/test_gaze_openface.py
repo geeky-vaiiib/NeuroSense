@@ -242,11 +242,11 @@ def test_service_not_fusion_eligible_without_webcam_validation(tmp_path):
 
 @needs_ckpt
 @needs_dasd
-def test_service_fusion_eligible_after_validation(tmp_path):
+def test_service_remains_excluded_after_domain_validation(tmp_path):
     f = tmp_path / "v.json"; f.write_text('{"passed": true}')
     child = dasd.read_csv(next(x for x in dasd.discover() if x.label == 0))
     r = S.GazeService(validation=f).analyze_frames(child)
-    assert r["fusion_eligible"] is True and r["is_trained_model"] is True
+    assert r["fusion_eligible"] is False and r["is_trained_model"] is False
     still = child.copy(); still.columns = [c.strip() for c in still.columns]
     for c in ("gaze_angle_x", "gaze_angle_y", "pose_Rx", "pose_Ry", "pose_Rz"):
         still[c] = still[c].mean() + 0.05 * (still[c] - still[c].mean())     # far below training movement -> never fusion-eligible
@@ -391,6 +391,7 @@ def test_lab_sessions_and_validate(app_client, monkeypatch, tmp_path):
         synth(seed=i).to_csv(tmp_path / "lab" / f"s{i}.csv", index=False)
     import backend.data.validate_webcam_domain as V
     monkeypatch.setattr(V, "WEBCAM_VALIDATION_PATH", tmp_path / "val.json")
+    monkeypatch.setattr(V, "REPORTS", tmp_path)
     c = app_client(); _login(c)
     assert c.get("/gaze/lab/sessions").status_code == 403                  # signed-in but not a clinician
     from backend.core.database import get_users_collection

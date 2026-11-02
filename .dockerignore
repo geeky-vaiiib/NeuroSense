@@ -1,0 +1,16 @@
+.git
+**/.env
+**/.env.*
+!**/.env.example
+.venv
+node_modules
+dist
+DASD-main
+Eye-Tracking Dataset
+backend/data/external
+backend/data/webcam_validation
+backend/cases_db.json
+backend/models/quarantine
+**/__pycache__
+.pytest_cache
+**/.pytest_cache

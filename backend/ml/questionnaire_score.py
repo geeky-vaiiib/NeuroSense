@@ -16,6 +16,7 @@ Scoring (per item, agree = "Definitely agree" | "Slightly agree"):
     ml/qchat10.py; `score_questionnaire("toddler", ...)` delegates to it.  The agree/disagree encoding below for "toddler"
     belongs to the superseded Thabtah-dataset pipeline and is kept only so historical cases stay readable.
 
+New scores use the ARC instrument cutoff of 6 (scoring version 3). Historical bases are not rewritten.
 LABEL_RULE_THRESHOLD is the empirical rule in the data (label = total >= threshold).  It follows the dataset
 providers' labelling; instrument manuals may quote a different cut-off, so treat it as "the rule the data
 uses", not as a clinical cut-off.  A unit test keeps these constants true against the shipped CSVs.
@@ -28,7 +29,7 @@ try:
 except ImportError:  # pragma: no cover - backend/ as cwd
     from core.categories import CATEGORY_SETTINGS
 
-SCORING_VERSION = 2
+SCORING_VERSION = 3
 ITEM_IDS = tuple(f"A{i}" for i in range(1, 11))
 ANSWER_OPTIONS = ("Definitely agree", "Slightly agree", "Slightly disagree", "Definitely disagree")
 _AGREE = {"definitely agree": 1, "slightly agree": 1, "definitely disagree": 0, "slightly disagree": 0}
@@ -38,14 +39,16 @@ TRAIT_AGREE_IDS = {                    # items where AGREE earns the point (all 
     "adult": frozenset({"A1", "A7", "A8", "A10"}),
     "toddler": frozenset({"A10"}),
 }
+INSTRUMENT_THRESHOLD = {"adult": 6, "child": 6}
 LABEL_RULE_THRESHOLD = {"adult": 7, "child": 7, "toddler": 4}      # class = 1  <=>  total >= threshold
 INSTRUMENT = {"adult": "AQ-10 (adult)", "child": "AQ-10 (child, caregiver-completed)", "toddler": "Q-CHAT-10"}
 SUPPORTED_FOR_NEW_SCREENINGS = ("child", "adult", "toddler")
 
 NOTICE = ("This is a threshold-based screening score. The machine-learning model shown beside it was trained on "
-          "labels that are themselves a threshold on this score, so it reproduces the scoring rule; it is not an "
+          "labels using the legacy dataset threshold (7, not the instrument cutoff 6), so it models that legacy rule; it is not an "
           "independently validated probability and does not change the result. A screening score is not a diagnosis.")
-THRESHOLD_SOURCE = "rule used to label the training datasets (total >= threshold); verify against the instrument manual"
+THRESHOLD_SOURCE = "ARC AQ-10 form (2012), referral cutoff 6 or above; accessed 2026-11-02"
+SOURCE_URLS = {"adult": "https://docs.autismresearchcentre.com/tests/AQ10.pdf", "child": "https://docs.autismresearchcentre.com/tests/AQ10-Child.pdf"}
 
 
 class AnswerError(ValueError):
@@ -89,9 +92,9 @@ def score_items(category: str, answers: dict) -> list[int]:
 
 
 def risk_band(category: str, total: int) -> str:
-    """Presentation band of the score (NOT a probability): >= threshold High, one point below Moderate, else Low."""
-    thr = LABEL_RULE_THRESHOLD[category]
-    return "High" if total >= thr else "Moderate" if total == thr - 1 else "Low"
+    """Presentation band of the score (NOT a probability): >= threshold High, else Low (internal flags, not risk tiers)."""
+    thr = INSTRUMENT_THRESHOLD[category]
+    return "High" if total >= thr else "Low"
 
 
 def score_questionnaire(category: str, answers: dict) -> dict:
@@ -105,12 +108,14 @@ def score_questionnaire(category: str, answers: dict) -> dict:
     pts = score_items(category, answers)
     trait = TRAIT_AGREE_IDS[category]
     total = int(sum(pts))
-    thr = LABEL_RULE_THRESHOLD[category]
+    thr = INSTRUMENT_THRESHOLD[category]
     items = [{"id": i, "answer": normalise_answer(answers[i]), "scores_on": "agree" if i in trait else "disagree", "points": p}
              for i, p in zip(ITEM_IDS, pts)]
     return {
         "scoring_version": SCORING_VERSION, "category": category, "instrument": INSTRUMENT[category],
         "total_score": total, "max_score": 10, "threshold": thr, "threshold_source": THRESHOLD_SOURCE,
+        "source": SOURCE_URLS[category], "source_accessed": "2026-11-02",
+        "interpretation": "At or above threshold" if total >= thr else "Below threshold",
         "meets_threshold": total >= thr, "risk_band": risk_band(category, total), "items": items,
         "validated_against_clinical_labels": False, "notice": NOTICE,
     }

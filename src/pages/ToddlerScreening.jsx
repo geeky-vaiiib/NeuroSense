@@ -157,6 +157,8 @@ export default function ToddlerScreening() {
           </div>
         )}
 
+            {step === 'questions' && startAt !== undefined && missing.length === 0 && <button type="button" className="btn btn-primary" onClick={() => setStep('review')}>Return to review</button>}
+
         {step !== 'questions' && !(step === 'review' && loading) && (
           <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginTop: 28, flexWrap: 'wrap' }}>
             <button type="button" className="btn btn-secondary"

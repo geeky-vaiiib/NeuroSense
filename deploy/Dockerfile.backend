@@ -1,0 +1,12 @@
+FROM python:3.11.14-slim-bookworm
+WORKDIR /app
+RUN apt-get update && apt-get install -y --no-install-recommends libgomp1 ffmpeg && rm -rf /var/lib/apt/lists/*
+COPY backend/requirements.lock /app/requirements.lock
+RUN pip install --no-cache-dir --require-hashes -r requirements.lock
+COPY backend /app/backend
+RUN useradd --create-home --uid 10001 neurosense
+USER neurosense
+ENV NUMBA_CACHE_DIR=/tmp/neurosense-numba GAZE_WARMUP=0
+EXPOSE 8000
+# One worker: throttles and OpenFace resource slots are process local.
+CMD ["python", "-m", "uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1", "--timeout-graceful-shutdown", "30"]

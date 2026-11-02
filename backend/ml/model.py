@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import logging
+import warnings
+
 import joblib
 import numpy as np
 
@@ -27,26 +30,35 @@ def _load_bundle(category: str) -> dict:
         "category": category,
     }
 
-    # Try category-specific artifact first
-    if model_path and model_path.exists():
-        bundle["model"] = joblib.load(model_path)
-        print(f"[NeuroSense] {category} model loaded from {model_path}")
-    elif category == "adult" and LEGACY_ADULT_ARTIFACTS["model_path"].exists():
-        bundle["model"] = joblib.load(LEGACY_ADULT_ARTIFACTS["model_path"])
-        print(
-            "[NeuroSense] adult model loaded from legacy "
-            f"{LEGACY_ADULT_ARTIFACTS['model_path']}"
-        )
-    else:
-        print(f"[NeuroSense] WARNING: No {category} model found — mock mode")
-
-    if encoders_path and encoders_path.exists():
-        bundle["encoders"] = joblib.load(encoders_path)
-    elif category == "adult" and LEGACY_ADULT_ARTIFACTS["encoders_path"].exists():
-        bundle["encoders"] = joblib.load(LEGACY_ADULT_ARTIFACTS["encoders_path"])
-
+    logger = logging.getLogger("neurosense.models")
+    bundle["status"] = "model_unavailable"
+    bundle["reason"] = "optional artifacts missing"
+    if category == "adult" and (not model_path or not model_path.exists()):
+        model_path = LEGACY_ADULT_ARTIFACTS["model_path"]
+        encoders_path = LEGACY_ADULT_ARTIFACTS["encoders_path"]
+    try:
+        if not model_path or not encoders_path or not model_path.exists() or not encoders_path.exists():
+            logger.warning("Optional questionnaire bundle [%s] missing; deterministic scoring available", category)
+            return bundle
+        # Version warnings are evidence of incompatibility, not something to suppress.
+        from sklearn.exceptions import InconsistentVersionWarning
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", InconsistentVersionWarning)
+            warnings.filterwarnings("error", message=r"(?is).*serializ.*", category=UserWarning)
+            model = joblib.load(model_path)
+            encoders = joblib.load(encoders_path)
+        if not callable(getattr(model, "predict", None)) or not isinstance(encoders, dict):
+            raise ValueError("invalid model/encoder interface")
+        bundle.update(model=model, encoders=encoders, status="available", reason=None)
+    except Exception as exc:
+        bundle["reason"] = "optional artifacts could not be loaded in this runtime"
+        logger.warning("Optional questionnaire bundle [%s] unavailable (%s): %s", category, type(exc).__name__, exc)
+        return bundle
     if background_path and background_path.exists():
-        bundle["background"] = np.load(background_path)
+        try:
+            bundle["background"] = np.load(background_path, allow_pickle=False)
+        except Exception:
+            logger.warning("Optional explanation background [%s] unavailable", category, exc_info=True)
 
     return bundle
 
@@ -56,7 +68,7 @@ def load_models() -> dict:
     Load all category models at startup.
     Returns { 'adult': bundle, 'child': bundle, 'toddler': bundle }
     """
-    print("[NeuroSense] Loading model registry...")
+    logging.getLogger("neurosense.models").info("Loading optional questionnaire model registry")
     registry = {}
     for category, cfg in CATEGORY_MODEL_CONFIG.items():
         if cfg.get("legacy"):

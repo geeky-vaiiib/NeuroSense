@@ -630,7 +630,7 @@ export default function SpeechSession({ onComplete, onSkip }) {
           }}
         >
           Your 20-second speech sample has been captured. Optionally type what
-          you said to improve the analysis accuracy.
+          you said for your own reference. This text is not analysed or saved by the server.
         </p>
 
         <label
@@ -660,7 +660,7 @@ export default function SpeechSession({ onComplete, onSkip }) {
               clearTimeout(autoProceedRef.current);
               autoProceedRef.current = setTimeout(() => finishSession(), 8000);
             }}
-            placeholder="This helps improve analysis accuracy…"
+            placeholder="Optional note, not analysed or saved…"
             rows={3}
             style={{
               width: '100%',

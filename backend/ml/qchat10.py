@@ -3,7 +3,7 @@
 Source of truth (not inferred from wording similarity or column position):
   * Item wording, the five response options (A-E) and the OFFICIAL scoring rule:
       Autism Research Centre, "Q-CHAT-10 Quantitative Checklist for Autism in Toddlers" form (© SBC/CA/BA/ARC/Cambridge University
-      1/5/12) - https://docs.autismresearchcentre.com/tests/Q-CHAT-10.pdf
+      1/5/12) - https://docs.autismresearchcentre.com/tests/QCHAT-10.pdf
       "For questions 1-9: if you circle an answer in columns C, D or E, score 1 point per question. For question 10: if you circle
        an answer in columns A, B or C, score 1 point. ... If your child scores 3 or above, the health professional may consider
        referring your child for a multi-disciplinary assessment."
@@ -163,6 +163,7 @@ def score_qchat10(answers: Mapping[str, str]) -> dict:
     # The ARC form defines one cut-point only ("3 or above"); no intermediate band exists in the instrument, so none is invented.
     band = "High" if total >= OFFICIAL_THRESHOLD else "Low"       # internal flag for the shared result contract; the UI shows meets_threshold
     return {"scoring_version": 3, "category": "toddler", "instrument": INSTRUMENT_NAME, "total_score": total, "max_score": MAX_SCORE,
+            "source": "https://docs.autismresearchcentre.com/tests/QCHAT-10.pdf", "source_accessed": "2026-11-02",
             "threshold": OFFICIAL_THRESHOLD, "threshold_source": "ARC Q-CHAT-10 form: score of 3 or above -> consider referral",
             "meets_threshold": total >= OFFICIAL_THRESHOLD, "risk_band": band,
             "interpretation": ("Score at or above the Q-CHAT-10 cut-point of 3: the form suggests a health professional may consider referral for a fuller assessment."

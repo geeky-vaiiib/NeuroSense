@@ -168,12 +168,12 @@ export const gazeApi = {
       }
       await sleepMs(GAZE_POLL_MS);
     }
-    throw new ApiError('timeout', FALLBACK_MESSAGES.timeout);
+    throw new ApiError('timeout', 'Gaze polling timed out. Server computation may still be running; no result is available here.');
   },
 };
 
 export const screeningApi = {
-  async submit(formData) {
+  async submit(formData, idempotencyKey) {
     // Build multimodal payload — exclude large fields if null/empty
     const payload = {
       category: formData.category,
@@ -207,6 +207,7 @@ export const screeningApi = {
       const res = await authFetch('/screening/screen', {
         method: 'POST',
         body: payloadStr,
+        headers: idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : {},
         signal: controller.signal,
       });
       if (!res.ok) throw apiErrorFromStatus(res.status, await res.json().catch(() => ({})));

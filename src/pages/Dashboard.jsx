@@ -90,7 +90,7 @@ export default function Dashboard() {
           <>
             <MetricCard label="Screening sessions" value={t ? t.totalCases : null} hint="all time" icon={<svg {...I}><rect x="4" y="3" width="16" height="18" rx="2" /><path d="M8 8h8M8 12h8M8 16h5" /></svg>} />
             <MetricCard label="Awaiting review" value={t ? t.awaitingReview : null} status={t && t.awaitingReview > 0 ? 'Needs attention' : 'All reviewed'} statusTone={t && t.awaitingReview > 0 ? 'warn' : 'ok'} icon={<svg {...I}><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg>} />
-            <MetricCard label="High-risk indicators" value={t ? t.highRisk : null} status={t && t.highRisk > 0 ? 'Clinician review advised' : 'None flagged'} statusTone={t && t.highRisk > 0 ? 'bad' : 'ok'} icon={<svg {...I}><path d="M12 3l9 16H3L12 3z" /><path d="M12 10v4M12 17v.01" /></svg>} />
+            <MetricCard label="At or above threshold" value={t ? t.highRisk : null} status={!t ? 'Unavailable' : t.highRisk > 0 ? 'Follow-up discussion advised' : 'None flagged'} statusTone={t && t.highRisk > 0 ? 'bad' : 'ok'} icon={<svg {...I}><path d="M12 3l9 16H3L12 3z" /><path d="M12 10v4M12 17v.01" /></svg>} />
             <MetricCard label="Average AQ-10" value={t && t.totalCases ? t.averageAq10Score : null} unit={t && t.totalCases ? '/ 10' : ''} hint={t && !t.totalCases ? 'No sessions yet' : 'questionnaire score'} unavailableText="No data yet" icon={<svg {...I}><path d="M4 19V9M10 19V5M16 19v-7M22 19H2" /></svg>} />
           </>
         )}
@@ -114,7 +114,7 @@ export default function Dashboard() {
                 <svg {...I} width="26" height="26"><rect x="4" y="3" width="16" height="18" rx="2" /><path d="M8 9h8M8 13h8M8 17h4" /></svg>
               </div>
               <h3 style={{ fontSize: '1rem' }}>No screening sessions yet</h3>
-              <p style={{ margin: '6px auto 18px', maxWidth: 360, color: 'var(--ns-n500)', fontSize: '0.88rem' }}>Completed screenings appear here with their result, risk level and the signals that contributed.</p>
+              <p style={{ margin: '6px auto 18px', maxWidth: 360, color: 'var(--ns-n500)', fontSize: '0.88rem' }}>Completed screenings appear here with their result, stored scoring basis and separate optional signals.</p>
               <Link to="/app/screening" className="btn btn-primary btn-sm">Start a screening</Link>
             </div>
           ) : (
@@ -143,7 +143,7 @@ export default function Dashboard() {
         <aside className="ns-card" style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 20 }}>
           <div>
             <h2 style={{ fontSize: '1.1rem' }}>Modality status</h2>
-            <p style={{ marginTop: 4, color: 'var(--ns-n500)', fontSize: '0.84rem' }}>How often each signal was captured and trusted enough to inform the result.</p>
+            <p style={{ marginTop: 4, color: 'var(--ns-n500)', fontSize: '0.84rem' }}>Availability of each signal. Only the questionnaire score determines the result.</p>
           </div>
           {status.length === 0 || !t?.totalCases ? (
             <p style={{ fontSize: '0.88rem', color: 'var(--ns-n500)' }}>Modality status appears after your first completed screening.</p>

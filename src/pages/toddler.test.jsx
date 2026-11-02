@@ -59,13 +59,13 @@ describe('age handling', () => {
     expect(routeForAge(20, 'months').track).toBe('toddler');
     expect(routeForAge(1.5, 'years').track).toBe('toddler');
     expect(routeForAge(6, 'years').track).toBe('child');
-    for (const [v, u] of [[30, 'months'], [2.5, 'years'], [12, 'months'], [20, 'years'], [0, 'months']]) {
+    for (const [v, u] of [[30, 'months'], [2.5, 'years'], [12, 'months'], [14, 'years'], [0, 'months']]) {
       const r = routeForAge(v, u); expect(r.track).toBeNull(); expect(r.message).toBeTruthy();
     }
   });
   it('the start page explains an unsupported age instead of opening a questionnaire', () => {
     render(<MemoryRouter><ScreeningStart /></MemoryRouter>);
-    fireEvent.change(screen.getByLabelText('Child’s age'), { target: { value: '30' } });
+    fireEvent.change(screen.getByLabelText('Age'), { target: { value: '30' } });
     fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
     expect(screen.getByRole('alert')).toHaveTextContent(/don’t have a questionnaire for this age/);
   });
@@ -140,6 +140,9 @@ describe('toddler screening page', () => {
     });
     expect(screen.getByRole('heading', { name: 'Check your answers' })).toBeInTheDocument();
     expect(screen.getByText(/20 months/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Change answer to question 1', exact: true }));
+    expect(screen.getAllByRole('radio')[3]).toHaveAttribute('aria-checked', 'true');
+    fireEvent.click(screen.getByRole('button', { name: 'Return to review' }));
     fireEvent.click(screen.getByRole('button', { name: 'Send my answers' }));
     await waitFor(() => expect(screen.getByText('RESULT PAGE')).toBeInTheDocument());
     const payload = submit.mock.calls[0][0];

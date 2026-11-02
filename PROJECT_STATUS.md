@@ -1,5 +1,7 @@
 # NeuroSense — project status (2026-10-29, after the toddler Phase 1 pass)
 
+> Historical review, retained for provenance. Current verification and corrected scoring/runtime behavior are recorded in `docs/RELEASE_ACCEPTANCE.md` and `docs/SCORING_AND_EVIDENCE.md`; this snapshot is not current acceptance evidence.
+
 Status levels (kept separate on purpose): **1 Implemented** · **2 Tested technically** · **3 Evaluated on labelled data (leakage-safe)** · **4 Validated for the intended population (children, webcam/phone, NeuroSense task)**.
 **Nothing in NeuroSense is at level 4. It is not clinically validated and must not be used to diagnose or to make care decisions.**
 

@@ -1,0 +1,22 @@
+# Example only: substitute hostnames/certificates and a private backend upstream.
+server {
+    listen 443 ssl;
+    server_name research.example.org;
+    ssl_certificate /etc/tls/fullchain.pem;
+    ssl_certificate_key /etc/tls/privkey.pem;
+    root /srv/neurosense/dist;
+    location / { try_files $uri $uri/ /index.html; }
+}
+server {
+    listen 443 ssl;
+    server_name api.research.example.org;
+    ssl_certificate /etc/tls/fullchain.pem;
+    ssl_certificate_key /etc/tls/privkey.pem;
+    client_max_body_size 160m;
+    location / {
+        proxy_pass http://127.0.0.1:8000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 60s;
+    }
+}
