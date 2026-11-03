@@ -7,10 +7,10 @@
   "platform": "macOS 26.6.2 arm64",
   "checks": {
     "clean_no_dasd_backend": {
-      "passed": 318,
+      "passed": 319,
       "skipped": 7,
       "failed": 0,
-      "seconds": 24.19,
+      "seconds": 24.08,
       "dependency_warnings": 934
     },
     "frontend": {
@@ -28,8 +28,8 @@
     "toddler_consistency": "PASS; stored-artifact arithmetic/predictions only",
     "gaze_consistency": "PASS; saved development metric arithmetic; raw-data checks unavailable"
   },
-  "new_harness_tests": 18,
-  "numeric_bilstm_fit": "PASS: tiny software fixtures, one-epoch deterministic CPU training; not diagnostic/model-quality evidence",
+  "new_harness_tests": 19,
+  "numeric_bilstm_fit": "PASS: tiny software fixtures, one-epoch deterministic CPU training; complete CLI success/export path with only loader replaced. Not diagnostic/model-quality evidence.",
   "initial_failure_and_fix": "Clean git archive lacked .git; two CLI tests failed at git rev-parse. Added explicit unavailable/null Git provenance and regression; final full suite passed.",
   "shipped_gaze_v3_sha256_unchanged": "b3899134d927af0013ba68e9c045c41aaf443e3de8cb2a227719b4043300a8d9",
   "new_dasd_comparison": {

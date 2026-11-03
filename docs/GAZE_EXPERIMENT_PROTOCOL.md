@@ -72,7 +72,7 @@ Tests ran in a fresh tracked-file export plus the intended harness/tests, withou
 
 | Command | Observed result |
 |---|---|
-| `MONGODB_URI=mongomock://target-ci GAZE_WARMUP=0 NUMBA_CACHE_DIR=/tmp/neurosense-numba-ci PYTHONPATH=backend python -m pytest backend/tests -q -rs` | PASS: **318 passed, 7 skipped, 0 failed**, 24.19s; seven optional-DASD skips; 934 dependency warnings |
+| `MONGODB_URI=mongomock://target-ci GAZE_WARMUP=0 NUMBA_CACHE_DIR=/tmp/neurosense-numba-ci PYTHONPATH=backend python -m pytest backend/tests -q -rs` | PASS: **319 passed, 7 skipped, 0 failed**, 24.08s; seven optional-DASD skips; 934 dependency warnings |
 | `PYTHONPATH=backend python scripts/check_research_consistency.py` | PASS; saved/checkpoint prediction max error 1.67e-16; not new cohort evidence |
 | `PYTHONPATH=backend python scripts/check_gaze_consistency.py` | PASS; saved arithmetic checked; raw-data check unavailable |
 | `npm test` | PASS: **94 passed**, 13 files; jsdom media-play notices remain |
@@ -80,6 +80,6 @@ Tests ran in a fresh tracked-file export plus the intended harness/tests, withou
 | `NEUROSENSE_PYTHON=/tmp/neurosense-clean/bin/python NUMBA_CACHE_DIR=/tmp/neurosense-numba-ci npm run test:e2e` | PASS: **4 passed**, 33.1s; controlled recording boundaries, not webcam validation |
 | Harness CLI with local data present but no permission reference | BLOCKED, exit2; explicit permission reason, no model metrics or participant reads |
 
-The first clean-archive suite found two CLI tests failing because provenance collection required `.git`. The harness now records null/unavailable Git provenance for source archives (retaining source hash/environment); an explicit regression covers this. The final suite above includes **18 new harness engineering tests**, actual tiny numeric-only CPU fits and mocked orchestration/loader boundaries. It is not a retraining or validation of shipped models. The v3 checkpoint hash remains `b3899134d927af0013ba68e9c045c41aaf443e3de8cb2a227719b4043300a8d9`.
+The first clean-archive suite found two CLI tests failing because provenance collection required `.git`. The harness now records null/unavailable Git provenance for source archives (retaining source hash/environment); an explicit regression covers this. The final suite above includes **19 new harness engineering tests**, actual tiny numeric-only CPU fits, a complete CLI/real-learner/OOF/export success run with only the data loader replaced, and separately mocked orchestration/loader boundaries. It is not a retraining or validation of shipped models. The v3 checkpoint hash remains `b3899134d927af0013ba68e9c045c41aaf443e3de8cb2a227719b4043300a8d9`.
 
 Push/remote CI acceptance must be checked for the new commit separately; local results alone do not establish it.

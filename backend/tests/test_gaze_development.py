@@ -190,3 +190,26 @@ def test_source_archive_has_explicit_unavailable_commit_provenance(tmp_path, mon
     state = E.git_provenance(tmp_path)
     assert state['implementation_commit'] is None and state['working_tree_dirty'] is None
     assert state['source_control_status'].startswith('unavailable')
+
+
+def test_complete_cli_on_numeric_only_fixture(tmp_path, monkeypatch):
+    """Real learners/OOF/JSON path; only the participant-data loader is replaced.
+
+    These are software groups, not generated or inferred diagnostic labels.
+    Reduced one-epoch settings are engineering coverage, not research results.
+    """
+    data = tmp_path/'software-fixture'; data.mkdir()
+    out = tmp_path/'numeric-experiment'
+    subjects = software_subjects(8)
+    manifest = {'development': [{'participant_id': s.participant_id} for s in subjects], 'excluded': []}
+    monkeypatch.setattr(E, 'load_development', lambda root: (subjects, manifest))
+    code = E.main(['--data-root', str(data), '--out', str(out),
+                   '--data-permission-reference', 'unit-test-only-no-human-data',
+                   '--folds', '2', '--seeds', '19', '--epochs', '1', '--permutations', '1', '--bootstrap', '2'])
+    summary = json.loads((out/'summary.json').read_text())
+    audit = json.loads((out/'private_audit.json').read_text())
+    assert code == 0 and summary['status'] == 'completed'
+    assert summary['n'] == 8 and summary['cohort']['development_n_before_quality'] == 8
+    assert summary['screening_integration'] is False
+    assert set(summary['models']) == {'statistics_lr', 'metadata_lr', 'bilstm', 'bilstm_time_shuffled'}
+    assert len(audit['predictions']) == 8*(4+3)
