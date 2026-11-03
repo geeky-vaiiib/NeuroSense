@@ -114,3 +114,28 @@ test('gaze camera-denied retry/skip never uploads (controlled media boundary)',a
  await page.getByRole('button',{name:'Skip the gaze step (the report will say why)'}).click();
  await expect(page.getByText('Speech Sample (Optional)',{exact:true})).toBeVisible();expect(uploads).toBe(0);
 });
+
+test('adult speech-emotion: numeric audio fixture, real model, saved refresh and PDF', async ({page}) => {
+  await register(page, 'emotion');
+  // Generated engineering tone, not human speech or evidence of emotion accuracy.
+  const { Buffer } = await import('node:buffer');
+  const sr=22050, n=sr*6, wav=Buffer.alloc(44+n*2);
+  wav.write('RIFF',0);wav.writeUInt32LE(36+n*2,4);wav.write('WAVEfmt ',8);wav.writeUInt32LE(16,16);
+  wav.writeUInt16LE(1,20);wav.writeUInt16LE(1,22);wav.writeUInt32LE(sr,24);wav.writeUInt32LE(sr*2,28);
+  wav.writeUInt16LE(2,32);wav.writeUInt16LE(16,34);wav.write('data',36);wav.writeUInt32LE(n*2,40);
+  for(let i=0;i<n;i++) wav.writeInt16LE(Math.round(8000*Math.sin(2*Math.PI*180*i/sr)),44+i*2);
+  const res=await page.request.post('http://127.0.0.1:8000/screening/screen', {
+    headers:{'X-Requested-With':'NeuroSense'},data:{category:'adult',demo:{subjectName:'Technical fixture',respondentName:'Operator',respondentRelationship:'Self',age:30,gender:'Prefer not to say',jaundice:'No',familyAsd:'No'},
+      answers:Object.fromEntries(Array.from({length:10},(_,i)=>[`A${i+1}`,'Definitely agree'])),gazeSkipped:true,speechSkipped:false,facialSkipped:true,audioMimeType:'audio/wav',audioBase64:wav.toString('base64')}});
+  expect(res.ok()).toBeTruthy();const body=await res.json();
+  expect(body.result.modalities_in_result).toEqual(['questionnaire']);
+  await page.goto(`/app/results/${body.caseId}`);
+  const card=page.getByLabel(/^Speech emotion \(CNN/);
+  await expect(card.getByText(/Predicted class:/)).toBeVisible();
+  await expect(card.getByText('Not used for the result')).toBeVisible();
+  const before=await card.getByRole('listitem').allTextContents();await page.reload();await expect(card.getByRole('listitem')).toHaveText(before);
+  await expect(page.getByLabel('Score 4 out of 10')).toBeVisible();
+  const download=page.waitForEvent('download');await page.locator('#download-pdf-btn').click();
+  expect((await download).suggestedFilename()).toContain(body.caseId);
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
+});

@@ -682,5 +682,7 @@
     }
   },
   "integration_eligible": true,
-  "seconds": 29.42
+  "seconds": 29.42,
+  "training_source_commit": "34cc245e5fbf0ab08eba0ad1493ad765cfc02833",
+  "post_training_provenance_note": "Only subsequent source-archive Git provenance handling changed; fit/selection/inference recipe unchanged. Exact trained source is in training_source_commit and matches source_sha256."
 }

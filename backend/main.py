@@ -88,7 +88,8 @@ async def lifespan(app: FastAPI):
     logger.info("Toddler Q-CHAT-10: official score drives the result; cohort model %s",
                 _t["model_version"] if _t["available"] else f"UNAVAILABLE ({_t['reason']})")
     logger.info("Speech: acoustic measurement only; classifier %s", "loaded" if _speech_classifier()[0] else "unavailable (none installed)")
-    logger.info("Facial: face detection only; no ASD classifier exists")
+    logger.info("Facial: detection/quality plus optional expression CNN; no ASD classifier exists")
+    logger.info("Separate adult research capabilities (never screening inputs): %s", _research_capabilities())
 
     # ── MongoDB Atlas ────────────────────────────────────────────────
     database.init_db()
@@ -139,6 +140,21 @@ app.include_router(cases.router)
 app.include_router(explainability.router)
 
 
+def _research_capabilities():
+    try:
+        from .ml.research_inference import load_model
+    except ImportError:  # pragma: no cover
+        from ml.research_inference import load_model
+    result = {}
+    for task, key in [('facial', 'facial_expression'), ('speech', 'speech_emotion')]:
+        model, meta = load_model(task)
+        result[key] = {'status': 'available_experimental' if model is not None else 'model_unavailable',
+                       'model_version': meta['version'] if meta else None, 'in_result': False,
+                       'clinically_validated': False, 'population': 'adult technical research only',
+                       'task': key, 'licence': meta['licence'] if meta else None}
+    return result
+
+
 def _speech_classifier():
     try:
         from .ml import speech_engine as _se
@@ -181,6 +197,7 @@ async def health():
         status="ok" if db["connected"] else "degraded",
         modelsLoaded=models_loaded,
         modalities={
+            **_research_capabilities(),
             "toddler_questionnaire": {**_toddler_status(), "instrument": "Q-CHAT-10 (official score drives the result)"},
             "questionnaire": {"status": "available_scoring_instrument", "result_driver": True,
                               "ml_model_loaded": models_loaded, "ml_model_role": "models the scoring rule; explanation only",

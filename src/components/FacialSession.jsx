@@ -156,6 +156,7 @@ export default function FacialSession({ onComplete, onSkip, category }) {
         <p style={{ color: 'var(--color-neutral-600)', lineHeight: 1.7, maxWidth: '640px', marginBottom: '6px' }}>
           We will briefly use your webcam to take one still image and check that a face is detected and the image is usable.
           No facial screening result is produced, and the image does not affect the result. Your video is <strong>not recorded or stored</strong>.
+          {category === 'adult' && ' Adult technical testing also reports experimental posed-expression classes from a CNN. These are not autism predictions or a measure of internal feelings; transfer to this camera and population is unvalidated.'}
         </p>
         <p style={{ color: 'var(--color-neutral-500)', fontSize: '0.88rem', lineHeight: 1.6, marginBottom: '24px' }}>
           Ensure you are in a well-lit room and facing the camera directly.

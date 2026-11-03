@@ -18,6 +18,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score,balanced_accuracy_score,f1_score,recall_score,confusion_matrix,roc_auc_score
 from backend.ml.research_models import (CompactCNN,EyeTrackerBiLSTM,face_input,audio_inputs,FACE_CLASSES,SPEECH_CLASSES,FACE_SCHEMA,SPEECH_SCHEMA,GAZE_SCHEMA)
+from backend.data.evaluate_gaze_development import git_provenance
 
 ROOT=Path(__file__).resolve().parents[2];DATA=ROOT/'research-data';SEED=20261104
 
@@ -205,7 +206,7 @@ def main():
  write(run/'private_manifest.json',{'group':data['group'].tolist(),'sample':data['sample'].tolist(),'split':data['split'].tolist(),'label':data['y'].tolist()})
  epochs=a.epochs or (2 if a.smoke else {'facial':45,'speech':35,'gaze':35}[a.task]);model,norm,history,best_epoch,x=fit_cnn(data,a.task,epochs,a.smoke)
  if a.smoke:write(run/'smoke.json',{'status':'smoke_only','history':history,'test_evaluated':False});return
- k=len(info['classes']);report={'dataset':info,'seed':SEED,'environment':{'python':platform.python_version(),'torch':torch.__version__,'numpy':np.__version__,'pandas':pd.__version__,'sklearn':__import__('sklearn').__version__,'device':'CPU','threads':2},'history':history,'selected_epoch':best_epoch,'classes':info['classes'],'schema':info['schema'],'source_sha256':sha(__file__),'implementation_commit':__import__('subprocess').check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),'calibrated':False,'screening_eligible':False,'smoke':False,'splits':{},'metrics':{}}
+ k=len(info['classes']);report={'dataset':info,'seed':SEED,'environment':{'python':platform.python_version(),'torch':torch.__version__,'numpy':np.__version__,'pandas':pd.__version__,'sklearn':__import__('sklearn').__version__,'device':'CPU','threads':2},'history':history,'selected_epoch':best_epoch,'classes':info['classes'],'schema':info['schema'],'source_sha256':sha(__file__),**git_provenance(ROOT),'calibrated':False,'screening_eligible':False,'smoke':False,'splits':{},'metrics':{}}
  for split in ['train','validation','test']:
   ix=data['split']==split;report['splits'][split]={'participants':len(np.unique(data['group'][ix])),'samples':len(np.unique(data['sample'][ix])),'windows_or_chunks':int(ix.sum()),'class_balance_samples':dict(Counter(str(int(data['y'][np.flatnonzero(data['sample']==s)[0]])) for s in np.unique(data['sample'][ix])))}
  probs=predict(model,x);base=baseline(data,data['features']);arms={'cnn' if a.task!='gaze' else 'bilstm':probs,'statistical_baseline':base}

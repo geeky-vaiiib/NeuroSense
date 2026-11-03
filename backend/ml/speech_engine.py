@@ -2,6 +2,7 @@
 
 What is implemented
   * decoding of the recorded audio and acoustic feature extraction (MFCC, pitch, energy, rate) - measurements;
+  * a separate optional adult research speech-emotion CNN, never used as an ASD classifier;
   * an optional ASD classifier loader that accepts ONLY a safe, non-pickle checkpoint
     (backend/models/speech_asd_model.json) produced by backend/data/train_speech_asd.py from participant-labelled data.
 
@@ -78,7 +79,7 @@ def _result(status: str, *, reason: str | None = None, code: str | None = None, 
                                "installed, so no speech screening result is produced.") if status == "model_unavailable" else (reason or "")}
 
 
-def analyze_speech(audio_base64: str, mime_type: str = "audio/webm") -> dict:
+def analyze_speech(audio_base64: str, mime_type: str = "audio/webm", *, research_enabled: bool = False) -> dict:
     """Decode + measure.  Returns a status dict (see modality_status.speech_state); never invents a score."""
     if not audio_base64:
         return _result("insufficient_data", reason="No audio provided.", code=ERR_NO_AUDIO)
@@ -110,11 +111,21 @@ def analyze_speech(audio_base64: str, mime_type: str = "audio/webm") -> dict:
         import logging
         logging.getLogger("neurosense.speech").exception("Acoustic measurement failed")
         return _result("analysis_failed", reason="Acoustic measurement failed; see server logs.", code=ERR_DECODE, duration_s=duration)
+    emotion_result = None
+    if research_enabled:
+        from .research_inference import speech_emotion
+        emotion_result = speech_emotion(y, sr)
     clf, why = load_classifier()
     if clf is None:
-        return _result("model_unavailable", reason=why, code=ERR_NO_MODEL, features=features, duration_s=duration)
+        result = _result("model_unavailable", reason=why, code=ERR_NO_MODEL, features=features, duration_s=duration)
+        if emotion_result is not None:
+            result['emotion_result'] = emotion_result
+        return result
     coef, intercept, mean, scale, meta = clf
     z = (SF.feature_vector(features) - mean) / np.where(scale == 0, 1.0, scale)
     p = float(1.0 / (1.0 + np.exp(-(z @ coef + intercept))))
-    return _result("available_experimental", features=features, duration_s=duration, output=round(p, 4),
-                   model={"version": meta.get("model_version"), "dataset": meta.get("dataset"), "validated": bool(meta.get("validated_for_deployment", False))})
+    result = _result("available_experimental", features=features, duration_s=duration, output=round(p, 4),
+                     model={"version": meta.get("model_version"), "dataset": meta.get("dataset"), "validated": bool(meta.get("validated_for_deployment", False))})
+    if emotion_result is not None:
+        result['emotion_result'] = emotion_result
+    return result

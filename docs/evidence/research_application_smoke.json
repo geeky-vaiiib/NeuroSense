@@ -1,0 +1,33 @@
+{
+  "scope": "post-selection licensed held-out recording HTTP TestClient/runtime parity, not webcam or diagnostic validation",
+  "core_status": 200,
+  "questionnaire_score": 6,
+  "modalities_in_result": [
+    "questionnaire"
+  ],
+  "api_reopened_case_equal": true,
+  "source_demographics": "technical routing fixture; not source participant age",
+  "speech_HTTP_status": "withheld: source clip shorter than existing five-second gate",
+  "speech_direct_frozen_inference_status": "available_experimental",
+  "outputs": [
+    {
+      "id": "speech_emotion",
+      "status": "failed_quality",
+      "model": null,
+      "in_result": false
+    },
+    {
+      "id": "facial_expression",
+      "status": "available_experimental",
+      "model": {
+        "version": "facial-v1",
+        "dataset": "V_Expression v1 / attributed course v1.0",
+        "schema": "face-gray64-clahe-v1",
+        "validated": false,
+        "weights_sha256": "898faddc571bbac2d456346d221f9ea33573190e6501337a8b9712993ba5009e",
+        "licence": "CC BY 4.0"
+      },
+      "in_result": false
+    }
+  ]
+}

@@ -1,7 +1,8 @@
 """Facial module: face detection and image-quality measurement only.
 
 Implemented: face detection (OpenCV DNN or Haar cascade), face box geometry, brightness / sharpness.
-NOT implemented: facial landmarks, expression recognition, and - above all - ASD classification.  No ASD-labelled
+Optional: a separate adult research expression CNN (research_inference), never an ASD classifier.
+NOT implemented: facial landmarks or ASD classification. No ASD-labelled
 facial dataset exists in this repository.  The former "heuristic score" (derived from image brightness/contrast)
 and the optional FER-2013 CNN path were removed: brightness is not evidence of anything about autism, and an
 emotion-recognition model is a different task (and facial expression must never be read as evidence of autism).
@@ -33,7 +34,7 @@ def _result(status, *, reason=None, code=None, features=None) -> dict:
                                "facial screening result is produced.") if status == "model_unavailable" else (reason or "")}
 
 
-def analyze_face(image_base64: str) -> dict:
+def analyze_face(image_base64: str, *, research_enabled: bool = False) -> dict:
     """Detect a face and measure image quality.  Never returns a risk score."""
     if not image_base64:
         return _result("insufficient_data", reason="No facial image provided.", code=ERR_NO_IMAGE)
@@ -59,4 +60,8 @@ def analyze_face(image_base64: str) -> dict:
     x, y, bw, bh = (int(v) for v in box)
     feats.update({"face_box": [x, y, bw, bh], "face_area_fraction": round(bw * bh / float(w * h), 4),
                   "face_center_offset": [round((x + bw / 2) / w - 0.5, 3), round((y + bh / 2) / h - 0.5, 3)]})
-    return _result("model_unavailable", reason="No validated facial ASD classifier is installed.", code=ERR_NO_MODEL, features=feats)
+    result = _result("model_unavailable", reason="No validated facial ASD classifier is installed.", code=ERR_NO_MODEL, features=feats)
+    if research_enabled:
+        from .research_inference import face_expression
+        result['expression_result'] = face_expression(bgr)
+    return result

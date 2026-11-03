@@ -102,3 +102,12 @@ describe('Results page consistency', () => {
     expect(screen.queryByText(/Speech risk score/)).toBeNull();
   });
 });
+
+it('shows saved expression classes separately with uncalibrated scores and no autism prediction', () => {
+  render(<ModalityStatusGrid states={[{id:'facial_expression',label:'Facial expression (CNN, experimental)',status:'available_experimental',status_label:'Experimental · not used in result',in_result:false,
+    output:{kind:'facial_expression',label:'happy',calibrated:false,class_scores:{happy:.625,sad:.375}},model:{version:'facial-v1',validated:false}}]} />);
+  expect(screen.getByText('Predicted class: happy')).toBeInTheDocument();
+  expect(screen.getByText('happy: 62.5%')).toBeInTheDocument();
+  expect(screen.getByText(/not autism prediction or a measure of internal feelings/)).toBeInTheDocument();
+  expect(screen.getByText('Not used for the result')).toBeInTheDocument();
+});

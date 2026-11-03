@@ -72,7 +72,7 @@ function preferredMime() {
 /* ──────────────────────────────────────────────────────────────
    SpeechSession Component
    ────────────────────────────────────────────────────────────── */
-export default function SpeechSession({ onComplete, onSkip }) {
+export default function SpeechSession({ onComplete, onSkip, category }) {
   const [phase, setPhase] = useState('intro');
   const [countdown, setCountdown] = useState(20);
   const [preCountdown, setPreCountdown] = useState(3);
@@ -295,6 +295,7 @@ export default function SpeechSession({ onComplete, onSkip }) {
           features (pitch, loudness, speech rate). These measurements are shown for information; no validated speech
           classifier exists, so they do not affect the screening result. You do not need to say anything specific. You can describe
           what you did today, or read the prompt shown on screen.
+          {category === 'adult' && ' Adult technical testing also reports experimental speech-emotion classes trained on acted North American English. They are not autism predictions or a measure of internal feelings, and transfer to spontaneous speech or other languages is unvalidated.'}
         </p>
         <p
           style={{

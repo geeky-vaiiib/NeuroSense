@@ -25,7 +25,7 @@
   "private_split_manifest_sha256": "ad5f336f1ba8cf94a52831390c4f500b5c3fb6f2cb69b6aa8fd879250f978a31",
   "training_source_sha256": "ff78c8da0a311fe3e005220b2660ddfa9e5334b06a1a53e4d4d8fc2fe889276a",
   "model_source_sha256": "3e55013d34eca4962ac28fb27550c7abac8def9b6353ced037ec66c9d057dc92",
-  "evaluation_report_sha256": "a16b810235d91e93dfd6a3a6eb9d4d2cdfe24ddb329b76848cf5f829d3853087",
+  "evaluation_report_sha256": "a573b0a4737d5dd31096b122ace40514e751c155ebce939ad46790ac317dad98",
   "split_counts": {
     "train": {
       "participants": 70,
@@ -80,5 +80,6 @@
     "threads": 2
   },
   "selected_epoch": 41,
-  "seed": 20261104
+  "seed": 20261104,
+  "training_source_commit": "34cc245e5fbf0ab08eba0ad1493ad765cfc02833"
 }

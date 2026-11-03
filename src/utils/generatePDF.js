@@ -1,3 +1,4 @@
+import { isResearchClassification, researchClassScores } from './researchOutputs.js';
 /** Export saved server values. No scoring, inference or substitute explanations. */
 export async function generatePDF(caseData, explanation = {}, options = {}) {
   const { jsPDF } = await import('jspdf');
@@ -43,6 +44,10 @@ export async function generatePDF(caseData, explanation = {}, options = {}) {
   section('Other analyses - excluded from the screening result');
   for (const modality of (caseData.modality_states ?? []).filter((m) => m.id !== 'questionnaire')) {
     line(`${modality.label ?? modality.id}: ${modality.status ?? 'Unavailable'}. ${modality.reason ?? ''}`, 9);
+    if (isResearchClassification(modality.output)) {
+      line(`Predicted class: ${modality.output.label}. Uncalibrated class scores: ${researchClassScores(modality.output).map((row) => `${row.label}: ${row.text}`).join(', ')}. Not autism prediction or a measure of internal feelings.`, 9);
+      line(`Model: ${modality.model?.version ?? 'Unavailable'}; input schema: ${modality.model?.schema ?? 'Unavailable'}; weights SHA-256: ${modality.model?.weights_sha256 ?? 'Unavailable'}.`, 8);
+    }
   }
   line(`Experimental gaze: ${caseData.gaze_status ?? 'Unavailable'}; output: ${caseData.gaze_score ?? 'Unavailable'}. Not a population autism probability.`, 9);
   if (caseData.gaze_quality) line(`Gaze recording quality (not model confidence): ${JSON.stringify(caseData.gaze_quality)}`, 9);

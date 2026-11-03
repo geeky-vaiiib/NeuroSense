@@ -356,6 +356,9 @@ class CaseDetailResponse(CaseSummaryResponse):
     age_months: Optional[int] = None
     scoring_version: Optional[int] = None
     modality_states: Optional[list] = None
+    speech_features: Optional[dict] = None
+    facial_features: Optional[dict] = None
+    facial_interpretation: Optional[str] = None
     screening_result: Optional[dict] = None
     warnings: Optional[list] = None
     # Gaze analysis (snake_case keys; all optional so pre-gaze-model cases still load)

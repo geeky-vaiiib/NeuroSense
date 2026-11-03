@@ -49,3 +49,10 @@ it('exports media timing and separates recording quality from model confidence',
  await generatePDF({id:'fixture',category:'child',gaze_quality:{data_quality_score:0},gaze_features:{recording_timing:{duration_s:30,timing_source:'decoded_media_pts',normalization_version:'media-pts-cfr-v1'}}},null);
  const all=texts.join('\n');expect(all).toContain('not model confidence');expect(all).toContain('media-pts-cfr-v1');expect(all).toContain('"duration_s":30');expect(all).not.toContain('undefined');
 });
+
+it('exports saved emotion class scores, model identity and null unavailable outputs honestly', async()=>{
+ texts.length=0;
+ await generatePDF({id:'technical',modality_states:[{id:'speech_emotion',label:'Speech emotion',status:'available_experimental',output:{kind:'speech_emotion',label:'calm',class_scores:{calm:.625,happy:.375}},model:{version:'speech-v1',schema:'audio-schema',weights_sha256:'fixture-hash'}},
+ {id:'facial_expression',label:'Facial expression',status:'model_unavailable',output:null}]},null);
+ const all=texts.join('\n');expect(all).toContain('Predicted class: calm');expect(all).toContain('calm: 62.5%');expect(all).toContain('Not autism prediction');expect(all).toContain('speech-v1');expect(all).toContain('fixture-hash');expect(all).toContain('model_unavailable');expect(all).not.toMatch(/NaN|undefined/);
+});

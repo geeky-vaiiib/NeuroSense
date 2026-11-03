@@ -26,6 +26,7 @@ try:
     from ..ml.modality_status import facial_state, gaze_state, questionnaire_state, speech_state
     from ..ml.preprocessing_pipeline import preprocess_screening_input
     from ..ml import toddler_service
+    from ..ml.research_inference import state as research_state, unavailable
     from ..ml.questionnaire_score import AnswerError, score_questionnaire
     from ..schemas.screening import ScreeningRequest, ScreeningResponse
 except ImportError:  # pragma: no cover - fallback for backend cwd execution
@@ -39,6 +40,7 @@ except ImportError:  # pragma: no cover - fallback for backend cwd execution
     from ml.modality_status import facial_state, gaze_state, questionnaire_state, speech_state
     from ml.preprocessing_pipeline import preprocess_screening_input
     from ml import toddler_service
+    from ml.research_inference import state as research_state, unavailable
     from ml.questionnaire_score import AnswerError, score_questionnaire
     from schemas.screening import ScreeningRequest, ScreeningResponse
 
@@ -110,6 +112,18 @@ def run_screening(
         speech_state(pre.speech_result, body.speech_skipped or False),
         facial_state(pre.facial_result, body.facial_skipped or False),
     ]
+    # Independent expression/emotion tasks; do not repurpose ASD statuses or scores.
+    for task, raw, result_key, submitted in (
+        ('speech', pre.speech_result, 'emotion_result', bool(body.audio_base64 and not body.speech_skipped)),
+        ('facial', pre.facial_result, 'expression_result', bool(body.facial_image_base64 and not body.facial_skipped)),
+    ):
+        if submitted:
+            candidate = (raw or {}).get(result_key)
+            if candidate is None:
+                reason = ('These research models are restricted to adult technical testing; not applied to children or toddlers.'
+                          if category != 'adult' else 'Recording failed the existing quality/measurement stage; no research classification produced.')
+                candidate = unavailable(task, reason, 'model_unavailable' if category != 'adult' else 'failed_quality')
+            states.append(research_state(candidate))
 
     # 4. Central result contract
     result = combine(screening, states)

@@ -4,6 +4,7 @@
  */
 import StatusBadge from '../ui/StatusBadge';
 import { outputPct } from '../../utils/caseModalities';
+import { isResearchClassification, researchClassScores } from '../../utils/researchOutputs';
 
 const TONE = { available_scoring_instrument: 'ok', available_validated: 'ok', available_experimental: 'warn',
   failed_quality: 'muted', insufficient_data: 'muted', model_unavailable: 'muted', analysis_failed: 'warn',
@@ -43,6 +44,15 @@ export default function ModalityStatusGrid({ states }) {
                 <strong style={{ fontFamily: 'var(--font-data)' }}>{pct}</strong>{' '}
                 {experimental ? 'experimental model output — research signal only' : 'value stored by an earlier version'}
               </p>
+            )}
+            {isResearchClassification(s.output) && (
+              <div>
+                <p style={{ margin: '0 0 8px' }}><strong>Predicted class: {s.output.label}</strong></p>
+                <p style={{ fontSize: '0.78rem' }}>Uncalibrated class scores — not autism prediction or a measure of internal feelings.</p>
+                <ul aria-label="Uncalibrated class scores" style={{ paddingLeft: 20, fontSize: '0.8rem' }}>
+                  {researchClassScores(s.output).map((row) => <li key={row.label}>{row.label}: {row.text}</li>)}
+                </ul>
+              </div>
             )}
             {!pct && !s.output && <p style={{ margin: 0, color: 'var(--ns-n400)', fontWeight: 500 }}>No output</p>}
             {qualityLine(s) && <p style={{ margin: 0, fontSize: '0.78rem', color: 'var(--ns-n500)' }}><strong style={{ color: 'var(--ns-n700)' }}>Details:</strong> {qualityLine(s)}</p>}
