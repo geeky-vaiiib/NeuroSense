@@ -1,0 +1,73 @@
+{
+  "version": "gaze-v1",
+  "task": "gaze",
+  "schema": "eye-tracker-screen-pixels20hz-4s-centered-v1",
+  "classes": [
+    "TD",
+    "ASD"
+  ],
+  "architecture": "EyeTrackerBiLSTM(2,24)",
+  "weights_sha256": "89a84eef07cfbf243a49e649980ca91fad9ccfd0cac4c83822cde8d325dcca02",
+  "normalizer": {
+    "mean": [
+      2.8630870474444237e-07,
+      2.015720781400887e-07
+    ],
+    "std": [
+      189.3862762451172,
+      116.58743286132812
+    ]
+  },
+  "dataset": "Cilia Figshare 20113592 v1",
+  "licence": "CC BY 4.0",
+  "integration_eligible": false,
+  "experimental": true,
+  "calibrated": false,
+  "screening_eligible": false,
+  "population": "source eye-tracker cohort only",
+  "report": "backend/reports/research/gaze-v1.json",
+  "private_split_manifest_sha256": "bd4c3ff33e98ceecd706bcfbe4f955c8c0317af25fd73977e5a54606dca6aa38",
+  "training_source_sha256": "ff78c8da0a311fe3e005220b2660ddfa9e5334b06a1a53e4d4d8fc2fe889276a",
+  "model_source_sha256": "3e55013d34eca4962ac28fb27550c7abac8def9b6353ced037ec66c9d057dc92",
+  "evaluation_report_sha256": "8053082b6d3576c74c23dba41273bc375212dc05c1b140540aa936cfcec22662",
+  "split_counts": {
+    "train": {
+      "participants": 34,
+      "samples": 34,
+      "windows_or_chunks": 924,
+      "class_balance_samples": {
+        "1": 16,
+        "0": 18
+      }
+    },
+    "validation": {
+      "participants": 11,
+      "samples": 11,
+      "windows_or_chunks": 288,
+      "class_balance_samples": {
+        "1": 5,
+        "0": 6
+      }
+    },
+    "test": {
+      "participants": 12,
+      "samples": 12,
+      "windows_or_chunks": 336,
+      "class_balance_samples": {
+        "1": 6,
+        "0": 6
+      }
+    }
+  },
+  "training_environment": {
+    "python": "3.11.14",
+    "torch": "2.6.0",
+    "numpy": "1.26.4",
+    "pandas": "2.2.3",
+    "sklearn": "1.6.1",
+    "device": "CPU",
+    "threads": 2
+  },
+  "selected_epoch": 2,
+  "seed": 20261104
+}

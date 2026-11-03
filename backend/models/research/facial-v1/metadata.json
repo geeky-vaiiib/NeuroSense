@@ -1,0 +1,84 @@
+{
+  "version": "facial-v1",
+  "task": "facial",
+  "schema": "face-gray64-clahe-v1",
+  "classes": [
+    "neutral",
+    "happy",
+    "sad",
+    "fearful",
+    "angry",
+    "surprised",
+    "disgusted"
+  ],
+  "architecture": "CompactCNN(16,32,64,128)",
+  "weights_sha256": "898faddc571bbac2d456346d221f9ea33573190e6501337a8b9712993ba5009e",
+  "normalizer": null,
+  "dataset": "V_Expression v1 / attributed course v1.0",
+  "licence": "CC BY 4.0",
+  "integration_eligible": true,
+  "experimental": true,
+  "calibrated": false,
+  "screening_eligible": false,
+  "population": "adult technical research only; transfer unvalidated",
+  "report": "backend/reports/research/facial-v1.json",
+  "private_split_manifest_sha256": "ad5f336f1ba8cf94a52831390c4f500b5c3fb6f2cb69b6aa8fd879250f978a31",
+  "training_source_sha256": "ff78c8da0a311fe3e005220b2660ddfa9e5334b06a1a53e4d4d8fc2fe889276a",
+  "model_source_sha256": "3e55013d34eca4962ac28fb27550c7abac8def9b6353ced037ec66c9d057dc92",
+  "evaluation_report_sha256": "a16b810235d91e93dfd6a3a6eb9d4d2cdfe24ddb329b76848cf5f829d3853087",
+  "split_counts": {
+    "train": {
+      "participants": 70,
+      "samples": 490,
+      "windows_or_chunks": 490,
+      "class_balance_samples": {
+        "0": 70,
+        "1": 70,
+        "2": 70,
+        "3": 70,
+        "4": 70,
+        "5": 70,
+        "6": 70
+      }
+    },
+    "validation": {
+      "participants": 17,
+      "samples": 119,
+      "windows_or_chunks": 119,
+      "class_balance_samples": {
+        "0": 17,
+        "1": 17,
+        "2": 17,
+        "3": 17,
+        "4": 17,
+        "5": 17,
+        "6": 17
+      }
+    },
+    "test": {
+      "participants": 40,
+      "samples": 280,
+      "windows_or_chunks": 280,
+      "class_balance_samples": {
+        "0": 40,
+        "1": 40,
+        "2": 40,
+        "3": 40,
+        "4": 40,
+        "5": 40,
+        "6": 40
+      }
+    }
+  },
+  "training_environment": {
+    "python": "3.11.14",
+    "torch": "2.6.0",
+    "numpy": "1.26.4",
+    "pandas": "2.2.3",
+    "sklearn": "1.6.1",
+    "device": "CPU",
+    "threads": 2
+  },
+  "selected_epoch": 41,
+  "seed": 20261104
+}

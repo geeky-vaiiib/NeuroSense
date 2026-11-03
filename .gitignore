@@ -52,3 +52,6 @@ playwright-report/
 
 # Private research runs: participant predictions/manifests; publish reviewed aggregates only
 experiments/
+
+# Licensed raw multimodal corpora, identifying images/audio and private extraction caches
+research-data/

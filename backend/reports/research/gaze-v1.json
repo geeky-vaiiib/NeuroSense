@@ -1,0 +1,469 @@
+{
+  "dataset": {
+    "dataset": "Cilia Figshare 20113592 v1",
+    "licence": "CC BY 4.0",
+    "metadata_people": 59,
+    "actual_people": 57,
+    "excluded": {
+      "invalid_frames": 301402,
+      "gappy_window": 4480,
+      "invalid_or_overlong_trial": 149,
+      "unidentified_participant_frames": 901786,
+      "short_trial": 2058,
+      "participants_without_usable_windows": 2
+    },
+    "archive_sha256": "a3b9341e48a7f57f3a51dd2bc0074642273ce701c3052a92430ba0bd14e80c66",
+    "classes": [
+      "TD",
+      "ASD"
+    ],
+    "schema": "eye-tracker-screen-pixels20hz-4s-centered-v1",
+    "webcam_compatible": false,
+    "diagnostic_provenance": "metadata Class and CARS fields; independent assessment procedure not verified"
+  },
+  "seed": 20261104,
+  "environment": {
+    "python": "3.11.14",
+    "torch": "2.6.0",
+    "numpy": "1.26.4",
+    "pandas": "2.2.3",
+    "sklearn": "1.6.1",
+    "device": "CPU",
+    "threads": 2
+  },
+  "history": [
+    {
+      "epoch": 1,
+      "train_loss": 0.6893681678278692,
+      "validation_macro_f1": 0.717948717948718
+    },
+    {
+      "epoch": 2,
+      "train_loss": 0.6795479223645967,
+      "validation_macro_f1": 0.8166666666666667
+    },
+    {
+      "epoch": 3,
+      "train_loss": 0.6733317190203173,
+      "validation_macro_f1": 0.6333333333333333
+    },
+    {
+      "epoch": 4,
+      "train_loss": 0.6663608818218626,
+      "validation_macro_f1": 0.6333333333333333
+    },
+    {
+      "epoch": 5,
+      "train_loss": 0.6612340047441679,
+      "validation_macro_f1": 0.717948717948718
+    },
+    {
+      "epoch": 6,
+      "train_loss": 0.6586020835514727,
+      "validation_macro_f1": 0.717948717948718
+    },
+    {
+      "epoch": 7,
+      "train_loss": 0.659728609282395,
+      "validation_macro_f1": 0.6071428571428572
+    },
+    {
+      "epoch": 8,
+      "train_loss": 0.6564771224712503,
+      "validation_macro_f1": 0.717948717948718
+    },
+    {
+      "epoch": 9,
+      "train_loss": 0.655263105343128,
+      "validation_macro_f1": 0.6071428571428572
+    },
+    {
+      "epoch": 10,
+      "train_loss": 0.6555142834268767,
+      "validation_macro_f1": 0.6333333333333333
+    },
+    {
+      "epoch": 11,
+      "train_loss": 0.6545938520595945,
+      "validation_macro_f1": 0.6333333333333333
+    },
+    {
+      "epoch": 12,
+      "train_loss": 0.6528240442276001,
+      "validation_macro_f1": 0.717948717948718
+    }
+  ],
+  "selected_epoch": 2,
+  "classes": [
+    "TD",
+    "ASD"
+  ],
+  "schema": "eye-tracker-screen-pixels20hz-4s-centered-v1",
+  "source_sha256": "ff78c8da0a311fe3e005220b2660ddfa9e5334b06a1a53e4d4d8fc2fe889276a",
+  "implementation_commit": "fa4d192f4573b8b8667bbb8d8a38d8d5fe16a43a",
+  "calibrated": false,
+  "screening_eligible": false,
+  "smoke": false,
+  "splits": {
+    "train": {
+      "participants": 34,
+      "samples": 34,
+      "windows_or_chunks": 924,
+      "class_balance_samples": {
+        "1": 16,
+        "0": 18
+      }
+    },
+    "validation": {
+      "participants": 11,
+      "samples": 11,
+      "windows_or_chunks": 288,
+      "class_balance_samples": {
+        "1": 5,
+        "0": 6
+      }
+    },
+    "test": {
+      "participants": 12,
+      "samples": 12,
+      "windows_or_chunks": 336,
+      "class_balance_samples": {
+        "1": 6,
+        "0": 6
+      }
+    }
+  },
+  "metrics": {
+    "bilstm": {
+      "validation": {
+        "n": 11,
+        "accuracy": 0.8181818181818182,
+        "balanced_accuracy": 0.8333333333333333,
+        "macro_f1": 0.8166666666666667,
+        "per_class_recall": [
+          0.6666666666666666,
+          1.0
+        ],
+        "confusion_matrix": [
+          [
+            4,
+            2
+          ],
+          [
+            0,
+            5
+          ]
+        ],
+        "sensitivity": 1.0,
+        "specificity": 0.6666666666666666,
+        "roc_auc": 0.8666666666666667,
+        "method": "participant/speaker cluster bootstrap, conditional on fitted model",
+        "draws_with_all_classes": 998,
+        "accuracy_ci95": [
+          0.5454545454545454,
+          1.0
+        ],
+        "macro_f1_ci95": [
+          0.5299145299145299,
+          1.0
+        ]
+      },
+      "test": {
+        "n": 12,
+        "accuracy": 0.8333333333333334,
+        "balanced_accuracy": 0.8333333333333334,
+        "macro_f1": 0.8333333333333334,
+        "per_class_recall": [
+          0.8333333333333334,
+          0.8333333333333334
+        ],
+        "confusion_matrix": [
+          [
+            5,
+            1
+          ],
+          [
+            1,
+            5
+          ]
+        ],
+        "sensitivity": 0.8333333333333334,
+        "specificity": 0.8333333333333334,
+        "roc_auc": 0.8055555555555557,
+        "method": "participant/speaker cluster bootstrap, conditional on fitted model",
+        "draws_with_all_classes": 1000,
+        "accuracy_ci95": [
+          0.5833333333333334,
+          1.0
+        ],
+        "macro_f1_ci95": [
+          0.5804195804195804,
+          1.0
+        ]
+      }
+    },
+    "statistical_baseline": {
+      "validation": {
+        "n": 11,
+        "accuracy": 0.6363636363636364,
+        "balanced_accuracy": 0.6333333333333333,
+        "macro_f1": 0.6333333333333333,
+        "per_class_recall": [
+          0.6666666666666666,
+          0.6
+        ],
+        "confusion_matrix": [
+          [
+            4,
+            2
+          ],
+          [
+            2,
+            3
+          ]
+        ],
+        "sensitivity": 0.6,
+        "specificity": 0.6666666666666666,
+        "roc_auc": 0.8666666666666667,
+        "method": "participant/speaker cluster bootstrap, conditional on fitted model",
+        "draws_with_all_classes": 998,
+        "accuracy_ci95": [
+          0.36363636363636365,
+          0.9090909090909091
+        ],
+        "macro_f1_ci95": [
+          0.3125,
+          0.905982905982906
+        ]
+      },
+      "test": {
+        "n": 12,
+        "accuracy": 0.6666666666666666,
+        "balanced_accuracy": 0.6666666666666667,
+        "macro_f1": 0.6571428571428571,
+        "per_class_recall": [
+          0.8333333333333334,
+          0.5
+        ],
+        "confusion_matrix": [
+          [
+            5,
+            1
+          ],
+          [
+            3,
+            3
+          ]
+        ],
+        "sensitivity": 0.5,
+        "specificity": 0.8333333333333334,
+        "roc_auc": 0.8055555555555557,
+        "method": "participant/speaker cluster bootstrap, conditional on fitted model",
+        "draws_with_all_classes": 1000,
+        "accuracy_ci95": [
+          0.4166666666666667,
+          0.9166666666666666
+        ],
+        "macro_f1_ci95": [
+          0.3333333333333333,
+          0.9111111111111111
+        ]
+      }
+    },
+    "metadata_control": {
+      "validation": {
+        "n": 11,
+        "accuracy": 0.7272727272727273,
+        "balanced_accuracy": 0.7166666666666667,
+        "macro_f1": 0.717948717948718,
+        "per_class_recall": [
+          0.8333333333333334,
+          0.6
+        ],
+        "confusion_matrix": [
+          [
+            5,
+            1
+          ],
+          [
+            2,
+            3
+          ]
+        ],
+        "sensitivity": 0.6,
+        "specificity": 0.8333333333333334,
+        "roc_auc": 0.8333333333333334,
+        "method": "participant/speaker cluster bootstrap, conditional on fitted model",
+        "draws_with_all_classes": 998,
+        "accuracy_ci95": [
+          0.45454545454545453,
+          1.0
+        ],
+        "macro_f1_ci95": [
+          0.3888888888888889,
+          1.0
+        ]
+      },
+      "test": {
+        "n": 12,
+        "accuracy": 0.5833333333333334,
+        "balanced_accuracy": 0.5833333333333334,
+        "macro_f1": 0.5555555555555556,
+        "per_class_recall": [
+          0.8333333333333334,
+          0.3333333333333333
+        ],
+        "confusion_matrix": [
+          [
+            5,
+            1
+          ],
+          [
+            4,
+            2
+          ]
+        ],
+        "sensitivity": 0.3333333333333333,
+        "specificity": 0.8333333333333334,
+        "roc_auc": 0.6666666666666666,
+        "method": "participant/speaker cluster bootstrap, conditional on fitted model",
+        "draws_with_all_classes": 1000,
+        "accuracy_ci95": [
+          0.3333333333333333,
+          0.8333333333333334
+        ],
+        "macro_f1_ci95": [
+          0.25,
+          0.8125
+        ]
+      }
+    },
+    "temporal_shuffle_control": {
+      "validation": {
+        "n": 11,
+        "accuracy": 0.8181818181818182,
+        "balanced_accuracy": 0.8333333333333333,
+        "macro_f1": 0.8166666666666667,
+        "per_class_recall": [
+          0.6666666666666666,
+          1.0
+        ],
+        "confusion_matrix": [
+          [
+            4,
+            2
+          ],
+          [
+            0,
+            5
+          ]
+        ],
+        "sensitivity": 1.0,
+        "specificity": 0.6666666666666666,
+        "roc_auc": 0.8666666666666667,
+        "method": "participant/speaker cluster bootstrap, conditional on fitted model",
+        "draws_with_all_classes": 998,
+        "accuracy_ci95": [
+          0.5454545454545454,
+          1.0
+        ],
+        "macro_f1_ci95": [
+          0.5299145299145299,
+          1.0
+        ]
+      },
+      "test": {
+        "n": 12,
+        "accuracy": 0.8333333333333334,
+        "balanced_accuracy": 0.8333333333333334,
+        "macro_f1": 0.8333333333333334,
+        "per_class_recall": [
+          0.8333333333333334,
+          0.8333333333333334
+        ],
+        "confusion_matrix": [
+          [
+            5,
+            1
+          ],
+          [
+            1,
+            5
+          ]
+        ],
+        "sensitivity": 0.8333333333333334,
+        "specificity": 0.8333333333333334,
+        "roc_auc": 0.7777777777777779,
+        "method": "participant/speaker cluster bootstrap, conditional on fitted model",
+        "draws_with_all_classes": 1000,
+        "accuracy_ci95": [
+          0.5833333333333334,
+          1.0
+        ],
+        "macro_f1_ci95": [
+          0.5804195804195804,
+          1.0
+        ]
+      }
+    }
+  },
+  "shuffle_validation_history": [
+    {
+      "epoch": 1,
+      "train_loss": 0.6912310246763558,
+      "validation_macro_f1": 0.8166666666666667
+    },
+    {
+      "epoch": 2,
+      "train_loss": 0.6838652553229496,
+      "validation_macro_f1": 0.7272727272727273
+    },
+    {
+      "epoch": 3,
+      "train_loss": 0.6802373466820553,
+      "validation_macro_f1": 0.6333333333333333
+    },
+    {
+      "epoch": 4,
+      "train_loss": 0.6761153360892986,
+      "validation_macro_f1": 0.7272727272727273
+    },
+    {
+      "epoch": 5,
+      "train_loss": 0.6710772904856451,
+      "validation_macro_f1": 0.6333333333333333
+    },
+    {
+      "epoch": 6,
+      "train_loss": 0.6671019998090021,
+      "validation_macro_f1": 0.6333333333333333
+    },
+    {
+      "epoch": 7,
+      "train_loss": 0.6660706256997997,
+      "validation_macro_f1": 0.717948717948718
+    },
+    {
+      "epoch": 8,
+      "train_loss": 0.6636865447307455,
+      "validation_macro_f1": 0.6333333333333333
+    },
+    {
+      "epoch": 9,
+      "train_loss": 0.6614312200710691,
+      "validation_macro_f1": 0.717948717948718
+    },
+    {
+      "epoch": 10,
+      "train_loss": 0.6624708113999203,
+      "validation_macro_f1": 0.8166666666666667
+    },
+    {
+      "epoch": 11,
+      "train_loss": 0.6623380471920145,
+      "validation_macro_f1": 0.6333333333333333
+    }
+  ],
+  "integration_eligible": false,
+  "seconds": 13.56
+}

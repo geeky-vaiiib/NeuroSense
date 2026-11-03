@@ -1,0 +1,47 @@
+{
+  "version": "gaze-statistical-lr-v1",
+  "algorithm": "StandardScaler + balanced LogisticRegression(C=1)",
+  "task": "gaze",
+  "schema": "eye-tracker-screen-pixels20hz-4s-centered-v1",
+  "classes": [
+    "TD",
+    "ASD"
+  ],
+  "coef": [
+    [
+      0.2073420286553069,
+      0.20453657392951577,
+      -0.18171824658922678,
+      -0.24729816350144201,
+      0.015777169267893444,
+      0.3650810181230423
+    ]
+  ],
+  "intercept": [
+    0.05060160090494406
+  ],
+  "mean": [
+    178.78937329744096,
+    100.18472515049618,
+    -218.12794657391763,
+    -101.83143857204189,
+    211.3511614910343,
+    132.03826980945811
+  ],
+  "scale": [
+    48.84052166142505,
+    31.714062557300164,
+    81.18593196744013,
+    46.27010467445129,
+    59.56044985349378,
+    50.6292214344614
+  ],
+  "licence": "CC BY 4.0",
+  "feature_dimension": 6,
+  "feature_order": "window SDx,SDy,p10x,p10y,p90x,p90y; participant mean",
+  "training_only": true,
+  "baseline_report": "backend/reports/research/gaze-v1.json",
+  "screening_eligible": false,
+  "calibrated": false,
+  "export_source_sha256": "9d3b92fc8c427fd7da77d1ba1775ec0f9e68dd3fd07e046c056509c9d5d084be"
+}
