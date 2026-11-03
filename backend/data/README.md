@@ -99,9 +99,9 @@ the variance of their predicted probability is explained by the total alone. The
 their accuracy / AUC / calibration are **not** evidence about clinical status, and the "probability" is not an
 independently validated probability. Verify with `python -m backend.data.audit_questionnaire_labels`
 (results: `backend/reports/questionnaire_label_audit.json`); `train_model.py` now prints a leakage warning when the
-agreement is >= 99%. The thresholds are the dataset providers' labelling rule; instrument manuals may quote a different
-cut-off. The app therefore shows the total score, the rule's threshold and a plain notice next to the model output
-(`backend/ml/questionnaire_score.py`).
+agreement is >= 99%. These thresholds reproduce dataset labels; the app separately uses versioned official
+instrument scoring (currently AQ-10 >=6 and Q-CHAT-10 >=3), with a plain notice separating supplementary
+model outputs from the server-scored result. See `../../docs/SCORING_AND_EVIDENCE.md`.
 
 To make this model meaningful you need labels that do not come from the items (e.g. clinician-confirmed diagnoses)
 and participant-level evaluation; do not invent or relabel data.
@@ -149,4 +149,13 @@ backend/ml/background_toddler.npy
 
 ## Running Without Trained Models
 
-The system falls back to **mock inference** automatically when `.pkl` files are not found. The Results page shows a "mock mode" badge when running in this state. Mock mode uses AQ-10/Q-CHAT-10 sum scores as a rough probability proxy — it is not a real ML prediction.
+Missing/corrupt optional model artifacts are reported as unavailable with null model output; deterministic
+server questionnaire scoring remains available. No mock probability or synthetic classifier substitutes for a model.
+
+## Current multimodal research target
+
+The questionnaire-only result is an intermediate application capability. The presentation's facial CNN,
+gaze LSTM, speech model, fusion and actual-output explanations remain the target, subject to appropriate data
+and evaluation. See `../../docs/TARGET_ARCHITECTURE_AND_GAPS.md` for the dataset/alignment inventory and
+`../../docs/GAZE_EXPERIMENT_PROTOCOL.md` for the isolated development harness. Do not run legacy trainers
+to overwrite shipped models or fabricate diagnostic labels from emotion/synthetic data.

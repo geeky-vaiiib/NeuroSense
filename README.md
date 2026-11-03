@@ -4,6 +4,8 @@ NeuroSense is a **research prototype**, not a diagnostic tool or clinically vali
 
 **Only the server-computed questionnaire score determines the screening result.** Child/adult ML models are supplementary models of legacy score-derived dataset labels. Toddler cohort output is separate from Q-CHAT-10. Gaze is experimental and excluded. Speech provides acoustic measurements; facial analysis provides face detection and image quality. No speech/facial ASD classifier is shipped. Unavailable analyses have null outputs with explicit status; no synthetic inference fallback exists.
 
+This questionnaire-only result is an **intermediate implementation**. The supplied presentation targets questionnaire ML, a facial-expression CNN, gaze LSTM, speech model, trained multimodal fusion and explanations of their actual outputs. See the [target architecture and data gaps](docs/TARGET_ARCHITECTURE_AND_GAPS.md), including real partial gaze/AU alignment and missing four-way paired data. The [gaze development protocol and executable harness](docs/GAZE_EXPERIMENT_PROTOCOL.md) advance that target without changing deployed weights or screening eligibility; new raw-data experiments require an auditable reuse permission reference.
+
 | Track | Supported application ages | New screening rule |
 |---|---|---|
 | Toddler Q-CHAT-10 | 18–24 months | Official five-option scoring; cutoff 3 |
@@ -36,6 +38,7 @@ For persistence, configure a dedicated research database using `backend/.env.exa
 ```sh
 NUMBA_CACHE_DIR=/tmp/neurosense-numba PYTHONPATH=backend python -m pytest backend/tests -q
 PYTHONPATH=backend python scripts/check_research_consistency.py
+PYTHONPATH=backend python scripts/check_gaze_consistency.py
 npm test
 npm run lint
 npm run build

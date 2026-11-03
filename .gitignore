@@ -49,3 +49,6 @@ backend/data/webcam_validation/
 
 test-results/
 playwright-report/
+
+# Private research runs: participant predictions/manifests; publish reviewed aggregates only
+experiments/
