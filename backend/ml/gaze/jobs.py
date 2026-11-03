@@ -134,6 +134,7 @@ def _run(job_id: str, owner_token: str, video: Path, duration_s: Optional[float]
     heartbeat = threading.Thread(target=_heartbeat, args=(job_id, owner_token, stop), daemon=True)
     heartbeat.start()
     timings: dict = {}
+    recording_timing = None
     t_job = time.perf_counter()
     acquired = False
     try:
@@ -153,7 +154,10 @@ def _run(job_id: str, owner_token: str, video: Path, duration_s: Optional[float]
             norm = tmp / "recording.avi"
             try:
                 t0 = time.perf_counter()
-                OF.normalize_video(video, norm, duration_s)
+                info = OF.normalize_video(video, norm, duration_s)
+                if info is not None:
+                    from dataclasses import asdict
+                    recording_timing = asdict(info)
                 timings["normalize_video"] = time.perf_counter() - t0
                 _set(job_id, owner_token, stage="extracting_gaze_features")
                 out = tmp / "of"; out.mkdir()
@@ -189,6 +193,7 @@ def _run(job_id: str, owner_token: str, video: Path, duration_s: Optional[float]
         except OSError:
             pass
     timings["total"] = time.perf_counter() - t_job
+    result["recording_timing"] = recording_timing
     result["timings_s"] = {k: round(v, 3) for k, v in timings.items()}     # measured, not estimated
     try:
         _set(job_id, owner_token, stage="complete", state="done", result=result)

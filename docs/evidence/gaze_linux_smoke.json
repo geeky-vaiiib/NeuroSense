@@ -1,0 +1,24 @@
+{
+  "platform": "Linux-6.12.76-linuxkit-x86_64-with-glibc2.36",
+  "python": "3.11.14 (main, Feb 24 2026, 19:47:17) [GCC 12.2.0]",
+  "ready": true,
+  "registered": true,
+  "screening_score": 6,
+  "result_modalities": [
+    "questionnaire"
+  ],
+  "media": {
+    "frames": 450,
+    "fps": 15.0,
+    "width": 320,
+    "height": 240,
+    "duration_s": 30.0,
+    "timing_source": "decoded_media_pts_span_plus_median_interval; constant_cadence_approximation",
+    "max_frame_gap_s": 0.06700000000000017,
+    "client_duration_s": null,
+    "normalization_version": "media-pts-cfr-v1"
+  },
+  "ffprobe": "ffprobe version 5.1.9-0+deb12u1 Copyright (c) 2007-2026 the FFmpeg developers",
+  "image_manifest": "sha256:d276b730eb002c39d7ca2d485aa49e26c05573ecc2e39c4f0af6d358d39459da",
+  "scope": "Linux amd64 under emulation; network-disabled, in-memory core auth/scoring + media normalization, not OpenFace inside backend image"
+}

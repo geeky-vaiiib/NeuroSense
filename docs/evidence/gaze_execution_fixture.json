@@ -1,0 +1,159 @@
+{
+  "os": "macOS-26.6.2-arm64-arm-64bit",
+  "python": "3.11.14 (main, Jan 27 2026, 23:58:06) [Clang 21.1.4 ]",
+  "image_digest": "sha256:f43ad4e7fa4530143c7a9e0e8eca7e4f2b45599c1ef19680b68ad1eebba05197",
+  "ffmpeg": "ffmpeg version 9.0.2 Copyright (c) 2000-2026 the FFmpeg developers",
+  "model_version": "gaze-openface-dasd-v3",
+  "model_loaded": true,
+  "model_sha256": "b3899134d927af0013ba68e9c045c41aaf443e3de8cb2a227719b4043300a8d9",
+  "runs": [
+    {
+      "fixture": "webm",
+      "sha256": "8f4445e78474fc16aae21454194cdda62674cfb64490f02f6e5146aa2609e466",
+      "result": {
+        "modality": "gaze",
+        "dataset": "DASD",
+        "model_version": "gaze-openface-dasd-v3",
+        "feature_schema_version": "openface-gaze-1.1.0",
+        "session_id": "synthetic-blank",
+        "analyzed_at": "2026-11-03T03:11:20.804543+00:00",
+        "probability": null,
+        "prediction": null,
+        "score": null,
+        "is_trained_model": false,
+        "fusion_eligible": false,
+        "isMock": false,
+        "features": {},
+        "explanation": null,
+        "method": "bilstm_openface_dasd",
+        "modality_label": "Eye Gaze (OpenFace webcam model \u2014 DASD)",
+        "error_code": "GAZE_NO_FACE",
+        "reason": "face_not_detected",
+        "detail": "",
+        "quality": {
+          "valid": false,
+          "reason": "face_not_detected",
+          "error_code": "GAZE_NO_FACE",
+          "reasons": [
+            "face_not_detected"
+          ],
+          "sample_count": 450,
+          "valid_sample_count": 0,
+          "valid_sample_ratio": 0.0,
+          "mean_confidence": null,
+          "tracking_continuity": 0.0,
+          "duration_seconds": 0.0,
+          "window_count": 0,
+          "data_quality_score": 0.0,
+          "rejected": {
+            "invalid_timestamp": 0,
+            "non_monotonic": 0,
+            "no_face": 450,
+            "low_confidence": 0,
+            "invalid_gaze": 0,
+            "impossible_jump": 0
+          },
+          "warnings": []
+        },
+        "domain": null,
+        "descriptive": null,
+        "status": "insufficient_quality",
+        "model_status": "available",
+        "interpretation": "Gaze could not be analysed (face_not_detected). It is treated as unavailable.",
+        "recording_timing": {
+          "frames": 450,
+          "fps": 15.0,
+          "width": 320,
+          "height": 240,
+          "duration_s": 30.0,
+          "timing_source": "decoded_media_pts_span_plus_median_interval; constant_cadence_approximation",
+          "max_frame_gap_s": 0.06700000000000017,
+          "client_duration_s": 30.0,
+          "normalization_version": "media-pts-cfr-v1"
+        },
+        "timings_s": {
+          "normalize_video": 0.39,
+          "openface": 3.083,
+          "preprocess_and_model": 0.004,
+          "total": 3.481
+        }
+      },
+      "raw_deleted": true,
+      "spool_empty": true
+    },
+    {
+      "fixture": "mp4",
+      "sha256": "0caed59fe184a7eb5f736cf616c37677b31df0832104658be9b1de95673ab22e",
+      "result": {
+        "modality": "gaze",
+        "dataset": "DASD",
+        "model_version": "gaze-openface-dasd-v3",
+        "feature_schema_version": "openface-gaze-1.1.0",
+        "session_id": "synthetic-blank",
+        "analyzed_at": "2026-11-03T03:11:23.134358+00:00",
+        "probability": null,
+        "prediction": null,
+        "score": null,
+        "is_trained_model": false,
+        "fusion_eligible": false,
+        "isMock": false,
+        "features": {},
+        "explanation": null,
+        "method": "bilstm_openface_dasd",
+        "modality_label": "Eye Gaze (OpenFace webcam model \u2014 DASD)",
+        "error_code": "GAZE_NO_FACE",
+        "reason": "face_not_detected",
+        "detail": "",
+        "quality": {
+          "valid": false,
+          "reason": "face_not_detected",
+          "error_code": "GAZE_NO_FACE",
+          "reasons": [
+            "face_not_detected"
+          ],
+          "sample_count": 450,
+          "valid_sample_count": 0,
+          "valid_sample_ratio": 0.0,
+          "mean_confidence": null,
+          "tracking_continuity": 0.0,
+          "duration_seconds": 0.0,
+          "window_count": 0,
+          "data_quality_score": 0.0,
+          "rejected": {
+            "invalid_timestamp": 0,
+            "non_monotonic": 0,
+            "no_face": 450,
+            "low_confidence": 0,
+            "invalid_gaze": 0,
+            "impossible_jump": 0
+          },
+          "warnings": []
+        },
+        "domain": null,
+        "descriptive": null,
+        "status": "insufficient_quality",
+        "model_status": "available",
+        "interpretation": "Gaze could not be analysed (face_not_detected). It is treated as unavailable.",
+        "recording_timing": {
+          "frames": 450,
+          "fps": 15.0,
+          "width": 320,
+          "height": 240,
+          "duration_s": 30.0,
+          "timing_source": "decoded_media_pts_span_plus_median_interval; constant_cadence_approximation",
+          "max_frame_gap_s": 0.06666700000000247,
+          "client_duration_s": 30.0,
+          "normalization_version": "media-pts-cfr-v1"
+        },
+        "timings_s": {
+          "normalize_video": 0.182,
+          "openface": 2.079,
+          "preprocess_and_model": 0.002,
+          "total": 2.264
+        }
+      },
+      "raw_deleted": true,
+      "spool_empty": true
+    }
+  ]
+}

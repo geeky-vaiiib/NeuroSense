@@ -157,6 +157,7 @@ def run_screening(
         "gaze_features": ({**(gaze_raw.get("features") or {}), "prediction": gaze_raw.get("prediction"),
                            "dataset": gaze_raw.get("dataset"), "feature_schema_version": gaze_raw.get("feature_schema_version"),
                            "explanation": gaze_raw.get("explanation"), "fusion_reason": "experimental: excluded from the result",
+                           "recording_timing": gaze_raw.get("recording_timing"), "timings_s": gaze_raw.get("timings_s"),
                            "descriptive": gaze_raw.get("descriptive"), "domain": gaze_raw.get("domain")} if gaze_raw else {}),
         "gaze_status": gaze_raw.get("status", "skipped" if body.gaze_skipped else "not_submitted"),
         "gaze_reason": gaze_raw.get("reason") or body.gaze_skip_reason,

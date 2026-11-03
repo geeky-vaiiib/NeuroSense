@@ -17,8 +17,8 @@ export async function generatePDF(caseData, explanation = {}, options = {}) {
   function section(title) { y += 4; line(title, 12, true); }
   line('NeuroSense - Research screening record', 17, true);
   line('Confidential. Research prototype; not clinically validated. Not a diagnosis.', 9);
-  line(`Case: ${caseData.id} | Track: ${caseData.categoryLabel ?? caseData.category} | Date: ${caseData.screeningDate}`);
-  line(`Subject: ${caseData.subjectName} | Age: ${caseData.category === 'toddler' ? `${caseData.age_months ?? caseData.demo?.ageMonths ?? 'Unavailable'} months` : `${caseData.age} years`} | Gender: ${caseData.gender}`);
+  line(`Case: ${caseData.id} | Track: ${caseData.categoryLabel ?? caseData.category ?? 'Unavailable'} | Date: ${caseData.screeningDate ?? 'Unavailable'}`);
+  line(`Subject: ${caseData.subjectName ?? 'Unavailable'} | Age: ${caseData.category === 'toddler' ? `${caseData.age_months ?? caseData.demo?.ageMonths ?? 'Unavailable'} months` : `${caseData.age ?? 'Unavailable'} years`} | Gender: ${caseData.gender ?? 'Unavailable'}`);
   const basis = caseData.questionnaire_basis;
   section('Questionnaire score - determines the screening result');
   if (basis) {
@@ -45,6 +45,9 @@ export async function generatePDF(caseData, explanation = {}, options = {}) {
     line(`${modality.label ?? modality.id}: ${modality.status ?? 'Unavailable'}. ${modality.reason ?? ''}`, 9);
   }
   line(`Experimental gaze: ${caseData.gaze_status ?? 'Unavailable'}; output: ${caseData.gaze_score ?? 'Unavailable'}. Not a population autism probability.`, 9);
+  if (caseData.gaze_quality) line(`Gaze recording quality (not model confidence): ${JSON.stringify(caseData.gaze_quality)}`, 9);
+  if (caseData.gaze_features?.descriptive) line(`Gaze/head movement (degrees, speed degrees/s; not calibrated screen position): ${JSON.stringify(caseData.gaze_features.descriptive)}`, 9);
+  if (caseData.gaze_features?.recording_timing) line(`Gaze media timing: ${JSON.stringify(caseData.gaze_features.recording_timing)}`, 9);
   for (const [label, values] of [['Speech acoustic measurements', caseData.speech_features], ['Facial detection / image quality', caseData.facial_features]]) {
     line(`${label}: ${values && Object.keys(values).length ? JSON.stringify(values) : 'Unavailable; no measurements stored'}`, 9);
   }

@@ -91,3 +91,26 @@ test('toddler: questionnaire editing, server result, history, refresh and PDF', 
   await expect(page.getByLabel('Score 1 out of 10')).toBeVisible();
   const download=page.waitForEvent('download'); await page.locator('#download-pdf-btn').click(); await download;
 });
+
+test('gaze camera-denied retry/skip never uploads (controlled media boundary)',async({page})=>{
+ await register(page,'gaze-denial');
+ await page.addInitScript(()=>{
+   Object.defineProperty(navigator,'mediaDevices',{configurable:true,value:{getUserMedia:()=>Promise.reject(new DOMException('Controlled permission denial','NotAllowedError'))}});
+ });
+ await page.route('**/gaze/status',r=>r.fulfill({json:{available:true,openface_available:true,media_timing_available:true,model_version:'fixture'}}));
+ let uploads=0;page.on('request',r=>{if(r.url().endsWith('/gaze/analyze'))uploads++;});
+ await page.goto('/app/screening/child');await expect(page.getByRole('checkbox')).toHaveCount(4);
+ for(const box of await page.getByRole('checkbox').all())await box.check();
+ await page.getByRole('button',{name:'Continue',exact:true}).click();
+ await page.getByLabel('Your relationship to the child').fill('Parent');await page.getByLabel('Child’s age',{exact:true}).fill('8');
+ await page.getByRole('button',{name:'Continue',exact:true}).click();
+ for(let i=1;i<=10;i++){
+   await page.getByRole('button',{name:new RegExp(`^Go to question ${i}(?: |$)`)}).click();
+   await page.getByRole('radio',{name:'Definitely agree',exact:true}).click();
+ }
+ await page.getByRole('button',{name:'Continue',exact:true}).click();
+ await page.getByRole('button',{name:'Start camera check'}).click();await expect(page.getByRole('alert')).toContainText('permission was denied');
+ await page.getByRole('button',{name:'Try again (new recording)'}).click();await expect(page.getByRole('alert')).toContainText('permission was denied');
+ await page.getByRole('button',{name:'Skip the gaze step (the report will say why)'}).click();
+ await expect(page.getByText('Speech Sample (Optional)',{exact:true})).toBeVisible();expect(uploads).toBe(0);
+});

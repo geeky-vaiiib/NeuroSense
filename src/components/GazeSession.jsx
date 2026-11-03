@@ -214,14 +214,32 @@ export default function GazeSession({ onComplete, onSkip, category, keepFeatures
   const mountedRef = useRef(true);
   const timersRef = useRef([]);
   const idRef = useRef(sessionId());
+  const attemptRef = useRef(0);
+  const controllerRef = useRef(null);
+  const statusControllerRef = useRef(null);
+  const jobRef = useRef(null);
+  const [acceptedJob, setAcceptedJob] = useState(null);
+  const abandon = useCallback(() => {
+    attemptRef.current += 1;
+    controllerRef.current?.abort(); statusControllerRef.current?.abort();
+    timersRef.current.forEach((t) => { clearInterval(t); clearTimeout(t); }); timersRef.current = [];
+    const recorder = recorderRef.current;
+    if (recorder) {
+      recorder.ondataavailable = null; recorder.onstop = null; recorder.onerror = null;
+      try { if (recorder.state !== 'inactive') recorder.stop(); } catch { /* already stopped */ }
+    }
+    recorderRef.current = null; chunksRef.current = [];
+    trackerRef.current?.stop(); trackerRef.current = null;
+  }, []);
 
-  const clearTimers = () => { timersRef.current.forEach((t) => { clearInterval(t); clearTimeout(t); }); timersRef.current = []; };
   const stopTracker = useCallback(() => { trackerRef.current?.stop(); trackerRef.current = null; setCamera('idle'); }, []);
 
   const loadStatus = useCallback(() => {
-    gazeApi.status().then(
-      (st) => mountedRef.current && setStatus({ checking: false, available: Boolean(st.available && st.openface_available), model: st.available, openface: st.openface_available, version: st.model_version }),
-      () => mountedRef.current && setStatus({ checking: false, available: null }),
+    statusControllerRef.current?.abort();
+    const controller = new AbortController(); statusControllerRef.current = controller;
+    gazeApi.status(controller.signal).then(
+      (st) => mountedRef.current && !controller.signal.aborted && setStatus({ checking: false, available: Boolean(st.available && st.openface_available && st.media_timing_available !== false), model: st.available, openface: st.openface_available, timing: st.media_timing_available, version: st.model_version }),
+      () => mountedRef.current && !controller.signal.aborted && setStatus({ checking: false, available: null }),
     );
   }, []);
   const checkStatus = () => { setStatus({ checking: true }); loadStatus(); };
@@ -231,16 +249,15 @@ export default function GazeSession({ onComplete, onSkip, category, keepFeatures
     loadStatus();
     return () => {
       mountedRef.current = false;
-      clearTimers();
-      try { recorderRef.current?.state === 'recording' && recorderRef.current.stop(); } catch { /* already stopped */ }
-      stopTracker();
+      abandon();
     };
-  }, [loadStatus, stopTracker]);
+  }, [loadStatus, abandon]);
 
-  const fail = useCallback((code, message) => { clearTimers(); setFault({ code, message }); setPhase('error'); }, []);
+  const fail = useCallback((code, message) => { abandon(); setFault({ code, message }); setPhase('error'); }, [abandon]);
 
   // Camera/face tracking starts after the setup view (and its <video>) has been committed.
   const startSetup = () => {
+    abandon(); jobRef.current = null; setAcceptedJob(null); idRef.current = sessionId();
     setFault(null); setStableOk(false); okSinceRef.current = null; setCamera('initializing');
     stopTracker(); setPhase('setup'); setSetupNonce((n) => n + 1);
   };
@@ -248,8 +265,9 @@ export default function GazeSession({ onComplete, onSkip, category, keepFeatures
   useEffect(() => {
     if (!setupNonce || !videoRef.current) return undefined;
     let cancelled = false;
+    const attempt = attemptRef.current;
     const tr = new FaceTracker((f) => {
-      if (!mountedRef.current || cancelled) return;
+      if (!mountedRef.current || cancelled || attempt !== attemptRef.current) return;
       setFace({ ok: f.ok, reason: f.reason, fps: f.fps, luma: f.luma });
       const good = f.ok && !(f.luma != null && f.luma < LOW_LIGHT);
       if (!good) { okSinceRef.current = null; setStableOk(false); return; }
@@ -257,8 +275,8 @@ export default function GazeSession({ onComplete, onSkip, category, keepFeatures
       if (nowMs() - okSinceRef.current >= STABLE_MS) setStableOk(true);
     });
     trackerRef.current = tr;
-    tr.start(videoRef.current).then(() => { if (!cancelled && mountedRef.current) setCamera('ready'); }).catch((e) => {
-      if (cancelled) return;
+    tr.start(videoRef.current).then(() => { if (!cancelled && mountedRef.current && attempt === attemptRef.current) setCamera('ready'); }).catch((e) => {
+      if (cancelled || !mountedRef.current || attempt !== attemptRef.current) return;
       stopTracker();
       fail(e instanceof TrackerError ? e.code : 'CAMERA_ERROR', e?.message || 'The camera could not be started.');
     });
@@ -274,17 +292,35 @@ export default function GazeSession({ onComplete, onSkip, category, keepFeatures
   });
 
   const upload = async (blob, durationMs) => {
-    setPhase('processing'); setStage('uploading');
+    const attempt = attemptRef.current;
+    controllerRef.current?.abort();
+    const controller = new AbortController(); controllerRef.current = controller;
+    setPhase('processing'); setStage(jobRef.current ? 'uploaded' : 'uploading');
+    const current = () => mountedRef.current && attempt === attemptRef.current && !controller.signal.aborted;
     try {
-      const res = await gazeApi.analyze({ blob, durationMs, sessionId: idRef.current, keepFeatures, onStage: (s) => mountedRef.current && setStage(s) });
-      if (!mountedRef.current) return;
+      const res = await gazeApi.analyze({ blob, durationMs, sessionId: idRef.current, keepFeatures,
+        signal: controller.signal, jobId: jobRef.current,
+        onAccepted: (id) => { if (current()) { jobRef.current = id; setAcceptedJob(id); } },
+        onStage: (s) => { if (current()) setStage(s); } });
+      if (!current()) return;
       setAnalysis(res); setPhase('result');
     } catch (e) {
-      fail('GAZE_ANALYSIS_FAILED', e?.message || 'The recording could not be analysed.');
+      if (!current()) return;
+      fail(e.kind || 'GAZE_ANALYSIS_FAILED', e?.message || 'The recording could not be analysed.');
     }
   };
 
+  useEffect(() => {
+    const hidden = () => {
+      if (document.hidden && ['setup', 'countdown', 'task'].includes(phase))
+        fail('CAPTURE_INTERRUPTED', 'The tab was hidden. This attempt was discarded; return and record a new full task.');
+    };
+    document.addEventListener('visibilitychange', hidden);
+    return () => document.removeEventListener('visibilitychange', hidden);
+  }, [phase, fail]);
+
   const beginTask = () => {
+    const attempt = attemptRef.current;
     const stream = trackerRef.current?.stream;
     if (!stream || typeof MediaRecorder === 'undefined') { fail('RECORDING_UNSUPPORTED', 'This browser cannot record video. Use a recent Chrome, Edge or Firefox.'); return; }
     const mime = MIME_CANDIDATES.find((m) => MediaRecorder.isTypeSupported?.(m)) || '';
@@ -292,35 +328,45 @@ export default function GazeSession({ onComplete, onSkip, category, keepFeatures
     try { rec = new MediaRecorder(stream, mime ? { mimeType: mime, videoBitsPerSecond: 2_500_000 } : undefined); }
     catch (e) { fail('RECORDING_UNSUPPORTED', e?.message || 'Recording could not be started.'); return; }
     chunksRef.current = [];
-    rec.ondataavailable = (ev) => { if (ev.data?.size) chunksRef.current.push(ev.data); };
+    for (const track of stream.getTracks()) track.onended = () => {
+      if (attempt === attemptRef.current && mountedRef.current) fail('CAMERA_DISCONNECTED', 'Camera disconnected. Partial recording discarded.');
+    };
+    rec.onerror = () => { if (attempt === attemptRef.current && mountedRef.current) fail('RECORDER_ERROR', 'Recording failed. Partial recording discarded.'); };
+    rec.ondataavailable = (ev) => { if (attempt === attemptRef.current && ev.data?.size) chunksRef.current.push(ev.data); };
     recorderRef.current = rec;
     setPhase('countdown'); setCount(3);
     let c = 3;
     const cd = setInterval(() => {
+      if (attempt !== attemptRef.current || !mountedRef.current) return;
       c -= 1; setCount(c);
       if (c > 0) return;
       clearInterval(cd);
       const t0 = nowMs();
+      let completed = false;
       rec.onstop = () => {
+        if (attempt !== attemptRef.current || !mountedRef.current) return;
+        if (!completed) { fail('CAPTURE_INTERRUPTED', 'Recording ended early; partial recording discarded.'); return; }
         const durationMs = nowMs() - t0;
         const blob = new Blob(chunksRef.current, { type: rec.mimeType || 'video/webm' });
+        chunksRef.current = [];
         stopTracker();
-        if (mountedRef.current) upload(blob, durationMs);
+        if (durationMs > TASK_MS + 1500) { fail('CAPTURE_INTERRUPTED', 'Browser timers were delayed; recording discarded. Please keep the tab visible and retry.'); return; }
+        upload(blob, durationMs);
       };
-      rec.start(1000);
+      try { rec.start(1000); } catch { fail('RECORDER_ERROR', 'Recording could not start. Please retry.'); return; }
       setPhase('task'); setElapsed(0); setStimulus(0);
       const tick = setInterval(() => {
         const e = nowMs() - t0;
         setElapsed(Math.min(e, TASK_MS));
         setStimulus(Math.min(STIMULI.length - 1, Math.floor(e / STIMULUS_MS)));
-        if (e >= TASK_MS) { clearInterval(tick); if (rec.state === 'recording') rec.stop(); }
+        if (e >= TASK_MS) { clearInterval(tick); completed = true; if (rec.state === 'recording') rec.stop(); }
       }, 200);
       timersRef.current.push(tick);
     }, 1000);
     timersRef.current.push(cd);
   };
 
-  const handleSkip = (reason) => { clearTimers(); stopTracker(); onSkip(reason || 'user_skipped'); };
+  const handleSkip = (reason) => { abandon(); onSkip(reason || 'user_skipped'); };
   const handleContinue = () => onComplete({ analysisId: analysis?.job_id || null }, analysis);
 
   /* ── render ── */
@@ -340,7 +386,7 @@ export default function GazeSession({ onComplete, onSkip, category, keepFeatures
         <h2 style={{ marginTop: 0, marginBottom: 12 }}>Eye gaze session {category === 'child' ? '(child)' : ''}</h2>
         <p style={{ color: 'var(--color-neutral-600)', lineHeight: 1.7, maxWidth: 640, marginBottom: 6 }}>
           The camera records a <strong>30-second</strong> picture task. When it ends, the recording is sent to the NeuroSense server,
-          where OpenFace measures gaze direction and head pose and the trained model produces a screening signal.
+          where OpenFace measures gaze direction and head pose and the frozen model may produce an experimental output, excluded from the questionnaire result.
           The result is calculated <strong>after</strong> the recording, not live. The video is deleted as soon as it has been processed.
         </p>
         <p style={{ color: 'var(--color-neutral-500)', fontSize: '0.88rem', lineHeight: 1.6, marginBottom: 18 }}>
@@ -350,8 +396,8 @@ export default function GazeSession({ onComplete, onSkip, category, keepFeatures
           color: status.checking ? 'var(--ns-n500)' : blocked ? 'var(--ns-risk-high-text)' : 'var(--ns-risk-low-text)' }}>
           <span aria-hidden="true" style={{ width: 8, height: 8, borderRadius: '50%', background: 'currentColor' }} />
           {status.checking ? 'Checking the gaze service…'
-            : blocked ? `Gaze analysis unavailable on the server — ${status.model === false ? 'model not loaded' : 'OpenFace is not installed'}`
-            : status.available ? `Gaze model ready (${status.version})` : 'Could not verify the gaze service; the analysis step will report its status.'}
+            : blocked ? `Gaze analysis unavailable on the server — ${status.model === false ? 'model not loaded' : status.timing === false ? 'ffprobe media timing is unavailable' : 'OpenFace is not installed'}`
+            : status.available ? `Gaze model loaded; media tools configured (${status.version})` : 'Could not verify the gaze service; the analysis step will report its status.'}
         </p>
         <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
           <button type="button" onClick={startSetup} disabled={status.checking || blocked} style={{ ...primaryBtn, opacity: status.checking || blocked ? 0.5 : 1 }}>Start camera check</button>
@@ -396,6 +442,7 @@ export default function GazeSession({ onComplete, onSkip, category, keepFeatures
     const mm = (s) => `00:${String(s).padStart(2, '0')}`;
     body = (
       <section className="ns-dark" style={{ position: 'relative', background: 'var(--ns-navy-900)', borderRadius: 20, minHeight: 480, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 32, userSelect: 'none' }}>
+        <button type="button" onClick={() => handleSkip('user_skipped')} style={skipLink}>Skip this step</button>
         {phase === 'countdown' ? (
           <>
             <p style={{ color: '#9FB0C8', fontWeight: 600 }}>Get ready — recording starts in</p>
@@ -419,6 +466,7 @@ export default function GazeSession({ onComplete, onSkip, category, keepFeatures
   } else if (phase === 'processing') {
     body = (
       <section style={{ ...card, textAlign: 'center', padding: '56px 28px' }} role="status">
+        <button type="button" onClick={() => { abandon(); setFault({ code: 'cancelled', message: 'Stopped waiting; accepted server computation may continue.' }); setPhase('error'); }}>Stop waiting</button>
         <GazeVisualizer size={120} />
         <p style={{ color: 'var(--color-neutral-700)', fontWeight: 600, fontSize: '1.05rem', marginTop: 12 }}>Recording complete · {STAGE_TEXT[stage] || 'Processing'}…</p>
         <p style={{ color: 'var(--color-neutral-500)', fontSize: '0.85rem', marginTop: 8 }}>
@@ -433,7 +481,8 @@ export default function GazeSession({ onComplete, onSkip, category, keepFeatures
         <h3 style={{ marginTop: 6, color: 'var(--color-risk-high)', marginBottom: 10 }}>Gaze step problem</h3>
         <p role="alert" style={{ color: 'var(--color-neutral-700)', lineHeight: 1.7, marginBottom: 20 }}>{fault.message}</p>
         <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
-          <button type="button" onClick={startSetup} style={primaryBtn}>Try again</button>
+          {acceptedJob && <button type="button" onClick={() => upload(null, null)} style={primaryBtn}>Resume accepted analysis</button>}
+          <button type="button" onClick={startSetup} style={primaryBtn}>{acceptedJob ? 'Record a new attempt' : 'Try again (new recording)'}</button>
           <button type="button" onClick={() => handleSkip(fault.code.toLowerCase())} style={skipText}>Skip the gaze step (the report will say why)</button>
         </div>
       </section>
@@ -450,7 +499,7 @@ export default function GazeSession({ onComplete, onSkip, category, keepFeatures
             {reasonText(analysis.reason)}{q ? ` (${q.valid_sample_count} of ${q.sample_count} frames usable, ${q.duration_seconds}s.)` : ''}
             {' '}Gaze will be reported as <strong>not available</strong>; it will not count as a low or high result.
           </p>
-          <GazeRecordingSummary quality={q} descriptive={analysis.descriptive} />
+          <GazeRecordingSummary quality={q} descriptive={analysis.descriptive} timing={analysis.recording_timing} />
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginTop: 16, alignItems: 'center' }}>
             {poor && <button type="button" onClick={startSetup} style={primaryBtn}>Repeat gaze test</button>}
             <button type="button" onClick={handleContinue} style={poor ? skipText : primaryBtn}>Continue (the report will show why gaze was not scored)</button>
@@ -466,7 +515,7 @@ export default function GazeSession({ onComplete, onSkip, category, keepFeatures
             {q.valid_sample_count} of {q.sample_count} frames were usable over {q.duration_seconds}s (data quality {Math.round(q.data_quality_score * 100)}%).
             The gaze result appears with your final results.
           </p>
-          <GazeRecordingSummary quality={q} descriptive={analysis.descriptive} />
+          <GazeRecordingSummary quality={q} descriptive={analysis.descriptive} timing={analysis.recording_timing} />
           <button type="button" onClick={handleContinue} style={primaryBtn}>Continue</button>
         </section>
       );

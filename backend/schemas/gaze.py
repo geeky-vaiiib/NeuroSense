@@ -46,6 +46,7 @@ class GazeAnalyzeResponse(BaseModel):
     explanation: Optional[dict] = None
     domain: Optional[dict] = None
     descriptive: Optional[dict] = None
+    recording_timing: Optional[dict] = None
     timings_s: Optional[dict] = None
     fusion_eligible: bool = False
     fusion_reason: Optional[str] = None

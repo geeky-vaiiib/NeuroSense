@@ -118,7 +118,15 @@ export const casesApi = {
 
 const GAZE_POLL_MS = 1500;
 const GAZE_MAX_WAIT_MS = 10 * 60_000;
-const sleepMs = (ms) => new Promise((r) => setTimeout(r, ms));
+const stoppedWaiting = () => new ApiError('cancelled', 'You stopped waiting. Accepted server computation may continue.');
+export function gazeDelay(ms, signal) {
+  return new Promise((resolve, reject) => {
+    if (signal?.aborted) { reject(stoppedWaiting()); return; }
+    const abort = () => { clearTimeout(timer); signal?.removeEventListener('abort', abort); reject(stoppedWaiting()); };
+    const timer = setTimeout(() => { signal?.removeEventListener('abort', abort); resolve(); }, ms);
+    signal?.addEventListener('abort', abort, { once: true });
+  });
+}
 
 export const gazeApi = {
   /** Gaze Lab (dev): saved webcam sessions + validation state; run the domain check; clear sessions. */
@@ -127,48 +135,64 @@ export const gazeApi = {
   labClear: () => api.delete('/gaze/lab/sessions'),
 
   /** GET /gaze/status: is the gaze model loaded, and is OpenFace installed on the server? */
-  status: () => api.get('/gaze/status'),
+  status: (signal) => api.get('/gaze/status', { signal }),
 
   /**
    * Upload the recording (multipart) and poll the background job.  The probability is computed
    * by the backend only.  onStage(stage) receives the server's real processing stage.
    * Rejects with ApiError; never returns synthetic data.
    */
-  async analyze({ blob, durationMs, sessionId, onStage, keepFeatures = false }) {
-    const form = new FormData();
-    const ext = blob.type.includes('mp4') ? 'mp4' : 'webm';
-    form.append('video', blob, `gaze.${ext}`);
-    form.append('duration_ms', String(Math.round(durationMs)));
-    if (sessionId) form.append('session_id', sessionId);
-    if (keepFeatures) form.append('keep_features', 'true');
-    onStage?.('uploading');
-    let res;
-    try {
-      // multipart: let the browser set Content-Type with the boundary
-      res = await fetch(`${API_BASE_URL}/gaze/analyze`, {
-        method: 'POST', body: form, credentials: 'include', headers: { ...CSRF_HEADERS, Accept: 'application/json' },
-      });
-    } catch (err) {
-      throw networkError(err);
+  async analyze({ blob, durationMs, sessionId, onStage, keepFeatures = false, signal, jobId, onAccepted }) {
+    if (signal?.aborted) throw stoppedWaiting();
+    if (!jobId) {
+      const form = new FormData();
+      form.append('video', blob, blob.type.includes('mp4') ? 'gaze.mp4' : 'gaze.webm');
+      form.append('duration_ms', String(Math.round(durationMs)));
+      if (sessionId) form.append('session_id', sessionId);
+      if (keepFeatures) form.append('keep_features', 'true');
+      onStage?.('uploading');
+      let res;
+      const uploadController = new AbortController();
+      const stop = () => uploadController.abort();
+      signal?.addEventListener('abort', stop, { once: true });
+      const timeout = setTimeout(stop, 120_000);
+      try {
+        res = await fetch(`${API_BASE_URL}/gaze/analyze`, {
+          method: 'POST', body: form, credentials: 'include', signal: uploadController.signal,
+          headers: { ...CSRF_HEADERS, Accept: 'application/json' },
+        });
+        if (res.status === 401) notifySessionExpired('/gaze/analyze');
+        if (!res.ok) throw apiErrorFromStatus(res.status, await res.json().catch(() => ({})));
+        const accepted = await res.json();
+        jobId = accepted.job_id;
+        if (!jobId) throw new ApiError('invalid_response', FALLBACK_MESSAGES.invalid_response);
+        onAccepted?.(jobId);
+      } catch (err) {
+        if (signal?.aborted) throw stoppedWaiting();
+        if (err instanceof ApiError && err.status) throw err;
+        throw new ApiError(uploadController.signal.aborted ? 'timeout' : 'upload_unknown',
+          'Upload acceptance is unknown. The server may have accepted this recording. Do not automatically upload it again; resume requires a received job ID, otherwise explicitly record a new attempt or skip.');
+      } finally {
+        clearTimeout(timeout); signal?.removeEventListener('abort', stop);
+      }
     }
-    if (res.status === 401) notifySessionExpired('/gaze/analyze');
-    if (!res.ok) throw apiErrorFromStatus(res.status, await res.json().catch(() => ({})));
-    const { job_id: jobId } = await res.json().catch(() => ({}));
-    if (!jobId) throw new ApiError('invalid_response', FALLBACK_MESSAGES.invalid_response);
-
     const t0 = Date.now();
     while (Date.now() - t0 < GAZE_MAX_WAIT_MS) {
-      const job = await api.get(`/gaze/jobs/${encodeURIComponent(jobId)}`);
+      if (signal?.aborted) throw stoppedWaiting();
+      let job;
+      try { job = await api.get(`/gaze/jobs/${encodeURIComponent(jobId)}`, { signal }); }
+      catch (err) { if (signal?.aborted) throw stoppedWaiting(); throw err; }
+      if (signal?.aborted) throw stoppedWaiting();
       onStage?.(job.stage);
       if (job.state === 'done') {
         const body = job.result;
-        const okStatus = ['success', 'insufficient_quality', 'out_of_domain', 'unavailable'].includes(body?.status);
-        if (body?.modality !== 'gaze' || !okStatus) throw new ApiError('invalid_response', FALLBACK_MESSAGES.invalid_response);
+        if (body?.modality !== 'gaze' || !['success', 'insufficient_quality', 'out_of_domain', 'unavailable'].includes(body.status))
+          throw new ApiError('invalid_response', FALLBACK_MESSAGES.invalid_response);
         return { ...body, job_id: jobId };
       }
-      await sleepMs(GAZE_POLL_MS);
+      await gazeDelay(GAZE_POLL_MS, signal);
     }
-    throw new ApiError('timeout', 'Gaze polling timed out. Server computation may still be running; no result is available here.');
+    throw new ApiError('timeout', 'Gaze polling timed out. Server computation may continue. Resume the accepted job to check again.');
   },
 };
 

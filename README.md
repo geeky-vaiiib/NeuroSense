@@ -59,7 +59,7 @@ Gaze: browser video → durable job/lease → FFmpeg normalization → OpenFace 
 
 Use **one application worker/instance**: authentication throttles, per-user admission serialization, and OpenFace resource semaphores remain process-local. In-memory database mode is inherently process-local. Multi-worker polling safety does not establish distributed scheduling or rate limits.
 
-Optional OpenFace needs a trusted native FeatureExtraction 2.x binary or amd64 Docker image; FFmpeg/ffprobe are needed for browser recordings. Linux x86-64 is the recommended OpenFace host; Apple silicon emulation is unverified in this acceptance run. The backend Dockerfile does not include OpenFace or a Docker socket. Camera/microphone require HTTPS or localhost.
+Optional OpenFace needs a trusted native FeatureExtraction 2.x binary or amd64 Docker image; FFmpeg/ffprobe are needed for browser recordings. Linux x86-64 is the recommended OpenFace host; Apple silicon Docker emulation processed synthetic blank WebM/MP4 fixtures; real webcam capture remains unverified. See [gaze execution evidence](docs/GAZE_EXECUTION_REPORT.md). The backend Dockerfile does not include OpenFace or a Docker socket. Camera/microphone require HTTPS or localhost.
 
 `/live` is process liveness; `/ready` reflects core database availability with 503 when unavailable; `/` reports optional capabilities. Optional model failures do not block deterministic scoring; mandatory security/DB configuration failures still fail startup. Artifact runtime pins match sklearn 1.6.1 and XGBoost 2.1.4; model files are unchanged. CI and deployment **configuration** are supplied, not deployed or independently certified for production.
 

@@ -316,6 +316,16 @@ def test_openface_unavailable(monkeypatch, tmp_path):
 @needs_ckpt
 def test_video_to_result_with_stub_openface(monkeypatch, tmp_path):
     """Pipeline plumbing test only: the stub emits a pre-made OpenFace CSV; it is NOT a webcam validation."""
+    original_which = OF.shutil.which
+    monkeypatch.setattr(OF.shutil, 'which', lambda name: '/test/ffprobe' if name == 'ffprobe' else original_which(name))
+    real_run = OF.subprocess.run
+    def probe_or_run(cmd, *a, **kw):
+        if cmd[0] == 'ffprobe':
+            import json
+            from types import SimpleNamespace
+            return SimpleNamespace(stdout=json.dumps({'frames': [{'pts_time': str(i/15)} for i in range(30)]}))
+        return real_run(cmd, *a, **kw)
+    monkeypatch.setattr(OF.subprocess, 'run', probe_or_run)
     csv = tmp_path / "of.csv"; synth().to_csv(csv, index=False)
     monkeypatch.setenv("OPENFACE_BIN", str(_fake_openface(tmp_path, csv)))
     video = tmp_path / "v.avi"; _make_video(video)
@@ -343,6 +353,16 @@ def test_api_requires_auth_and_validates(app_client):
 
 @needs_ckpt
 def test_api_async_job_end_to_end(app_client, monkeypatch, tmp_path):
+    original_which = OF.shutil.which
+    monkeypatch.setattr(OF.shutil, 'which', lambda name: '/test/ffprobe' if name == 'ffprobe' else original_which(name))
+    real_run = OF.subprocess.run
+    def probe_or_run(cmd, *a, **kw):
+        if cmd[0] == 'ffprobe':
+            import json
+            from types import SimpleNamespace
+            return SimpleNamespace(stdout=json.dumps({'frames': [{'pts_time': str(i/15)} for i in range(30)]}))
+        return real_run(cmd, *a, **kw)
+    monkeypatch.setattr(OF.subprocess, 'run', probe_or_run)
     csv = tmp_path / "of.csv"; synth().to_csv(csv, index=False)
     monkeypatch.setenv("OPENFACE_BIN", str(_fake_openface(tmp_path, csv)))
     video = tmp_path / "v.avi"; _make_video(video)

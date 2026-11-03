@@ -43,3 +43,9 @@ it('exports toddler provenance and unavailable model without risk tiers or fabri
   expect(all).toContain('Model output unavailable'); expect(all).toContain('skipped');
   expect(all).not.toMatch(/HIGH RISK|Clinical Use Only|top reasons.*risk classification|NaN/);
 });
+
+it('exports media timing and separates recording quality from model confidence',async()=>{
+ texts.length=0;
+ await generatePDF({id:'fixture',category:'child',gaze_quality:{data_quality_score:0},gaze_features:{recording_timing:{duration_s:30,timing_source:'decoded_media_pts',normalization_version:'media-pts-cfr-v1'}}},null);
+ const all=texts.join('\n');expect(all).toContain('not model confidence');expect(all).toContain('media-pts-cfr-v1');expect(all).toContain('"duration_s":30');expect(all).not.toContain('undefined');
+});

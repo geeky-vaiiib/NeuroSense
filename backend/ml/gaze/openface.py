@@ -11,6 +11,9 @@ Nothing here ever fabricates output: if OpenFace cannot run, OpenFaceUnavailable
 from __future__ import annotations
 
 import os
+import json
+import math
+import statistics
 import shutil
 import subprocess
 import tempfile
@@ -44,6 +47,11 @@ class VideoInfo:
     fps: float
     width: int
     height: int
+    duration_s: Optional[float] = None
+    timing_source: str = "unknown"
+    max_frame_gap_s: Optional[float] = None
+    client_duration_s: Optional[float] = None
+    normalization_version: str = "media-pts-cfr-v1"
 
 
 def inspect_video(path: Path) -> VideoInfo:
@@ -61,6 +69,8 @@ def inspect_video(path: Path) -> VideoInfo:
             if n == 0:
                 h, w = frame.shape[:2]
             n += 1
+            if n > 21600:
+                raise CorruptVideo("recording exceeds bounded decode budget (21600 frames)")
         if n == 0:
             raise CorruptVideo("video contains no decodable frames")
         fps = cap.get(cv2.CAP_PROP_FPS) or 0.0
@@ -70,14 +80,39 @@ def inspect_video(path: Path) -> VideoInfo:
 
 
 def normalize_video(src: Path, dst: Path, duration_s: Optional[float]) -> VideoInfo:
-    """Re-encode to MJPEG/AVI at the true frame rate.  Browser MediaRecorder WebM files carry no
-    reliable fps/duration, and OpenFace derives its timestamps from the container fps, so the
-    client-measured recording duration is used to set it (frames / duration)."""
+    """Preserve decoded frames at an estimated constant cadence from media PTS.
+
+    Client wall time is a cross-check only. Reject unreliable or highly variable
+    cadence instead of silently time-warping it into the frozen preprocessing.
+    """
     import cv2
     info = inspect_video(src)
-    fps = info.frames / duration_s if duration_s and duration_s > 0 else info.fps
+    try:
+        probe_cmd = ['ffprobe']
+        probe_path = str(src)
+        probe = subprocess.run(probe_cmd + ['-v', 'error', '-select_streams', 'v:0',
+                                '-show_entries', 'frame=pts_time', '-of', 'json', probe_path],
+                               capture_output=True, text=True, timeout=60, check=True)
+        frames = json.loads(probe.stdout)['frames']
+        pts = [float(f['pts_time']) for f in frames]
+    except FileNotFoundError as exc:
+        raise OpenFaceUnavailable('ffprobe is required for server-observed recording timing') from exc
+    except (subprocess.SubprocessError, ValueError, KeyError, TypeError) as exc:
+        raise CorruptVideo('reliable decoded frame timestamps unavailable') from exc
+    if len(pts) != info.frames or len(pts) < 2 or not all(math.isfinite(t) for t in pts):
+        raise CorruptVideo('decoded frame timestamps/count disagree')
+    gaps = [b-a for a,b in zip(pts, pts[1:])]
+    if min(gaps) <= 0:
+        raise CorruptVideo('frame timestamps must increase strictly')
+    interval = statistics.median(gaps)
+    measured = pts[-1] - pts[0] + interval
+    if not 0 < measured <= 180 or max(gaps) > max(.25, 3*interval) or statistics.pstdev(gaps)/statistics.mean(gaps) > .2:
+        raise CorruptVideo('interrupted or highly variable frame timing; record again with the tab visible')
+    if duration_s is not None and (not math.isfinite(duration_s) or duration_s <= 0 or abs(duration_s-measured) > max(1., measured*.1)):
+        raise CorruptVideo('client elapsed duration disagrees with media timestamps')
+    fps = info.frames / measured
     if not (1.0 <= fps <= 120.0):
-        raise CorruptVideo(f"cannot determine a plausible frame rate (got {fps:.2f})")
+        raise CorruptVideo(f'implausible measured cadence ({fps:.2f})')
     cap = cv2.VideoCapture(str(src))
     out = cv2.VideoWriter(str(dst), cv2.VideoWriter_fourcc(*"MJPG"), fps, (info.width, info.height))
     if not out.isOpened():
@@ -90,7 +125,8 @@ def normalize_video(src: Path, dst: Path, duration_s: Optional[float]) -> VideoI
             break
         out.write(fr); n += 1
     cap.release(); out.release()
-    return VideoInfo(n, fps, info.width, info.height)
+    return VideoInfo(n, fps, info.width, info.height, measured,
+                     "decoded_media_pts_span_plus_median_interval; constant_cadence_approximation", max(gaps), duration_s)
 
 
 def find_openface() -> Optional[list[str]]:

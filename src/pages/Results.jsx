@@ -712,7 +712,7 @@ export default function Results() {
               </div>
             )}
             {!isToddler && gazeStatus && (
-              <GazeRecordingSummary quality={gazeQuality} descriptive={gazeFeatures?.descriptive} />
+              <GazeRecordingSummary quality={gazeQuality} descriptive={gazeFeatures?.descriptive} timing={gazeFeatures?.recording_timing} />
             )}
           </section>
 

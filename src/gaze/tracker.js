@@ -1,7 +1,7 @@
 /**
  * Camera + MediaPipe FaceMesh lifecycle.
  *
- * - ONE camera stream and ONE FaceMesh instance per page (module singleton); start()/stop() are
+ * - Each tracker owns its camera stream; one FaceMesh instance is shared with serialized sends. start()/stop() are
  *   idempotent and StrictMode-safe.
  * - Frames are processed only after: video has metadata + readyState>=2 + non-zero size, AND FaceMesh
  *   has finished initialize(). A processing guard prevents overlapping send() calls (no queue build-up).
@@ -43,6 +43,7 @@ let scriptPromise = null;
 let meshPromise = null;
 let mesh = null;
 let onMeshResults = null;
+let meshBusy = false;
 
 function loadScript() {
   if (window.FaceMesh) return Promise.resolve();
@@ -97,13 +98,18 @@ export async function openCamera() {
 }
 
 /** Resolve once the <video> is really producing frames. */
-export function waitForVideo(video, timeoutMs = 8000) {
+export function waitForVideo(video, timeoutMs = 8000, signal) {
   return new Promise((resolve, reject) => {
     const t0 = performance.now();
+    let timer;
+    const finish = (error, value) => { clearTimeout(timer); signal?.removeEventListener('abort', abort); if (error) reject(error); else resolve(value); };
+    const abort = () => finish(new TrackerError('STOPPED', 'Camera setup stopped.'));
+    if (signal?.aborted) { abort(); return; }
+    signal?.addEventListener('abort', abort, { once: true });
     const check = () => {
-      if (video.readyState >= 2 && video.videoWidth > 0 && video.videoHeight > 0) { resolve({ w: video.videoWidth, h: video.videoHeight }); return; }
-      if (performance.now() - t0 > timeoutMs) { reject(new TrackerError(CODES.VIDEO_NOT_READY, 'The camera did not deliver any video frames.')); return; }
-      setTimeout(check, 50);
+      if (video.readyState >= 2 && video.videoWidth > 0 && video.videoHeight > 0) { finish(null, { w: video.videoWidth, h: video.videoHeight }); return; }
+      if (performance.now() - t0 > timeoutMs) { finish(new TrackerError(CODES.VIDEO_NOT_READY, 'The camera did not deliver any video frames.')); return; }
+      timer = setTimeout(check, 50);
     };
     check();
   });
@@ -116,6 +122,7 @@ export class FaceTracker {
    */
   constructor(onFrame) {
     this.onFrame = onFrame;
+    this.generation = 0;
     this.stream = null;
     this.video = null;
     this.running = false;
@@ -129,16 +136,23 @@ export class FaceTracker {
 
   async start(video) {
     if (this.running) return { w: video.videoWidth, h: video.videoHeight };
+    this.startController = new AbortController();
+    const generation = ++this.generation;
+    const active = () => generation === this.generation;
     this.video = video;
-    this.stream = await openCamera();
+    const stream = await openCamera();
+    if (!active()) { stream.getTracks().forEach((t) => t.stop()); return; }
+    this.stream = stream;
     video.srcObject = this.stream;
     video.muted = true;
     video.playsInline = true;
     try { await video.play(); } catch { /* autoplay flag usually suffices; readiness is verified below */ }
-    const size = await waitForVideo(video);
+    const size = await waitForVideo(video, 8000, this.startController.signal);
+    if (!active()) return;
     await ensureFaceMesh();                 // never process before the model is ready
+    if (!active()) return;
     this.running = true;
-    onMeshResults = (res) => this.handleResults(res);
+    this.receive = (res) => this.handleResults(res);
     this.loop();
     return size;
   }
@@ -148,12 +162,13 @@ export class FaceTracker {
     const v = this.video;
     const step = async (now) => {
       if (!this.running) return;
-      if (!this.busy && now - this.lastSend >= 1000 / MAX_FPS && v.readyState >= 2 && v.videoWidth > 0) {
-        this.busy = true;
+      if (!meshBusy && !this.busy && now - this.lastSend >= 1000 / MAX_FPS && v.readyState >= 2 && v.videoWidth > 0) {
+        this.busy = true; meshBusy = true; onMeshResults = this.receive;
         this.lastSend = now;
         this.sampleLight(now);
         try { await mesh.send({ image: v }); } catch (e) { this.onFrame?.({ t: performance.now(), ok: false, reason: 'PROCESSING_ERROR', error: e }); }
-        this.busy = false;
+        this.busy = false; meshBusy = false;
+        if (onMeshResults === this.receive) onMeshResults = null;
       }
       this.schedule(step);
     };
@@ -161,7 +176,8 @@ export class FaceTracker {
   };
 
   schedule(fn) {
-    if (this.video?.requestVideoFrameCallback) this.video.requestVideoFrameCallback((now) => fn(now));
+    if (!this.running) return;
+    if (this.video?.requestVideoFrameCallback) this.frameCallback = this.video.requestVideoFrameCallback((now) => fn(now));
     else this.raf = requestAnimationFrame(fn);
   }
 
@@ -180,6 +196,7 @@ export class FaceTracker {
   }
 
   handleResults(res) {
+    if (!this.running || !this.video) return;
     const t = performance.now();
     this.fpsWin.push(t);
     while (this.fpsWin.length && t - this.fpsWin[0] > 1000) this.fpsWin.shift();
@@ -191,10 +208,13 @@ export class FaceTracker {
 
   /** Release the camera and stop the loop. FaceMesh itself is kept (single shared instance). */
   stop() {
+    this.generation += 1;
     this.running = false;
-    onMeshResults = null;
+    this.startController?.abort();
+    if (onMeshResults === this.receive) onMeshResults = null;
+    if (this.frameCallback != null) this.video?.cancelVideoFrameCallback?.(this.frameCallback);
     if (this.raf) cancelAnimationFrame(this.raf);
-    this.stream?.getTracks().forEach((tr) => tr.stop());
+    this.stream?.getTracks().forEach((tr) => { tr.onended = null; tr.stop(); });
     if (this.video) this.video.srcObject = null;
     this.stream = null;
   }

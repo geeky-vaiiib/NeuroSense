@@ -68,7 +68,7 @@ class GazeService:
     def status(self) -> dict:
         ok, why = self.fusion_eligibility()
         return {"available": self.available, "model_version": self.model_version, "dataset": C.DATASET_NAME,
-                "openface_available": OF.is_available(), "fusion_eligible": ok, "fusion_reason": why,
+                "openface_available": OF.is_available(), "media_timing_available": bool(OF.shutil.which("ffprobe")), "fusion_eligible": ok, "fusion_reason": why,
                 "error_code": None if self.available else self.load_error[0],
                 "detail": None if self.available else self.load_error[1]}
 
