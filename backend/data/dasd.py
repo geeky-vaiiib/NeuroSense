@@ -84,3 +84,32 @@ def holdout_split(recs: list[Recording], frac: float, seed: int):
     a, b = train_test_split(recs, test_size=frac, stratify=[r.label for r in recs], random_state=seed)
     assert_disjoint(a, b)
     return a, b
+
+
+def optional_recordings(root: Optional[Path] = None) -> Optional[list[Recording]]:
+    """Absent optional corpus -> None; present but invalid corpus -> explicit error.
+
+    Test/audit prerequisite only. Does not change training or runtime domain gates.
+    """
+    root = Path(root) if root is not None else DASD_ROOT
+    if not root.exists():
+        return None
+    if not (root / "dataset").is_dir():
+        raise ValueError("DASD root is present but its dataset directory is missing")
+    recs = discover(root)
+    validate_labels(recs)
+    from ..ml.gaze.config import REQUIRED_COLUMNS, HEAD_POSE_COLUMNS
+    for rec in recs:
+        try:
+            frame = read_csv(rec)
+            frame.columns = frame.columns.str.strip()
+            required = list(REQUIRED_COLUMNS + HEAD_POSE_COLUMNS)
+            missing = sorted(set(required) - set(frame.columns))
+            if missing or frame.empty:
+                raise ValueError(f"empty recording or missing columns: {missing}")
+            numeric = frame[required].apply(pd.to_numeric, errors="raise")
+            if numeric.timestamp.notna().sum() < 2:
+                raise ValueError("recording lacks numeric timestamps")
+        except (ValueError, KeyError, OSError) as exc:
+            raise ValueError(f"Malformed DASD recording {rec.path.name}: {exc}") from exc
+    return recs

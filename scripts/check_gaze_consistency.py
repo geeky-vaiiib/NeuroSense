@@ -23,9 +23,8 @@ def main():
     out={'selected':report['selection']['chosen'],'dev_auc_recomputed_repeat_mean':mean,
          'deployed_feature_names':meta['feature_names'],
          'scope':'saved metric arithmetic and split inventory only; no training reproduction'}
-    try:
-        recs=dasd.discover()
-    except FileNotFoundError:
+    recs=dasd.optional_recordings()
+    if recs is None:
         out['raw_data_check']='unavailable: licensed DASD not installed'
     else:
         dev,test=dasd.official_split(recs); dasd.assert_disjoint(dev,test)

@@ -25,6 +25,7 @@ For persistent local use, copy `backend/.env.example` to `backend/.env`, configu
 ```sh
 NUMBA_CACHE_DIR=/tmp/neurosense-numba PYTHONPATH=backend python -m pytest backend/tests -q
 PYTHONPATH=backend python scripts/check_research_consistency.py
+PYTHONPATH=backend python scripts/check_gaze_consistency.py
 npm test
 npm run lint
 npm run build
@@ -32,7 +33,7 @@ npx playwright install chromium
 NEUROSENSE_PYTHON="$PWD/.venv/bin/python" npm run test:e2e
 ```
 
-`conftest.py` sets disposable configuration before imports, injects fresh mongomock per test and uses an isolated recording spool. E2E launches its own Vite/FastAPI servers; uses real auth/scoring/persistence against throw-away mongomock. Camera/OpenFace-unavailable responses and a single dropped submission response are controlled browser fixtures, not real recording coverage. Do not run against a production URL. CI repeats these checks without service credentials. Raw DASD tests skip when licensed local data are absent; inspect skip counts. Q-CHAT SAV included in this checkout is required for consistency audit, subject to its attribution terms.
+`conftest.py` sets disposable configuration before imports, injects fresh mongomock per test and uses an isolated recording spool. E2E launches its own Vite/FastAPI servers; uses real auth/scoring/persistence against throw-away mongomock. Camera/OpenFace-unavailable responses and a single dropped submission response are controlled browser fixtures, not real recording coverage. Do not run against a production URL. CI repeats these checks without service credentials. Raw DASD tests use the shared `needs_dasd`/`dasd_recordings` prerequisite: an absent optional corpus skips explicitly; an installed but incomplete corpus or malformed recording fails. Checkpoint availability alone does not imply participant data availability. Dataset-independent numeric engineering tests still exercise the domain gate and frozen inference/withholding path. The gaze consistency audit reports raw-data checks unavailable when DASD is absent, rather than reporting an empty split as verified. See CI_DATA_PREREQUISITES.md for the reproduced failure and clean-checkout results. Q-CHAT SAV included in this checkout is required for consistency audit, subject to its attribution terms.
 
 ## Artifact compatibility
 

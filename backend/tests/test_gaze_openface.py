@@ -20,9 +20,17 @@ from backend.ml.gaze import preprocess as P
 from backend.ml.gaze import quality as Q
 from backend.ml.gaze import service as S
 
-HAVE_DASD = dasd.DASD_ROOT.joinpath("dataset").exists()
 HAVE_CKPT = M.CHECKPOINT_PATH.exists() and M.METADATA_PATH.exists()
-needs_dasd = pytest.mark.skipif(not HAVE_DASD, reason="DASD not present")
+needs_dasd = pytest.mark.usefixtures("dasd_recordings")
+
+
+@pytest.fixture(scope="module")
+def dasd_recordings():
+    recs = dasd.optional_recordings()
+    if recs is None:
+        pytest.skip("Optional licensed DASD recordings not installed; numeric engineering tests still run")
+    return recs
+
 needs_ckpt = pytest.mark.skipif(not HAVE_CKPT, reason="checkpoint not trained")
 
 
@@ -434,6 +442,7 @@ def test_session_centering_removes_camera_offset_but_not_motion():
 
 
 @needs_ckpt
+@needs_dasd
 def test_domain_gate_flags_stillness_and_passes_dasd_children():
     svc = S.GazeService()
     rec = next(r for r in dasd.discover() if r.label == 0)

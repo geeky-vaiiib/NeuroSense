@@ -60,6 +60,35 @@ No clinical validity, population autism probabilities, calibrated screen gaze, f
 
 FFprobe command semantics reference: [official FFprobe documentation](https://ffmpeg.org/ffprobe.html), accessed 2026-11-03. Frame/stream inspection supplies media timestamps; this policy does not establish exposure timing or participant attention.
 
+## Operator session preparation — 2026-11-03
+
+Verified runtime implementation commit: `be5fa03a2dd590f32d6614f0955f3451755ff27f`, on main. This follow-up changes optional-data test/audit prerequisites only; no capture, processing, gates or weights changed. The isolated Python 3.11.14 venv matches all 86 hash-locked packages with no changes required; dependency compatibility check passed. Node 25.9.0/npm 11.12.1, host FFmpeg/FFprobe 9.0.2, frozen v3 checkpoint SHA-256 and pinned OpenFace image digest above were reverified. Real FeatureExtraction executed under Linux/amd64 emulation without network or input video. Its output includes HAAR/landmark detector warnings; binary execution/model loading does **not** establish usable-face tracking, and the warnings must be considered when a real recording is available.
+
+Started loopback-only frontend `http://127.0.0.1:5174` and API `http://127.0.0.1:8001` with matching hostname/CORS, disposable mongomock storage, a generated nonpersisted session secret, lab feature retention disabled and a private `/tmp/neurosense-operator-spool-*` directory. `/ready` returned core readiness true; frontend returned HTTP 200; API advertised experimental gaze/OpenFace capability. In-memory storage lasts only for this process/session, not a deployment. No production database or camera was accessed. No raw recording, face image or identifying screenshot is committed.
+
+| Operator scenario / comparison | Status and observation |
+|---|---|
+| Deny permission, retry and allow | NOT RUN: first deny-only instruction issued; awaiting adult operator observations |
+| Setup, countdown, normal 30-second task | NOT RUN |
+| Skip during countdown; separate skip during recording | NOT RUN |
+| Navigate away; hide tab; separate camera-disconnection attempt | NOT RUN |
+| Confirm tracks stop and interrupted captures never upload | NOT RUN on hardware; controlled automated coverage is separate |
+| Complete recording, stop waiting after acceptance, resume same ID without upload | NOT RUN on hardware |
+| Compare actual job/API, reopened case, UI and PDF; null/withheld output; unchanged questionnaire result | NOT RUN for operator recording |
+| Raw/intermediate cleanup after operator jobs | NOT RUN: no operator recording yet |
+
+| Real-webcam milestone | Status |
+|---|---|
+| A. Video captured and accepted | NOT RUN |
+| B. OpenFace produced usable face/gaze features | NOT RUN |
+| C. Quality checks passed | NOT RUN |
+| D. Domain checks allowed inference | NOT RUN |
+| E. Frozen model produced experimental output | NOT RUN |
+
+Separate **numeric-fixture coverage — PASS**: `test_frozen_service_on_synthetic_numeric_in_range_and_withheld_inputs` runs the shipped frozen checkpoint on deterministic synthetic numeric channels sized from its existing reference. The in-range fixture passed quality/domain checks and produced finite output; a separate below-range fixture passed quality but was withheld as `out_of_domain` with probability null and fusion disabled. This bypasses video capture and OpenFace and is expressly **not webcam validation**, participant evidence or justification for changing real operator movement. Clean no-DASD backend checks: 300 passed/7 skipped; frontend: 94 passed; lint/build passed; four controlled browser E2E tests passed. Full commands/CI defect evidence: CI_DATA_PREREQUISITES.md.
+
+No new capture/processing engineering defect has been reproduced in an operator recording. Hardware testing pauses for the operator; remaining comparisons and milestones must retain NOT RUN until observed. This technical test cannot establish scientific or clinical validity.
+
 ## Linux runtime attempt and final verification
 
 Executed `docker build --platform linux/amd64 -f deploy/Dockerfile.backend -t neurosense-gaze-smoke:local .` successfully; a final cache-backed rebuild included the current backend. Initial build took over eight minutes and fetched the existing lock's large CUDA dependencies despite CPU inference. No runtime pins or model files were changed to avoid that cost. Final local image manifest: `sha256:d276b730eb002c39d7ca2d485aa49e26c05573ecc2e39c4f0af6d358d39459da`.
