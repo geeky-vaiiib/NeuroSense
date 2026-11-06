@@ -1,4 +1,4 @@
-"""Facial module: face detection and image-quality measurement only.
+"""Facial module: face detection, image quality, and separate optional expression CNN.
 
 Implemented: face detection (OpenCV DNN or Haar cascade), face box geometry, brightness / sharpness.
 Optional: a separate adult research expression CNN (research_inference), never an ASD classifier.
@@ -52,8 +52,8 @@ def analyze_face(image_base64: str, *, research_enabled: bool = False) -> dict:
     grey = cv2.cvtColor(bgr, cv2.COLOR_BGR2GRAY)
     box, detector = _cv._detect_face(cv2, bgr)
     h, w = grey.shape
-    feats = {"image_width": int(w), "image_height": int(h), "mean_brightness": round(float(grey.mean()), 1),
-             "sharpness_laplacian_var": round(float(cv2.Laplacian(grey, cv2.CV_64F).var()), 1), "detector": detector,
+    feats = {"image_width": int(w), "image_height": int(h), "mean_brightness": float(grey.mean()),
+             "sharpness_laplacian_var": float(cv2.Laplacian(grey, cv2.CV_64F).var()), "detector": detector,
              "face_detected": box is not None}
     if box is None:
         return _result("failed_quality", reason="No face was detected in the image.", code=ERR_NO_FACE, features=feats)

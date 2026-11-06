@@ -2,14 +2,14 @@
 
 FORMULA
   The screening result is the questionnaire's threshold-based score and nothing else:
-      outcome   = total_score >= threshold            (threshold: questionnaire_score.LABEL_RULE_THRESHOLD)
-      band      = High if total >= threshold; Moderate if total == threshold - 1; else Low
+      outcome   = total_score >= threshold            (threshold: questionnaire_score.INSTRUMENT_THRESHOLD)
+      band      = High if total >= threshold; else Low (legacy internal labels, not clinical risk tiers)
   There is NO composite probability and NO modality weights.  ``composite_probability`` is always null.
 
 ELIGIBILITY
   A modality may influence the result only if its id is in modality_status.ELIGIBLE_MODALITIES AND its status is
   in ELIGIBLE_STATUSES.  Today that is the questionnaire scoring instrument only.  Gaze (experimental BiLSTM),
-  speech (no classifier) and facial (detection only) are listed under ``excluded`` with their status and reason.
+  speech/emotion and facial/expression (separate measurement or experimental tasks) are listed under ``excluded`` with their status and reason.
 
 MISSING / UNAVAILABLE MODALITIES
   They are reported with their status and ``output = null``; they are never scored as 0 and never imputed, so

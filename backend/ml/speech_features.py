@@ -41,12 +41,12 @@ def extract_features(y: np.ndarray, sr: int) -> dict:
         speech_rate = float(np.mean(zcr) * 10)
     rms = librosa.feature.rms(y=y)[0]
     return {
-        "mfcc_mean": [round(float(v), 4) for v in mfccs.mean(axis=1)],
-        "mfcc_std": [round(float(v), 4) for v in mfccs.std(axis=1)],
-        "pitch_mean": round(pitch_mean, 2) if pitch_mean is not None else None, "pitch_std": round(pitch_std, 2) if pitch_std is not None else None,
+        "mfcc_mean": [float(v) for v in mfccs.mean(axis=1)],
+        "mfcc_std": [float(v) for v in mfccs.std(axis=1)],
+        "pitch_mean": pitch_mean if pitch_mean is not None else None, "pitch_std": pitch_std if pitch_std is not None else None,
         "pitch_status": "measured" if pitch_mean is not None else "unavailable_no_voiced_frames",
-        "speech_rate": round(speech_rate, 2), "voiced_fraction": round(voiced_fraction, 4),
-        "energy_mean": round(float(rms.mean()), 6), "energy_std": round(float(rms.std()), 6),
+        "speech_rate": speech_rate, "voiced_fraction": voiced_fraction,
+        "energy_mean": float(rms.mean()), "energy_std": float(rms.std()),
     }
 
 

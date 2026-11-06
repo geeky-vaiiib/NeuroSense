@@ -73,3 +73,13 @@ Optional OpenFace needs a trusted native FeatureExtraction 2.x binary or amd64 D
 The toddler audit script rechecks checksums, participant-ID splits, stored scores, checkpoint predictions, AUC/Brier and participant bootstrap intervals without retraining. Reported nested training/gaze evaluations are distinguished from independently reproduced consistency checks in the evidence audit. Source confounding, prior holdout reuse, population mismatch, participant permissions, ethics and instrument electronic-administration rights remain limitations. Dataset attribution is in `backend/data/DATASET_ATTRIBUTION.md`; future modality-data requirements are in `backend/data/TODDLER_MODALITY_DATA_REQUIREMENTS.md`.
 
 No training command is part of setup or CI. Training scripts and quarantined synthetic-proxy artifacts are preserved for provenance; they must not be represented as validated runtime classifiers.
+
+### Academic demo
+
+Use the [demo runbook](docs/DEMO_RUNBOOK.md) for locked setup, disposable accounts/storage, actual execution preflight and the five-minute sequence. With the locked `.venv-demo` and an installed working OpenFace image:
+
+```bash
+OPENFACE_DOCKER_IMAGE=algebr/openface .venv-demo/bin/python scripts/demo.py
+```
+
+Open `http://127.0.0.1:5173`. New submissions use a saved backend-owned `research-report-v1` for UI/PDF agreement. The explicit **Recorded example** page shows genuine, independently sourced model outputs with provenance; it never substitutes for a live result. Eye-tracker `gaze-v1` has a separate schema-checked offline research CLI. Physical webcam validation remains an operator check; see the runbook's verified scope.

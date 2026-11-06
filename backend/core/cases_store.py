@@ -207,6 +207,7 @@ def normalize_case_record(record: dict[str, Any]) -> dict[str, Any]:
         "id": str(record.get("id", "")),
         # Owner (set only by the backend from the authenticated user). Legacy cases: None.
         "user_id": record.get("user_id"),
+        "report": record.get("report"),
         "category": category,
         "category_label": category_label(category),
         "subject_name": subject_name,
@@ -387,6 +388,7 @@ def case_detail(record: dict[str, Any]) -> dict[str, Any]:
     detail = case_summary(normalized)
     detail.update(
         {
+            "report": normalized.get("report"),
             "referral_date": normalized["referral_date"],
             "clinician": normalized["clinician"],
             "completed_screenings": normalized["completed_screenings"],

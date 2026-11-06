@@ -1,3 +1,4 @@
+import UnifiedReport from '../components/results/UnifiedReport';
 import GazeRecordingSummary from '../components/results/GazeRecordingSummary';
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -245,6 +246,16 @@ export default function Results() {
         ['Status', selectedCase.status],
       ]
     : [];
+
+  if (selectedCase?.report) return <main id="results-page" style={styles.page}>
+    {pageError && <p role="alert">{pageError}</p>}
+    <button id="download-pdf-btn" className="btn btn-secondary" disabled={pdfLoading} onClick={handleDownloadPDF}>{pdfLoading ? 'Generating PDF…' : 'Download PDF'}</button>
+    <UnifiedReport report={selectedCase.report} />
+    <section className="panel"><h2>Questionnaire item scoring</h2>
+      {selectedCase.report.questionnaire?.items?.map((item) => <p key={item.id}>{item.id}: {item.answer ?? item.letter} · {item.points ?? item.point} points</p>)}
+    </section>
+    <ExplanationPanel features={features} lime={explanation?.lime} loading={explanationLoading[selectedCaseId]} error={errors[selectedCaseId]} modelUsed={selectedCase.modelUsed} modelExplanation={explanation?.modelExplanation} category={selectedCase.category} />
+  </main>;
 
   return (
     <main id="results-page" style={styles.page}>

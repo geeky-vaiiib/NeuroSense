@@ -1,3 +1,4 @@
+import RecordedExample from './pages/RecordedExample';
 /**
  * App.jsx — Root with AuthProvider, protected routes, landing + auth pages.
  */
@@ -147,6 +148,7 @@ function AppShell() {
             <Route path="/cases"           element={<Cases />} />
             <Route path="/settings"        element={<Settings />} />
             <Route path="/diagnostic"      element={<Diagnostic />} />
+            <Route path="/recorded-example" element={<RecordedExample />} />
             <Route path="/gaze-lab"        element={<GazeLab />} />
             <Route path="*"               element={<NotFound />} />
           </Routes>

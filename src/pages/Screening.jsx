@@ -1,3 +1,6 @@
+import { useDraftState } from '../hooks/useDraftState';
+import { useDraftOwner } from '../context/AuthContext';
+import { clearDraft } from '../utils/flowDrafts';
 import { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import CategoryBadge from '../components/CategoryBadge';
@@ -55,21 +58,23 @@ export default function Screening() {
   const navigate = useNavigate();
   const { category: routeCategory } = useParams();
   const { submit, loading, error } = useScreening();
+  const draftOwner = useDraftOwner();
 
-  const [step, setStep] = useState(1);
-  const [consents, setConsents] = useState(BASE_CONSENTS);
-  const [demo, setDemo] = useState(() => ({ ...BASE_DEMO, respondentRelationship: routeCategory === 'adult' ? 'Self' : BASE_DEMO.respondentRelationship }));
-  const [answers, setAnswers] = useState({});
+  const [step, setStep] = useDraftState(routeCategory, 'step', 1);
+  const [consents, setConsents] = useDraftState(routeCategory, 'consents', BASE_CONSENTS);
+  const [demo, setDemo] = useDraftState(routeCategory, 'demo', () => ({ ...BASE_DEMO, respondentRelationship: routeCategory === 'adult' ? 'Self' : BASE_DEMO.respondentRelationship }));
+  const [answers, setAnswers] = useDraftState(routeCategory, 'answers', {});
+  const [acceptedGazeJob, setAcceptedGazeJob] = useDraftState(routeCategory, 'acceptedGazeJob', null);
   const [editingQuestion, setEditingQuestion] = useState(null);
-  const [gazeSession, setGazeSession] = useState(null);
-  const [gazeAnalysis, setGazeAnalysis] = useState(null);
-  const [gazeSkipped, setGazeSkipped] = useState(false);
-  const [gazeSkipReason, setGazeSkipReason] = useState(null);
-  const [audioBlob, setAudioBlob] = useState(null);
-  const [transcriptHint, setTranscriptHint] = useState('');
-  const [speechSkipped, setSpeechSkipped] = useState(false);
-  const [facialImage, setFacialImage] = useState(null);
-  const [facialSkipped, setFacialSkipped] = useState(false);
+  const [gazeSession, setGazeSession] = useDraftState(routeCategory, 'gazeSession', null);
+  const [gazeAnalysis, setGazeAnalysis] = useDraftState(routeCategory, 'gazeAnalysis', null);
+  const [gazeSkipped, setGazeSkipped] = useDraftState(routeCategory, 'gazeSkipped', false);
+  const [gazeSkipReason, setGazeSkipReason] = useDraftState(routeCategory, 'gazeSkipReason', null);
+  const [audioBlob, setAudioBlob] = useDraftState(routeCategory, 'audioBlob', null);
+  const [transcriptHint, setTranscriptHint] = useDraftState(routeCategory, 'transcriptHint', '');
+  const [speechSkipped, setSpeechSkipped] = useDraftState(routeCategory, 'speechSkipped', false);
+  const [facialImage, setFacialImage] = useDraftState(routeCategory, 'facialImage', null);
+  const [facialSkipped, setFacialSkipped] = useDraftState(routeCategory, 'facialSkipped', false);
   const [validationMessage, setValidationMessage] = useState('');
 
   const category = routeCategory === 'adult' ? 'adult' : 'child';
@@ -193,6 +198,7 @@ export default function Screening() {
           facialSkipped,
         };
         const result = await submit(payload);
+        clearDraft(draftOwner, routeCategory);
         navigate(`/app/results/${result.caseId}`);
       } catch {
         // The error is stored and rendered by useScreening; nothing is faked on failure.
@@ -324,9 +330,10 @@ export default function Screening() {
 
             {hasGaze && step === GAZE_STEP && (
               <GazeSession
+                initialJobId={acceptedGazeJob} onAcceptedJob={setAcceptedGazeJob}
                 category={category}
                 onComplete={(session, analysis) => { setGazeSession(session); setGazeAnalysis(analysis); setGazeSkipped(false); setStep(SPEECH_STEP); }}
-                onSkip={(reason) => { setGazeSession(null); setGazeAnalysis(null); setGazeSkipped(true); setGazeSkipReason(reason || 'user_skipped'); setStep(SPEECH_STEP); }}
+                onSkip={(reason) => { setAcceptedGazeJob(null); setGazeSession(null); setGazeAnalysis(null); setGazeSkipped(true); setGazeSkipReason(reason || 'user_skipped'); setStep(SPEECH_STEP); }}
               />
             )}
 

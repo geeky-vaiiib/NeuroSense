@@ -12,4 +12,5 @@ def test_pinned_runtime_reproduces_unchanged_questionnaire_artifacts(category):
     assert bundle['model'] is not None, bundle['reason']
     for total, value in enumerate(expected['probabilities']):
         output=predict(category,bundle,{'age':8 if category=='child' else 30,'gender':'Male','jaundice':'No','familyAsd':'No','ethnicity':'Other'},answers_scoring(total,category))
-        assert output['probability']==round(value,4)
+        # Preserve the reference model's original precision; presentation rounding belongs to report v1.
+        assert output['probability']==value

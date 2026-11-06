@@ -17,6 +17,7 @@ def load_model(task):
     try:
         schema,classes=EXPECTED[task];folder=ROOT/f'{task}-v1';meta=json.loads((folder/'metadata.json').read_text());weights=folder/'weights.pt'
         if (meta['schema']!=schema or tuple(meta['classes'])!=classes or meta['task']!=task
+                or meta.get('architecture') != 'CompactCNN(16,32,64,128)' or meta.get('normalizer') is not None
                 or not meta['integration_eligible'] or meta.get('screening_eligible') is not False
                 or hashlib.sha256(weights.read_bytes()).hexdigest()!=meta['weights_sha256']):
             raise ValueError('incompatible or unapproved research artifact')

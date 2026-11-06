@@ -62,3 +62,7 @@ Baseline phase changes: this plan only. Verification above. Next: backend reliab
 | Acceptance | RELEASE_ACCEPTANCE, source-copy corrections, non-breaking advisory remediation, model explanation correctness/responsiveness regressions | Exact final command counts/commit/environment and criteria are in RELEASE_ACCEPTANCE | Verdict remains bounded by documented evidence; next phase is approved human-participant/hardware and Linux deployment validation, not clinical release. |
 
 The baseline-only instruction was honored by writing this plan before reliability fixes. Subsequent implementation follows the additional phases explicitly requested in the same task. Nothing has been merged or deployed, no real database used, and no models retrained or replaced.
+
+## Academic demo integration (2026-11-06)
+
+Implemented: backend-owned saved report v1 and shared UI/PDF text, explicit eight-card modality inventory, independent saved research example, eye-tracker schema-checked offline inference, disposable launcher/execution preflight, same-tab owner-scoped expiry recovery and accepted-job resume. Questionnaire scoring, ownership, historical records and experimental exclusions remain. See DEMO_RUNBOOK.md and docs/evidence/demo_execution.json for acceptance scope. Remaining: adult-operator physical webcam/microphone tests and usable-face webcam inference, authorized ASD speech data, paired multimodal data, external/clinical validation. No new model training or diagnostic fusion occurred.

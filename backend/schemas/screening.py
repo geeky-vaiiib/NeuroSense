@@ -1,5 +1,6 @@
 """Pydantic models for the triple-track NeuroSense screening API."""
 
+from .report import ResearchReport
 from enum import Enum
 from typing import Optional
 
@@ -94,7 +95,7 @@ class Demographics(BaseModel):
     respondent_name: Optional[str] = Field(None, alias="respondentName", max_length=120)
     respondent_relationship: Optional[str] = Field(None, alias="respondentRelationship", max_length=80)
     age: Optional[int] = Field(
-        None, ge=0, le=100,
+        None, ge=0, le=120,
         description="Age in years (adult/child). Toddlers: send ageMonths instead; years are derived by the server.",
     )
     age_months: Optional[int] = Field(
@@ -251,6 +252,7 @@ class ScreeningRequest(BaseModel):
 
 # ── Response ───────────────────────────────────────────────────────
 class ScreeningResponse(BaseModel):
+    report: ResearchReport | None = None
     case_id: str = Field(..., alias="caseId", description="Generated case identifier")
     category: CategoryEnum
     category_label: str = Field(..., alias="categoryLabel")
@@ -338,6 +340,7 @@ class CaseSummaryResponse(BaseModel):
 
 
 class CaseDetailResponse(CaseSummaryResponse):
+    report: ResearchReport | None = None
     referral_date: str = Field("", alias="referralDate")
     clinician: str = ""
     completed_screenings: list[str] = Field(default_factory=list, alias="completedScreenings")

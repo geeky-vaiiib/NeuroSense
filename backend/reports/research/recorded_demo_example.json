@@ -1,0 +1,544 @@
+{
+  "report_version": "research-report-v1",
+  "case_id": "RECORDED-RESEARCH-EXAMPLE-v1",
+  "generated_at": "2026-11-05T15:19:28.697605+00:00",
+  "provenance": "Recorded research example: independent V_Expression CC BY 4.0, RAVDESS CC BY-NC-SA 4.0 and Cilia Figshare CC BY 4.0 development fixtures. Real frozen inference from cached training-schema inputs; not live capture, not held-out evaluation, not aligned participants. Questionnaire answers synthetic. See MODEL_TRAINING_PROTOCOL and MULTIMODAL_TRAINING_REPORT for source versions, licences, preprocessing and hashes.",
+  "questionnaire": {
+    "scoring_version": 3,
+    "category": "adult",
+    "instrument": "AQ-10 (adult)",
+    "total_score": 4,
+    "max_score": 10,
+    "threshold": 6,
+    "threshold_source": "ARC AQ-10 form (2012), referral cutoff 6 or above; accessed 2026-11-02",
+    "source": "https://docs.autismresearchcentre.com/tests/AQ10.pdf",
+    "source_accessed": "2026-11-02",
+    "interpretation": "Below threshold",
+    "meets_threshold": false,
+    "risk_band": "Low",
+    "items": [
+      {
+        "id": "A1",
+        "answer": "Definitely agree",
+        "scores_on": "agree",
+        "points": 1
+      },
+      {
+        "id": "A2",
+        "answer": "Definitely agree",
+        "scores_on": "disagree",
+        "points": 0
+      },
+      {
+        "id": "A3",
+        "answer": "Definitely agree",
+        "scores_on": "disagree",
+        "points": 0
+      },
+      {
+        "id": "A4",
+        "answer": "Definitely agree",
+        "scores_on": "disagree",
+        "points": 0
+      },
+      {
+        "id": "A5",
+        "answer": "Definitely agree",
+        "scores_on": "disagree",
+        "points": 0
+      },
+      {
+        "id": "A6",
+        "answer": "Definitely agree",
+        "scores_on": "disagree",
+        "points": 0
+      },
+      {
+        "id": "A7",
+        "answer": "Definitely agree",
+        "scores_on": "agree",
+        "points": 1
+      },
+      {
+        "id": "A8",
+        "answer": "Definitely agree",
+        "scores_on": "agree",
+        "points": 1
+      },
+      {
+        "id": "A9",
+        "answer": "Definitely agree",
+        "scores_on": "disagree",
+        "points": 0
+      },
+      {
+        "id": "A10",
+        "answer": "Definitely agree",
+        "scores_on": "agree",
+        "points": 1
+      }
+    ],
+    "validated_against_clinical_labels": false,
+    "notice": "This is a threshold-based screening score. The machine-learning model shown beside it was trained on labels using the legacy dataset threshold (7, not the instrument cutoff 6), so it models that legacy rule; it is not an independently validated probability and does not change the result. A screening score is not a diagnosis."
+  },
+  "screening_conclusion": "Synthetic questionnaire answers only; these separate research examples do not describe one person.",
+  "summary": [
+    "No raw participant media or identifying metadata is included. Speech uses a source 4-second model chunk, not the live 5-second acoustic-quality workflow. Facial input uses the cached detector-processed face; original detection was verified in the training audit.",
+    "Synthetic questionnaire answers only; these separate research examples do not describe one person.",
+    "These analyses describe different tasks. No diagnostic fusion or average of model scores is calculated.",
+    "Supplementary questionnaire model: model unavailable. Excluded from screening: separate experimental task or no usable output.",
+    "Webcam gaze (experimental): not provided. Excluded from screening: separate experimental task or no usable output.",
+    "Eye-tracker gaze-v1 (separate research workflow): available experimental. Output: ASD. Separate eye-tracker research only; never included in questionnaire screening.",
+    "Facial detection and image quality: not provided. Excluded from screening: separate experimental task or no usable output.",
+    "Facial expression (CNN, experimental): Experimental \u00b7 not used in result. Output: neutral. Adult technical research only; age/device/task/language transfer unvalidated. Excluded from screening.",
+    "Acoustic measurements / ASD speech classifier: not provided. Excluded from screening: separate experimental task or no usable output.",
+    "Speech emotion (CNN, experimental): Experimental \u00b7 not used in result. Output: neutral. Adult technical research only; age/device/task/language transfer unvalidated. Excluded from screening."
+  ],
+  "modalities": [
+    {
+      "id": "questionnaire",
+      "label": "Questionnaire score",
+      "status": "available_scoring_instrument",
+      "status_label": "Scoring rule \u00b7 used",
+      "output": {
+        "kind": "screening_score",
+        "total": 4,
+        "max": 10,
+        "threshold": 6,
+        "meets_threshold": false
+      },
+      "model": null,
+      "quality": null,
+      "measurements": null,
+      "included_in_screening": true,
+      "inclusion_reason": "Only the server questionnaire score determines screening.",
+      "limitations": [
+        "Not clinically validated. Does not establish diagnosis."
+      ],
+      "values": [
+        {
+          "name": "Instrument",
+          "value": "AQ-10 (adult)",
+          "unit": null,
+          "text": "AQ-10 (adult)"
+        },
+        {
+          "name": "Scoring version",
+          "value": 3,
+          "unit": null,
+          "text": "3"
+        },
+        {
+          "name": "Score",
+          "value": 4,
+          "unit": "points",
+          "text": "4/10 points"
+        },
+        {
+          "name": "Threshold",
+          "value": 6,
+          "unit": "points",
+          "text": "6 points"
+        },
+        {
+          "name": "Interpretation",
+          "value": "Below threshold",
+          "unit": null,
+          "text": "Below threshold"
+        }
+      ]
+    },
+    {
+      "id": "questionnaire_model",
+      "label": "Supplementary questionnaire model",
+      "status": "model_unavailable",
+      "status_label": "model unavailable",
+      "output": null,
+      "model": null,
+      "quality": null,
+      "measurements": null,
+      "included_in_screening": false,
+      "inclusion_reason": "Excluded from screening: separate experimental task or no usable output.",
+      "limitations": [
+        "Not clinically validated. Does not establish diagnosis.",
+        "Uncalibrated experimental outputs; task, age, device and language transfer may be unsupported."
+      ],
+      "values": []
+    },
+    {
+      "id": "gaze",
+      "label": "Webcam gaze (experimental)",
+      "status": "not_provided",
+      "status_label": "not provided",
+      "output": null,
+      "model": null,
+      "quality": null,
+      "measurements": null,
+      "included_in_screening": false,
+      "inclusion_reason": "Excluded from screening: separate experimental task or no usable output.",
+      "limitations": [
+        "Not clinically validated. Does not establish diagnosis.",
+        "Uncalibrated experimental outputs; task, age, device and language transfer may be unsupported."
+      ],
+      "values": [
+        {
+          "name": "recording_timing",
+          "value": null,
+          "unit": null,
+          "text": "Unavailable"
+        },
+        {
+          "name": "timings_s",
+          "value": null,
+          "unit": null,
+          "text": "Unavailable"
+        }
+      ]
+    },
+    {
+      "id": "eye_tracker",
+      "label": "Eye-tracker gaze-v1 (separate research workflow)",
+      "status": "available_experimental",
+      "status_label": "available experimental",
+      "output": {
+        "kind": "eye_tracker_cohort_output",
+        "label": "ASD",
+        "class_scores": {
+          "TD": 0.4915843605995178,
+          "ASD": 0.5084156394004822
+        },
+        "calibrated": false,
+        "meaning": "Source cohort class scores, not diagnosis or calibrated probability. Not webcam compatible."
+      },
+      "model": {
+        "version": "gaze-v1",
+        "schema": "eye-tracker-screen-pixels20hz-4s-centered-v1",
+        "weights_sha256": "89a84eef07cfbf243a49e649980ca91fad9ccfd0cac4c83822cde8d325dcca02",
+        "licence": "CC BY 4.0"
+      },
+      "quality": {
+        "window_count": 30,
+        "sample_rate_hz": 20,
+        "window_duration_s": 4
+      },
+      "measurements": null,
+      "included_in_screening": false,
+      "inclusion_reason": "Separate eye-tracker research only; never included in questionnaire screening.",
+      "limitations": [
+        "Not clinically validated. Does not establish diagnosis.",
+        "Uncalibrated experimental outputs; task, age, device and language transfer may be unsupported.",
+        "Source cohort class scores, not diagnosis or calibrated probability. Not webcam compatible."
+      ],
+      "values": [
+        {
+          "name": "Predicted class",
+          "value": "ASD",
+          "unit": null,
+          "text": "ASD"
+        },
+        {
+          "name": "TD",
+          "value": 0.4915843605995178,
+          "unit": null,
+          "text": "49.2%"
+        },
+        {
+          "name": "ASD",
+          "value": 0.5084156394004822,
+          "unit": null,
+          "text": "50.8%"
+        },
+        {
+          "name": "Model version",
+          "value": "gaze-v1",
+          "unit": null,
+          "text": "gaze-v1"
+        },
+        {
+          "name": "Model schema",
+          "value": "eye-tracker-screen-pixels20hz-4s-centered-v1",
+          "unit": null,
+          "text": "eye-tracker-screen-pixels20hz-4s-centered-v1"
+        },
+        {
+          "name": "Model weights_sha256",
+          "value": "89a84eef07cfbf243a49e649980ca91fad9ccfd0cac4c83822cde8d325dcca02",
+          "unit": null,
+          "text": "89a84eef07cfbf243a49e649980ca91fad9ccfd0cac4c83822cde8d325dcca02"
+        },
+        {
+          "name": "quality.window_count",
+          "value": 30,
+          "unit": null,
+          "text": "30"
+        },
+        {
+          "name": "quality.sample_rate_hz",
+          "value": 20,
+          "unit": null,
+          "text": "20"
+        },
+        {
+          "name": "quality.window_duration_s",
+          "value": 4,
+          "unit": null,
+          "text": "4"
+        }
+      ]
+    },
+    {
+      "id": "facial",
+      "label": "Facial detection and image quality",
+      "status": "not_provided",
+      "status_label": "not provided",
+      "output": null,
+      "model": null,
+      "quality": null,
+      "measurements": null,
+      "included_in_screening": false,
+      "inclusion_reason": "Excluded from screening: separate experimental task or no usable output.",
+      "limitations": [
+        "Not clinically validated. Does not establish diagnosis.",
+        "Uncalibrated experimental outputs; task, age, device and language transfer may be unsupported."
+      ],
+      "values": []
+    },
+    {
+      "id": "facial_expression",
+      "label": "Facial expression (CNN, experimental)",
+      "status": "available_experimental",
+      "status_label": "Experimental \u00b7 not used in result",
+      "output": {
+        "kind": "facial_expression",
+        "label": "neutral",
+        "class_scores": {
+          "neutral": 0.58034747838974,
+          "happy": 0.008638394065201283,
+          "sad": 0.32242757081985474,
+          "fearful": 0.06064072623848915,
+          "angry": 5.713714472221909e-06,
+          "surprised": 7.635728252353147e-05,
+          "disgusted": 0.02786371298134327
+        },
+        "calibrated": false,
+        "meaning": "Uncalibrated posed-expression/emotion class scores; not autism prediction or a measurement of internal feelings."
+      },
+      "model": {
+        "version": "facial-v1",
+        "dataset": "V_Expression v1 / attributed course v1.0",
+        "schema": "face-gray64-clahe-v1",
+        "validated": false,
+        "weights_sha256": "898faddc571bbac2d456346d221f9ea33573190e6501337a8b9712993ba5009e",
+        "licence": "CC BY 4.0"
+      },
+      "quality": null,
+      "measurements": null,
+      "included_in_screening": false,
+      "inclusion_reason": "Adult technical research only; age/device/task/language transfer unvalidated. Excluded from screening.",
+      "limitations": [
+        "Not clinically validated. Does not establish diagnosis.",
+        "Uncalibrated experimental outputs; task, age, device and language transfer may be unsupported.",
+        "Uncalibrated posed-expression/emotion class scores; not autism prediction or a measurement of internal feelings."
+      ],
+      "values": [
+        {
+          "name": "Predicted class",
+          "value": "neutral",
+          "unit": null,
+          "text": "neutral"
+        },
+        {
+          "name": "neutral",
+          "value": 0.58034747838974,
+          "unit": null,
+          "text": "58.0%"
+        },
+        {
+          "name": "happy",
+          "value": 0.008638394065201283,
+          "unit": null,
+          "text": "0.9%"
+        },
+        {
+          "name": "sad",
+          "value": 0.32242757081985474,
+          "unit": null,
+          "text": "32.2%"
+        },
+        {
+          "name": "fearful",
+          "value": 0.06064072623848915,
+          "unit": null,
+          "text": "6.1%"
+        },
+        {
+          "name": "angry",
+          "value": 5.713714472221909e-06,
+          "unit": null,
+          "text": "0.0%"
+        },
+        {
+          "name": "surprised",
+          "value": 7.635728252353147e-05,
+          "unit": null,
+          "text": "0.0%"
+        },
+        {
+          "name": "disgusted",
+          "value": 0.02786371298134327,
+          "unit": null,
+          "text": "2.8%"
+        },
+        {
+          "name": "Model version",
+          "value": "facial-v1",
+          "unit": null,
+          "text": "facial-v1"
+        },
+        {
+          "name": "Model schema",
+          "value": "face-gray64-clahe-v1",
+          "unit": null,
+          "text": "face-gray64-clahe-v1"
+        },
+        {
+          "name": "Model weights_sha256",
+          "value": "898faddc571bbac2d456346d221f9ea33573190e6501337a8b9712993ba5009e",
+          "unit": null,
+          "text": "898faddc571bbac2d456346d221f9ea33573190e6501337a8b9712993ba5009e"
+        }
+      ]
+    },
+    {
+      "id": "speech",
+      "label": "Acoustic measurements / ASD speech classifier",
+      "status": "not_provided",
+      "status_label": "not provided",
+      "output": null,
+      "model": null,
+      "quality": null,
+      "measurements": null,
+      "included_in_screening": false,
+      "inclusion_reason": "Excluded from screening: separate experimental task or no usable output.",
+      "limitations": [
+        "Not clinically validated. Does not establish diagnosis.",
+        "Uncalibrated experimental outputs; task, age, device and language transfer may be unsupported."
+      ],
+      "values": []
+    },
+    {
+      "id": "speech_emotion",
+      "label": "Speech emotion (CNN, experimental)",
+      "status": "available_experimental",
+      "status_label": "Experimental \u00b7 not used in result",
+      "output": {
+        "kind": "speech_emotion",
+        "label": "neutral",
+        "class_scores": {
+          "neutral": 0.44641274213790894,
+          "calm": 0.12928074598312378,
+          "happy": 0.16930505633354187,
+          "sad": 0.16531318426132202,
+          "angry": 0.015625983476638794,
+          "fearful": 0.04210125282406807,
+          "disgust": 0.015775326639413834,
+          "surprised": 0.016185658052563667
+        },
+        "calibrated": false,
+        "meaning": "Uncalibrated posed-expression/emotion class scores; not autism prediction or a measurement of internal feelings."
+      },
+      "model": {
+        "version": "speech-v1",
+        "dataset": "RAVDESS audio speech v1.0.0",
+        "schema": "audio16k-trim30db-mel64-hop512-4s-v1",
+        "validated": false,
+        "weights_sha256": "c043f3f63e12cfce492e5de0111f6edafede8657cd51169b923f99bd0ec2885a",
+        "licence": "CC BY-NC-SA 4.0, noncommercial research only"
+      },
+      "quality": null,
+      "measurements": null,
+      "included_in_screening": false,
+      "inclusion_reason": "Adult technical research only; age/device/task/language transfer unvalidated. Excluded from screening.",
+      "limitations": [
+        "Not clinically validated. Does not establish diagnosis.",
+        "Uncalibrated experimental outputs; task, age, device and language transfer may be unsupported.",
+        "Uncalibrated posed-expression/emotion class scores; not autism prediction or a measurement of internal feelings."
+      ],
+      "values": [
+        {
+          "name": "Predicted class",
+          "value": "neutral",
+          "unit": null,
+          "text": "neutral"
+        },
+        {
+          "name": "neutral",
+          "value": 0.44641274213790894,
+          "unit": null,
+          "text": "44.6%"
+        },
+        {
+          "name": "calm",
+          "value": 0.12928074598312378,
+          "unit": null,
+          "text": "12.9%"
+        },
+        {
+          "name": "happy",
+          "value": 0.16930505633354187,
+          "unit": null,
+          "text": "16.9%"
+        },
+        {
+          "name": "sad",
+          "value": 0.16531318426132202,
+          "unit": null,
+          "text": "16.5%"
+        },
+        {
+          "name": "angry",
+          "value": 0.015625983476638794,
+          "unit": null,
+          "text": "1.6%"
+        },
+        {
+          "name": "fearful",
+          "value": 0.04210125282406807,
+          "unit": null,
+          "text": "4.2%"
+        },
+        {
+          "name": "disgust",
+          "value": 0.015775326639413834,
+          "unit": null,
+          "text": "1.6%"
+        },
+        {
+          "name": "surprised",
+          "value": 0.016185658052563667,
+          "unit": null,
+          "text": "1.6%"
+        },
+        {
+          "name": "Model version",
+          "value": "speech-v1",
+          "unit": null,
+          "text": "speech-v1"
+        },
+        {
+          "name": "Model schema",
+          "value": "audio16k-trim30db-mel64-hop512-4s-v1",
+          "unit": null,
+          "text": "audio16k-trim30db-mel64-hop512-4s-v1"
+        },
+        {
+          "name": "Model weights_sha256",
+          "value": "c043f3f63e12cfce492e5de0111f6edafede8657cd51169b923f99bd0ec2885a",
+          "unit": null,
+          "text": "c043f3f63e12cfce492e5de0111f6edafede8657cd51169b923f99bd0ec2885a"
+        }
+      ]
+    }
+  ],
+  "formatting": "Numeric values: 3 decimals; class scores: 1 decimal percent, uncalibrated. Raw values retained."
+}

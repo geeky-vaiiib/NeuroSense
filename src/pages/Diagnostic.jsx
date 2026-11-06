@@ -79,7 +79,7 @@ function Row({ label, value, mono }) {
 /* ── Test payloads ───────────────────────────────────────── */
 const TEST_PAYLOAD = {
   category: 'adult',
-  demo: { age: 30, gender: 'Male', jaundice: 'No', familyAsd: 'No', subjectName: 'Test Subject' },
+  demo: { age: 30, gender: 'Male', jaundice: 'No', familyAsd: 'No', subjectName: 'Synthetic questionnaire fixture' },
   answers: {
     A1: 'Definitely agree', A2: 'Slightly disagree', A3: 'Slightly disagree',
     A4: 'Slightly disagree', A5: 'Slightly disagree', A6: 'Slightly disagree',
@@ -142,7 +142,7 @@ export default function Diagnostic() {
   }, []);
 
   /* ── Section 2: Cases list ─────────────────────── */
-  const runMockData = useCallback(async () => {
+  const runCaseList = useCallback(async () => {
     setS2({ status: 'running', data: null, error: null });
     try {
       const list = await casesApi.list();
@@ -197,33 +197,19 @@ export default function Diagnostic() {
     }
   }, [s3.data, s4.data]);
 
-  /* ── Section 6: 4-Modality Fusion Smoke Test ───────────── */
+  /* ── Section 6: Independent modality report smoke test ───────────── */
   const runMultimodal = useCallback(async () => {
     setS6({ status: 'running', data: null, error: null });
     try {
       const result = await screeningApi.submit(TEST_PAYLOAD_MULTIMODAL);
-      const breakdown = result?.modalityBreakdown?.components || [];
-
-      // Verify 4 components present
-      if (breakdown.length !== 4) {
-        setS6({
-          status: 'fail',
-          data: result,
-          error: `Expected 4 modality components, got ${breakdown.length}. Components: ${breakdown.map(c => c.modality).join(', ')}`,
-        });
-        return null;
-      }
-
-      // Verify expected is_trained_model flags
-      // Questionnaire: always trained. Gaze, Speech: depends on checkpoint.
-      // Facial: face detection only (no facial classifier exists).
-      const byModality = Object.fromEntries(breakdown.map(c => [c.modality, c]));
+      const breakdown = result?.report?.modalities || [];
+      const byModality = Object.fromEntries(breakdown.map(c => [c.id, c]));
+      const saved = await casesApi.get(result.caseId);
       const checks = [
-        { label: 'questionnaire.isTrainedModel === true', pass: byModality.questionnaire?.isTrainedModel === true },
-        { label: 'gaze present', pass: !!byModality.gaze },
-        { label: 'speech present', pass: !!byModality.speech },
-        { label: 'facial present', pass: !!byModality.facial },
-        { label: 'facial.isTrainedModel === false (no checkpoint)', pass: byModality.facial?.isTrainedModel === false },
+        ...['questionnaire', 'questionnaire_model', 'gaze', 'eye_tracker', 'speech', 'speech_emotion', 'facial', 'facial_expression'].map(id => ({label: `${id} report card present`, pass: !!byModality[id]})),
+        { label: 'Only questionnaire determines screening', pass: JSON.stringify(result.result?.modalities_in_result) === '["questionnaire"]' },
+        { label: 'Failed and skipped outputs remain null', pass: breakdown.filter(c => !c.status.startsWith('available_')).every(c => c.output === null) },
+        { label: 'Saved and API report agree', pass: JSON.stringify(saved.report) === JSON.stringify(result.report) },
       ];
       const failed = checks.filter(c => !c.pass);
 
@@ -244,14 +230,14 @@ export default function Diagnostic() {
   const runAll = useCallback(async () => {
     setRunningAll(true);
     await runHealth();
-    await runMockData();
+    await runCaseList();
     const screenResult = await runScreening();
     const caseId = screenResult?.caseId || screenResult?.id;
     await runExplain(caseId);
     await runPDF();
     await runMultimodal();
     setRunningAll(false);
-  }, [runHealth, runMockData, runScreening, runExplain, runPDF, runMultimodal]);
+  }, [runHealth, runCaseList, runScreening, runExplain, runPDF, runMultimodal]);
 
   return (
     <main id="diagnostic-page" style={{ display: 'flex', flexDirection: 'column', gap: '18px', maxWidth: '780px' }}>
@@ -298,7 +284,7 @@ export default function Diagnostic() {
         {s1.error && (
           <div style={{ marginTop: '8px' }}>
             <Row label="Error" value={s1.error} />
-            <span style={mockBadge}>Mock fallback active</span>
+            <span style={errorBadge}>Backend unavailable; no fallback output</span>
           </div>
         )}
         {s1.data && (
@@ -313,7 +299,7 @@ export default function Diagnostic() {
 
       {/* Section 2 — Cases list */}
       <Card title="2 — Cases list" status={s2.status}>
-        <button onClick={runMockData} disabled={s2.status === 'running'} style={btnStyle}>
+        <button onClick={runCaseList} disabled={s2.status === 'running'} style={btnStyle}>
           {s2.status === 'running' ? 'Fetching…' : 'Fetch Cases'}
         </button>
         {s2.error && <Row label="Error" value={s2.error} />}
@@ -383,14 +369,14 @@ export default function Diagnostic() {
           </div>
         )}
       </Card>
-      {/* Section 6 — 4-Modality Fusion Smoke Test */}
-      <Card title="6 — 4-Modality Fusion Smoke Test" status={s6.status}>
+      {/* Section 6 — Independent modality report smoke test */}
+      <Card title="6 — Independent modality report smoke test" status={s6.status}>
         <p style={{ margin: '0 0 8px', color: 'var(--color-neutral-500)', fontSize: '0.8rem' }}>
           Submits a full adult screening with synthetic gaze (30 pts), silent audio, and a 1×1 JPEG frame.
-          Verifies the response has 4 modality_breakdown components with correct <code>isTrainedModel</code> flags.
+          Verifies every report card, null unavailable outputs, questionnaire-only inclusion and exact saved-report agreement. Synthetic inputs do not validate model accuracy.
         </p>
         <button id="run-multimodal-test-btn" onClick={runMultimodal} disabled={s6.status === 'running'} style={btnStyle}>
-          {s6.status === 'running' ? 'Running…' : 'Run 4-Modality Test'}
+          {s6.status === 'running' ? 'Running…' : 'Run report contract test'}
         </button>
         {s6.error && <Row label="Error" value={s6.error} />}
         {s6.data && (
@@ -398,9 +384,9 @@ export default function Diagnostic() {
             <Row label="Components" value={(s6.data.breakdown || []).length} mono />
             {(s6.data.breakdown || []).map((c) => (
               <Row
-                key={c.modality}
-                label={c.modality}
-                value={`score=${c.score ?? 'n/a'} · trained=${c.isTrainedModel}`}
+                key={c.id}
+                label={c.id}
+                value={`${c.status} · screening inclusion=${c.included_in_screening}`}
                 mono
               />
             ))}
@@ -427,7 +413,7 @@ const btnStyle = {
   fontFamily: 'var(--font-body)',
 };
 
-const mockBadge = {
+const errorBadge = {
   display: 'inline-block', marginTop: '6px',
   padding: '3px 10px', borderRadius: '999px',
   backgroundColor: '#FFF3CD', color: '#826A14',

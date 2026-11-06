@@ -79,3 +79,12 @@ it('delayed task timers discard overlong captures',async()=>{
  act(()=>vi.advanceTimersByTime(200));clock.mockRestore();
  expect(screen.getByRole('alert')).toHaveTextContent('timers were delayed');expect(gazeApi.analyze).not.toHaveBeenCalled();
 });
+
+it('remounted accepted job resumes polling without camera capture or another upload',async()=>{
+ gazeApi.status.mockResolvedValue({available:true,openface_available:true});
+ gazeApi.analyze.mockResolvedValueOnce({job_id:'retained-job',status:'unavailable',reason:'openface_unavailable',quality:null});
+ render(<GazeSession category="adult" initialJobId="retained-job" onComplete={vi.fn()} onSkip={vi.fn()}/>);
+ await act(async()=>{});
+ fireEvent.click(screen.getByRole('button',{name:'Resume accepted analysis'}));await act(async()=>{});
+ expect(gazeApi.analyze.mock.calls[0][0].jobId).toBe('retained-job');expect(gazeApi.analyze.mock.calls[0][0].blob).toBeNull();
+});

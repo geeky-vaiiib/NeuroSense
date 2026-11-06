@@ -258,3 +258,5 @@ export const healthApi = {
 };
 
 export default api;
+
+export const researchApi = { recordedExample: () => api.get('/research/recorded-example') };

@@ -1,0 +1,19 @@
+{
+  "scope": "Permitted source-media TestClient smoke; technical age routing fixture, not participant demographics or hardware validation",
+  "api_saved_retry_report_equal": true,
+  "questionnaire_only": true,
+  "raw_spool_empty": true,
+  "source_audio_duration_s": 3.3033125,
+  "speech_direct_status": "available_experimental",
+  "modality_statuses": {
+    "questionnaire": "available_scoring_instrument",
+    "questionnaire_model": "available_experimental",
+    "gaze": "skipped",
+    "eye_tracker": "not_provided",
+    "facial": "measurements_available",
+    "facial_expression": "available_experimental",
+    "speech": "insufficient_data",
+    "speech_emotion": "failed_quality"
+  },
+  "physical_webcam": "NOT RUN"
+}

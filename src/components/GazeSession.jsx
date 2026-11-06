@@ -192,8 +192,8 @@ function Check({ ok, label, hint }) {
      onComplete(session, analysis) — analysis is the backend result; session = { analysisId }
      onSkip(reason) — only from an explicit user choice (or an unavailable service)
    ────────────────────────────────────────────────────────────── */
-export default function GazeSession({ onComplete, onSkip, category, keepFeatures = false }) {
-  const [phase, setPhase] = useState('intro'); // intro|setup|countdown|task|processing|result|error
+export default function GazeSession({ onComplete, onSkip, category, keepFeatures = false, initialJobId = null, onAcceptedJob }) {
+  const [phase, setPhase] = useState(initialJobId ? 'error' : 'intro'); // intro|setup|countdown|task|processing|result|error
   const [status, setStatus] = useState({ checking: true });
   const [camera, setCamera] = useState('idle');
   const [face, setFace] = useState({ ok: null, reason: null, fps: 0, luma: null });
@@ -203,7 +203,7 @@ export default function GazeSession({ onComplete, onSkip, category, keepFeatures
   const [stimulus, setStimulus] = useState(0);
   const [stage, setStage] = useState('uploading');
   const [analysis, setAnalysis] = useState(null);
-  const [fault, setFault] = useState(null);
+  const [fault, setFault] = useState(initialJobId ? { code: 'resume', message: 'An accepted job is retained. Resume polling without another upload.' } : null);
   const [setupNonce, setSetupNonce] = useState(0);
 
   const videoRef = useRef(null);
@@ -217,8 +217,8 @@ export default function GazeSession({ onComplete, onSkip, category, keepFeatures
   const attemptRef = useRef(0);
   const controllerRef = useRef(null);
   const statusControllerRef = useRef(null);
-  const jobRef = useRef(null);
-  const [acceptedJob, setAcceptedJob] = useState(null);
+  const jobRef = useRef(initialJobId);
+  const [acceptedJob, setAcceptedJob] = useState(initialJobId);
   const abandon = useCallback(() => {
     attemptRef.current += 1;
     controllerRef.current?.abort(); statusControllerRef.current?.abort();
@@ -257,7 +257,7 @@ export default function GazeSession({ onComplete, onSkip, category, keepFeatures
 
   // Camera/face tracking starts after the setup view (and its <video>) has been committed.
   const startSetup = () => {
-    abandon(); jobRef.current = null; setAcceptedJob(null); idRef.current = sessionId();
+    abandon(); jobRef.current = null; setAcceptedJob(null); onAcceptedJob?.(null); idRef.current = sessionId();
     setFault(null); setStableOk(false); okSinceRef.current = null; setCamera('initializing');
     stopTracker(); setPhase('setup'); setSetupNonce((n) => n + 1);
   };
@@ -300,7 +300,7 @@ export default function GazeSession({ onComplete, onSkip, category, keepFeatures
     try {
       const res = await gazeApi.analyze({ blob, durationMs, sessionId: idRef.current, keepFeatures,
         signal: controller.signal, jobId: jobRef.current,
-        onAccepted: (id) => { if (current()) { jobRef.current = id; setAcceptedJob(id); } },
+        onAccepted: (id) => { if (current()) { jobRef.current = id; setAcceptedJob(id); onAcceptedJob?.(id); } },
         onStage: (s) => { if (current()) setStage(s); } });
       if (!current()) return;
       setAnalysis(res); setPhase('result');

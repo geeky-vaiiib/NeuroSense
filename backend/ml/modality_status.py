@@ -58,7 +58,7 @@ def questionnaire_state(screening: dict, model_output: Optional[dict]) -> dict:
         model=None if model_output is None else {"kind": ("toddler_polish_cohort_model" if screening.get("category") == "toddler" else "ml_reproducing_score_rule"),
                                                  "version": model_output.get("model_used") or model_output.get("model_version"),
                                                  "validated": False, "role": "explanation only - does not affect the result"},
-        detail=("Server-computed total of ten items against the threshold used to label the training data. "
+        detail=("Server-computed total of ten items against the versioned instrument threshold. "
                 "The ML model that reproduces this rule is shown separately and does not affect the result."))
 
 
@@ -67,7 +67,8 @@ def gaze_state(gaze: Optional[dict], skipped: bool, skip_reason: Optional[str]) 
     if skipped or not gaze:
         return _state("gaze", label, SKIPPED if skipped else NOT_PROVIDED, reason=skip_reason if skipped else None)
     st = gaze.get("status")
-    model = {"version": gaze.get("model_version"), "dataset": gaze.get("dataset"), "validated": False}
+    model = {"version": gaze.get("model_version"), "dataset": gaze.get("dataset"), "validated": False,
+             "schema":gaze.get("feature_schema_version"), "weights_sha256":gaze.get("weights_sha256")}
     common = dict(error_code=gaze.get("error_code"), quality=gaze.get("quality"), model=model,
                   measurements={"descriptive": gaze.get("descriptive"), "domain": gaze.get("domain")})
     if st == "success":
@@ -97,7 +98,7 @@ def speech_state(speech: Optional[dict], skipped: bool) -> dict:
 
 
 def facial_state(facial: Optional[dict], skipped: bool) -> dict:
-    label = "Facial (face detection only)"
+    label = "Facial detection and image quality"
     if skipped or not facial:
         return _state("facial", label, SKIPPED if skipped else NOT_PROVIDED)
     st = facial.get("status")

@@ -1,3 +1,6 @@
+import { useDraftState } from '../hooks/useDraftState';
+import { useDraftOwner } from '../context/AuthContext';
+import { clearDraft } from '../utils/flowDrafts';
 /**
  * Toddler (18-24 months) Q-CHAT-10 screening: welcome -> age -> instructions -> ten questions -> review -> submit -> results.
  * The browser only collects answers (option letters) and the age in months. The score, the model output and the stored case
@@ -17,13 +20,14 @@ const GENDERS = ['Prefer not to say', 'Female', 'Male'];
 export default function ToddlerScreening() {
   const navigate = useNavigate();
   const { submit, loading, error } = useScreening();
-  const [step, setStep] = useState('welcome');
-  const [agree, setAgree] = useState(false);
-  const [ageText, setAgeText] = useState('');
+  const draftOwner = useDraftOwner();
+  const [step, setStep] = useDraftState('toddler', 'step', 'welcome');
+  const [agree, setAgree] = useDraftState('toddler', 'agree', false);
+  const [ageText, setAgeText] = useDraftState('toddler', 'ageText', '');
   const [ageTouched, setAgeTouched] = useState(false);
-  const [gender, setGender] = useState('Prefer not to say');
-  const [childName, setChildName] = useState('');
-  const [answers, setAnswers] = useState({});
+  const [gender, setGender] = useDraftState('toddler', 'gender', 'Prefer not to say');
+  const [childName, setChildName] = useDraftState('toddler', 'childName', '');
+  const [answers, setAnswers] = useDraftState('toddler', 'answers', {});
   const [notice, setNotice] = useState('');
   const [startAt, setStartAt] = useState(undefined);
   const headingRef = useRef(null);
@@ -44,6 +48,7 @@ export default function ToddlerScreening() {
         answers,
         gazeSkipped: true, gazeSkipReason: 'toddler_questionnaire_only', speechSkipped: true, facialSkipped: true,
       });
+      clearDraft(draftOwner, 'toddler');
       navigate(`/app/results/${result.caseId}`);
     } catch {
       // useScreening exposes the error; nothing is faked and the answers stay on screen so the caregiver can retry.

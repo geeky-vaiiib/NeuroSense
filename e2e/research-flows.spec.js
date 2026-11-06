@@ -139,3 +139,33 @@ test('adult speech-emotion: numeric audio fixture, real model, saved refresh and
   expect((await download).suggestedFilename()).toContain(body.caseId);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
 });
+
+test('recorded example is explicit, uses saved model versions, downloads without creating a case',async({page})=>{
+ await register(page,'recorded-example');
+ const before=await (await page.request.get('http://127.0.0.1:8000/cases/')).json();
+ await page.goto('/app/recorded-example');
+ await expect(page.getByText(/not a multimodal participant/)).toBeVisible();
+ await page.getByRole('button',{name:'Load recorded example'}).click();
+ await expect(page.getByLabel('Unified research report')).toBeVisible();
+ for(const version of ['facial-v1','speech-v1','gaze-v1'])await expect(page.getByText(`Model version: ${version}`,{exact:true})).toBeVisible();
+ const download=page.waitForEvent('download');await page.getByRole('button',{name:'Download example PDF'}).click();
+ expect((await download).suggestedFilename()).toContain('RECORDED-RESEARCH-EXAMPLE');
+ const after=await (await page.request.get('http://127.0.0.1:8000/cases/')).json();expect(after).toEqual(before);
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
+});
+
+test('expired session restores owner-scoped answers in the same tab after sign-in',async({page})=>{
+ const email=await register(page,'draft-recovery');
+ await page.goto('/app/screening/adult');for(const box of await page.getByRole('checkbox').all())await box.check();
+ await page.getByRole('button',{name:'Continue',exact:true}).click();await page.getByLabel('Your age',{exact:true}).fill('30');
+ await page.getByRole('button',{name:'Continue',exact:true}).click();
+ await page.getByRole('radio',{name:'Definitely agree',exact:true}).click();
+ // Controlled expiry notification, with real logout/re-authentication. No server authentication bypass.
+ await page.request.post('http://127.0.0.1:8000/auth/logout',{headers:{'X-Requested-With':'NeuroSense'}});
+ await page.evaluate(()=>window.dispatchEvent(new Event('ns:session-expired')));
+ await expect(page).toHaveURL(/\/auth/);
+ await page.locator('#login-email').fill(email);await page.locator('#login-password').fill('research-fixture-9');await page.locator('#login-submit-btn').click();
+ await expect(page).toHaveURL(/\/app\/screening\/adult/);
+ await page.getByRole('button',{name:/^Go to question 1 /}).click();
+ await expect(page.getByRole('radio',{name:'Definitely agree',exact:true})).toHaveAttribute('aria-checked','true');
+});

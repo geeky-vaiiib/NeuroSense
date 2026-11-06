@@ -81,7 +81,7 @@ class GazeService:
     # ── analysis ──
     def _base(self, session_id: Optional[str]) -> dict:
         return {"modality": "gaze", "dataset": C.DATASET_NAME, "model_version": self.model_version,
-                "feature_schema_version": C.FEATURE_SCHEMA_VERSION, "session_id": session_id,
+                "feature_schema_version": C.FEATURE_SCHEMA_VERSION, "weights_sha256":self.meta.get("loaded_weights_sha256"), "session_id": session_id,
                 "analyzed_at": datetime.now(timezone.utc).isoformat(),
                 "probability": None, "prediction": None, "score": None, "is_trained_model": False,
                 "fusion_eligible": False, "isMock": False, "features": {}, "explanation": None,
@@ -124,7 +124,7 @@ class GazeService:
         try:
             norm = self.meta["normalization"]
             wp = I.predict_windows(self.model, prep.windows, norm)
-            prob = round(I.aggregate(wp), 4)
+            prob = I.aggregate(wp)
             ablation = I.feature_ablation(self.model, prep.windows, norm, self.cfg.feature_names, prob)
         except Exception as exc:
             return self._fail(base, "unavailable", C.ERR_INFERENCE, "inference_failed", str(exc), q)
@@ -137,8 +137,8 @@ class GazeService:
             is_trained_model=eligible, fusion_eligible=eligible, quality=q.to_dict(),
             features={"features_used": list(self.cfg.feature_names), "sequence_length": self.cfg.window_steps,
                       "sampling_rate_hz": self.cfg.resample_hz, "windows_scored": int(len(wp)),
-                      "window_probability_min": round(float(wp.min()), 4),
-                      "window_probability_max": round(float(wp.max()), 4)},
+                      "window_probability_min": float(wp.min()),
+                      "window_probability_max": float(wp.max())},
             explanation={"method": "feature ablation (replace one feature by its training mean, "
                                    "change in session probability)", "feature_effect": ablation},
             fusion_reason=why, domain=domain,

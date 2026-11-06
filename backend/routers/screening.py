@@ -188,7 +188,13 @@ def run_screening(
         "facial_interpretation": facial_raw.get("interpretation", "") or "",
     }
 
+    try:
+        from ..core.reports import build_report
+    except ImportError:
+        from core.reports import build_report
+    record['report'] = build_report(record)
     response = ScreeningResponse(
+        report=record['report'],
         caseId=case_id, category=category, categoryLabel=category_label(category), status="pending-review",
         riskLevel=risk_level, questionnaireProbability=model_output["probability"] if model_output else None,
         questionnaireBasis=screening, modelOutput=model_output, result=result, modalities=states, warnings=warnings,

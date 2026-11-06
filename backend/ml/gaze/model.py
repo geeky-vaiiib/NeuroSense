@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import hashlib
 from pathlib import Path
 
 import torch
@@ -43,4 +44,5 @@ def load_checkpoint(path: Path = CHECKPOINT_PATH, meta_path: Path = METADATA_PAT
     model = GazeBiLSTM(arch["input_size"], arch["hidden_size"], arch["dropout"])
     model.load_state_dict(ckpt["model_state_dict"])
     model.eval()
+    meta = {**meta, "loaded_weights_sha256": hashlib.sha256(Path(path).read_bytes()).hexdigest()}
     return model, meta

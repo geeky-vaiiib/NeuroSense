@@ -83,8 +83,10 @@ export default function Settings() {
             <Row k="Questionnaire ML models" v={Object.entries(health.data.modelsLoaded || {}).map(([c, ok]) => `${c}: ${ok ? 'loaded' : 'not loaded'}`).join(' · ') || '—'} />
             <Row k="Questionnaire" v="scoring rule drives the result; ML model is explanation only; not clinically validated" />
             <Row k="Eye gaze" v={m ? `${m.gaze.status.replace(/_/g, ' ')} · OpenFace ${m.gaze.openface_available ? 'installed' : 'not installed'} · not in result` : '—'} />
-            <Row k="Speech" v={m ? `${m.speech.status.replace(/_/g, ' ')} · measurements only` : '—'} />
-            <Row k="Facial" v={m ? `${m.facial.status.replace(/_/g, ' ')} · face detection only` : '—'} />
+            <Row k="Speech" v={m ? `${m.speech.status.replace(/_/g, ' ')} · acoustic measurements; ASD classifier status` : '—'} />
+            <Row k="Facial" v={m ? `${m.facial.status.replace(/_/g, ' ')} · face detection / image quality; ASD classifier status` : '—'} />
+            <Row k="Speech emotion CNN (adult technical scope)" v={m?.speech_emotion?.status ?? 'Unavailable'} />
+            <Row k="Facial expression CNN (adult technical scope)" v={m?.facial_expression?.status ?? 'Unavailable'} />
             <Row k="Result basis" v={m?.result?.basis?.replace(/_/g, ' ') ?? '—'} />
           </>
         )}

@@ -1,3 +1,4 @@
+import { recordingCapability } from '../utils/recordingCapability';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import SpeechVisualizer from './screening/SpeechVisualizer';
 
@@ -74,6 +75,7 @@ function preferredMime() {
    ────────────────────────────────────────────────────────────── */
 export default function SpeechSession({ onComplete, onSkip, category }) {
   const [phase, setPhase] = useState('intro');
+  const [capabilityNote, setCapabilityNote] = useState('');
   const [countdown, setCountdown] = useState(20);
   const [preCountdown, setPreCountdown] = useState(3);
   const [transcriptHint, setTranscriptHint] = useState('');
@@ -227,6 +229,7 @@ export default function SpeechSession({ onComplete, onSkip, category }) {
   const requestMic = async () => {
     setPhase('permission');
     try {
+      setCapabilityNote(await recordingCapability('speech', category));
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: true,
         video: false,
@@ -271,6 +274,7 @@ export default function SpeechSession({ onComplete, onSkip, category }) {
   if (phase === 'intro') {
     return (
       <section style={{ ...card, position: 'relative' }}>
+        {capabilityNote && <p role="status">{capabilityNote}</p>}
         <h2
           style={{
             marginTop: 0,
@@ -407,6 +411,7 @@ export default function SpeechSession({ onComplete, onSkip, category }) {
   if (phase === 'prompt') {
     return (
       <section style={{ ...card, position: 'relative' }}>
+        {capabilityNote && <p role="status">{capabilityNote}</p>}
         <button type="button" onClick={handleSkip} style={skipLink}>
           Skip this step →
         </button>
@@ -594,6 +599,7 @@ export default function SpeechSession({ onComplete, onSkip, category }) {
   if (phase === 'done') {
     return (
       <section style={{ ...card, position: 'relative' }}>
+        {capabilityNote && <p role="status">{capabilityNote}</p>}
         <button type="button" onClick={handleSkip} style={skipLink}>
           Skip this step →
         </button>

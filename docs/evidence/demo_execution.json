@@ -1,0 +1,100 @@
+{
+  "date": "2026-11-06",
+  "baseline_commit": "374f5807b9e938f35da852a2608e62255ec4cc32",
+  "implementation_commit": "The commit containing this evidence; verify with git rev-parse HEAD and its Actions run.",
+  "environment": {
+    "python": "3.11.14",
+    "node": "25.9.0",
+    "platform": "macOS-26.6.2-arm64-arm-64bit",
+    "runtime": "backend/requirements.lock; package-lock.json",
+    "database": "mongomock; isolated source export without .env, DASD or research-data"
+  },
+  "checks": [
+    {
+      "command": "PYTHONPATH=backend:. python -m pytest backend/tests -q",
+      "cwd": "isolated source export",
+      "status": "PASS",
+      "passed": 342,
+      "skipped": 7,
+      "failed": 0,
+      "warnings": 934,
+      "seconds": 24.76
+    },
+    {
+      "command": "npm test",
+      "status": "PASS",
+      "passed": 102,
+      "files": 15,
+      "failed": 0
+    },
+    {
+      "command": "npm run lint",
+      "status": "PASS"
+    },
+    {
+      "command": "npm run build",
+      "status": "PASS",
+      "note": "Existing >500kB chunk advisory remains"
+    },
+    {
+      "command": "NEUROSENSE_PYTHON=<locked-python> npm run test:e2e",
+      "status": "PASS",
+      "passed": 7,
+      "failed": 0,
+      "seconds": 21.2,
+      "browser": "Chromium, 390x844, reducedMotion=reduce"
+    },
+    {
+      "command": "PYTHONPATH=backend:. python scripts/check_research_consistency.py",
+      "status": "PASS",
+      "scope": "Saved evaluation consistency, not retraining"
+    },
+    {
+      "command": "PYTHONPATH=backend:. python scripts/check_gaze_consistency.py",
+      "status": "PASS",
+      "scope": "Saved metrics/split inventory; raw DASD absent"
+    },
+    {
+      "command": "OPENFACE_DOCKER_IMAGE=algebr/openface python scripts/demo.py",
+      "status": "PASS",
+      "scope": "Locked versions/hashes, model forward passes, FFmpeg/FFprobe, real OpenFace blank clip (30 rows), backend readiness and frontend HTTP 200. Normal shutdown tested."
+    },
+    {
+      "command": "python -m backend.ml.eye_tracker_research <numeric-fixture.json> <output.json>",
+      "status": "PASS",
+      "scope": "Declared synthetic numeric fixture, real gaze-v1 checkpoint; not participant or webcam validation"
+    },
+    {
+      "command": "python scripts/verify_demo_fixture.py --image <permitted-development-image> --audio <permitted-development-audio> --evidence <aggregate.json>",
+      "status": "PASS",
+      "details": "demo_permitted_fixture.json"
+    },
+    {
+      "command": "generatePDF + pdftoppm + visual review",
+      "status": "PASS",
+      "scope": "All five recorded-example pages inspected; model values/statuses/UI-PDF parity also tested programmatically"
+    },
+    {
+      "check": "Physical camera/microphone and usable-face webcam stages",
+      "status": "NOT RUN"
+    },
+    {
+      "check": "Clinical validation or new accuracy evaluation",
+      "status": "NOT RUN"
+    }
+  ],
+  "earlier_failures": [
+    "One isolated backend invocation used PYTHONPATH=. instead of backend:.; an existing config-export import failed. Correct invocation passed.",
+    "Precision regression initially expected rounded stored probabilities; updated assertion now checks the original full-precision captured model reference exactly. A new test import collided with backend/scripts and was corrected to explicit run_path.",
+    "Original-motion browser runs intermittently stalled on animation actionability/session restoration on this host; no assertion was removed. Supported reduced-motion runs passed twice (36.4s and final 21.2s). Physical-device/original-motion reliability is not newly validated.",
+    "Starting the launcher while E2E occupied its ports failed explicitly; final launcher now checks port availability and was verified after stopping conflicting task services.",
+    "Docker access was denied in a sandbox-only preflight; the authorized local execution preflight passed with real Docker/OpenFace access."
+  ],
+  "coverage_boundaries": {
+    "real": "Frozen models; permitted cached development examples; permitted image/direct audio inference; FFmpeg/FFprobe/OpenFace blank execution; actual API persistence/auth; browser generated-tone inference",
+    "controlled": "Media denial/interruption boundaries; synthetic numeric gaze and tone fixtures; same-tab expiry event with real server logout/relogin",
+    "not_established": "Usable-face live webcam inference, camera unplug behavior on real hardware, new-domain accuracy, population calibration, diagnosis, ASD speech or multimodal diagnostic fusion"
+  },
+  "artifact_review": "Only intended source/docs and aggregate outputs; no changed checkpoint binaries, raw participant recordings/images, credentials or private manifests. Pinned model hashes unchanged.",
+  "ci": "Local checks do not establish CI success; inspect the Actions run for the pushed commit."
+}

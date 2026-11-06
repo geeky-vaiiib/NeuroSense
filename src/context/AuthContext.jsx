@@ -1,3 +1,4 @@
+import { clearOwnerDrafts } from '../utils/flowDrafts';
 /**
  * AuthContext.jsx
  * Global authentication state backed by the FastAPI server.
@@ -110,8 +111,9 @@ export function AuthProvider({ children }) {
         return false;
       }
     }
+    clearOwnerDrafts(state.user?.user_id);
     dispatch({ type: 'ANONYMOUS' });
-  }, []);
+  }, [state.user?.user_id]);
 
   const clearError = useCallback(() => dispatch({ type: 'ERROR', error: null }), []);
 
@@ -127,3 +129,6 @@ export function useAuth() {
   if (!ctx) throw new Error('useAuth must be used within <AuthProvider>');
   return ctx;
 }
+
+/** Optional owner for recoverable form state; never an authentication decision. */
+export function useDraftOwner() { return useContext(AuthContext)?.user?.user_id ?? null; }

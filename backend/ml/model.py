@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import hashlib
 import warnings
 
 import joblib
@@ -10,10 +11,10 @@ import numpy as np
 
 try:
     from .config import CATEGORY_MODEL_CONFIG, LEGACY_ADULT_ARTIFACTS
-    from .preprocessor import preprocess_for_inference
+    from .preprocessor import preprocess_for_inference, feature_names_for
 except ImportError:  # pragma: no cover - fallback for backend cwd execution
     from ml.config import CATEGORY_MODEL_CONFIG, LEGACY_ADULT_ARTIFACTS
-    from ml.preprocessor import preprocess_for_inference
+    from ml.preprocessor import preprocess_for_inference, feature_names_for
 
 
 def _load_bundle(category: str) -> dict:
@@ -49,7 +50,11 @@ def _load_bundle(category: str) -> dict:
             encoders = joblib.load(encoders_path)
         if not callable(getattr(model, "predict", None)) or not isinstance(encoders, dict):
             raise ValueError("invalid model/encoder interface")
-        bundle.update(model=model, encoders=encoders, status="available", reason=None)
+        bundle.update(model=model, encoders=encoders, status="available", reason=None,
+                      model_provenance={"weights_sha256":hashlib.sha256(model_path.read_bytes()).hexdigest(),
+                                        "encoders_sha256":hashlib.sha256(encoders_path.read_bytes()).hexdigest(),
+                                        "schema":"questionnaire-features-v1", "feature_order":feature_names_for(category),
+                                        "class_order":model.classes_.tolist()})
     except Exception as exc:
         bundle["reason"] = "optional artifacts could not be loaded in this runtime"
         logger.warning("Optional questionnaire bundle [%s] unavailable (%s): %s", category, type(exc).__name__, exc)
@@ -99,8 +104,9 @@ def predict(category: str, bundle: dict, demo: dict, answers: dict):
     else:
         positive = float(clf.predict(X)[0])
     return {
-        "probability": round(positive, 4), "prediction": int(clf.predict(X)[0]),
+        "probability": positive, "prediction": int(clf.predict(X)[0]),
         "model_used": f"{category}_{type(clf).__name__}",
         "role": "model of the scoring rule; shown for transparency, does not affect the result",
         "validated_against_clinical_labels": False,
+        "model_provenance": bundle.get("model_provenance"),
     }

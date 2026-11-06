@@ -3,7 +3,7 @@
  * form on the right. Authentication itself is unchanged (see context/AuthContext.jsx).
  */
 import { useState, useEffect } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { NeuroSenseLogo } from '../components/branding/NeuroSenseLogo';
 import SignalVisualization from '../components/ui/SignalVisualization';
@@ -64,6 +64,9 @@ function PasswordRules({ value }) {
 export default function Auth() {
   const { login, register, isAuthenticated, isLoading, error, expired, clearError } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const requestedPath = location.state?.from?.pathname;
+  const returnPath = typeof requestedPath === 'string' && requestedPath.startsWith('/app/') ? requestedPath : '/app';
   const [params] = useSearchParams();
 
   const [tab, setTab] = useState(params.get('mode') === 'register' ? 'register' : 'login');
@@ -78,7 +81,7 @@ export default function Auth() {
   const [rPwd, setRPwd] = useState('');
   const [conf, setConf] = useState('');
 
-  useEffect(() => { if (isAuthenticated) navigate('/app', { replace: true }); }, [isAuthenticated, navigate]);
+  useEffect(() => { if (isAuthenticated) navigate(returnPath, { replace: true }); }, [isAuthenticated, navigate, returnPath]);
 
   const switchTab = (t) => { setTab(t); setLocalErr(''); setDone(''); clearError(); };
 
@@ -86,7 +89,7 @@ export default function Auth() {
     e.preventDefault(); setLocalErr(''); setBusy(true);
     const ok = await login(email, pwd);
     setBusy(false);
-    if (ok) { setDone('Signed in'); navigate('/app', { replace: true }); }
+    if (ok) { setDone('Signed in'); navigate(returnPath, { replace: true }); }
   };
 
   const handleRegister = async (e) => {
@@ -96,10 +99,10 @@ export default function Auth() {
     setBusy(true);
     const ok = await register({ name, email: rEmail, password: rPwd });
     setBusy(false);
-    if (ok) { setDone('Account created'); navigate('/app', { replace: true }); }
+    if (ok) { setDone('Account created'); navigate(returnPath, { replace: true }); }
   };
 
-  const err = localErr || error || (expired ? 'Your session has expired. Please sign in again.' : '');
+  const err = localErr || error || (expired ? 'Your session has expired. Sign in to resume this tab’s draft. Do not reload: unsaved recordings and answers are kept only in memory.' : '');
   const submitting = busy || isLoading;
 
   return (

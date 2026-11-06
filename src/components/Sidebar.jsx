@@ -11,6 +11,7 @@ import { useBackendStatus } from '../hooks/useBackendStatus';
 import { casesApi } from '../services/api';
 
 const NAV_ITEMS = [
+  { to: '/app/recorded-example', end: false, label: 'Recorded example', icon: <span aria-hidden="true">▤</span> },
   {
     to: '/app',
     end: true,

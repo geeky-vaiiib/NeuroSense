@@ -16,6 +16,28 @@ export async function generatePDF(caseData, explanation = {}, options = {}) {
     y += 2;
   }
   function section(title) { y += 4; line(title, 12, true); }
+  if (caseData.report) {
+    const report = caseData.report;
+    line('NeuroSense - Research report', 17, true);
+    line(`${report.case_id} | ${report.report_version} | ${report.generated_at}`);
+    line(report.provenance);
+    line(report.screening_conclusion);
+    for (const card of report.modalities) {
+      section(card.label);
+      line(`${card.status_label} (${card.status})`);
+      line(card.inclusion_reason);
+      for (const row of card.values) line(`${row.name}: ${row.text}`);
+      if (card.output === null) line('Model output: Unavailable');
+      for (const limitation of card.limitations) line(limitation, 9);
+    }
+    section('Questionnaire item scoring');
+    for (const item of report.questionnaire?.items ?? []) line(`${item.id}: ${item.answer ?? item.letter} | ${item.points ?? item.point} points`);
+    section('How this report was formed');
+    for (const text of report.summary) line(text);
+    line(report.formatting, 9);
+    if (options.save !== false) doc.save(`NeuroSense_Report_${report.case_id}.pdf`);
+    return doc;
+  }
   line('NeuroSense - Research screening record', 17, true);
   line('Confidential. Research prototype; not clinically validated. Not a diagnosis.', 9);
   line(`Case: ${caseData.id} | Track: ${caseData.categoryLabel ?? caseData.category ?? 'Unavailable'} | Date: ${caseData.screeningDate ?? 'Unavailable'}`);

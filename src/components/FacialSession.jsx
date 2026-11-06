@@ -1,3 +1,4 @@
+import { recordingCapability } from '../utils/recordingCapability';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 /* ──────────────────────────────────────────────────────────────
@@ -55,6 +56,7 @@ const skipLink = {
 
 export default function FacialSession({ onComplete, onSkip, category }) {
   const [phase, setPhase] = useState('intro');
+  const [capabilityNote, setCapabilityNote] = useState('');
   const [stream, setStream] = useState(null);
   const [permissionError, setPermissionError] = useState(null);
   const [countdown, setCountdown] = useState(5);
@@ -90,6 +92,7 @@ export default function FacialSession({ onComplete, onSkip, category }) {
   const requestCamera = async () => {
     setPhase('permission');
     try {
+      setCapabilityNote(await recordingCapability('facial', category));
       const mediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
       streamRef.current = mediaStream;
       setStream(mediaStream);
@@ -98,7 +101,7 @@ export default function FacialSession({ onComplete, onSkip, category }) {
     } catch (camErr) {
       const msg = camErr.name === 'NotAllowedError'
           ? 'Camera permission was denied.'
-          : 'Unable to access the camera.';
+          : (camErr.message || 'Unable to access the camera.');
       setPermissionError(msg);
       setPhase('error');
     }
@@ -150,6 +153,7 @@ export default function FacialSession({ onComplete, onSkip, category }) {
   if (phase === 'intro') {
     return (
       <section style={{ ...card, position: 'relative' }}>
+        {capabilityNote && <p role="status">{capabilityNote}</p>}
         <h2 style={{ marginTop: 0, color: 'var(--color-neutral-900)', marginBottom: '12px' }}>
           Facial Check {category === 'child' ? '(Child)' : '(Adult)'}
         </h2>

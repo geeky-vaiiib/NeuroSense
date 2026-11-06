@@ -56,3 +56,26 @@ it('exports saved emotion class scores, model identity and null unavailable outp
  {id:'facial_expression',label:'Facial expression',status:'model_unavailable',output:null}]},null);
  const all=texts.join('\n');expect(all).toContain('Predicted class: calm');expect(all).toContain('calm: 62.5%');expect(all).toContain('Not autism prediction');expect(all).toContain('speech-v1');expect(all).toContain('fixture-hash');expect(all).toContain('model_unavailable');expect(all).not.toMatch(/NaN|undefined/);
 });
+
+it('prints authoritative report text verbatim, ignoring contradictory legacy score fields', async()=>{
+ texts.length=0;
+ const report={case_id:'contract',report_version:'research-report-v1',generated_at:'2026-11-05',provenance:'Technical fixture',
+ screening_conclusion:'Below threshold',summary:['Questionnaire only.'],formatting:'Server formatting',questionnaire:{items:[]},
+ modalities:[{id:'questionnaire',label:'Questionnaire score',status:'available_scoring_instrument',status_label:'Scoring rule',inclusion_reason:'Only scoring input',output:{total:5},limitations:[],values:[{name:'Score',text:'5/10 points'},{name:'Threshold',text:'6 points'}]},
+ {id:'speech',label:'Speech',status:'failed_quality',status_label:'Failed quality',inclusion_reason:'Withheld',output:null,limitations:[],values:[{name:'pitch_mean',text:'180.123 Hz'},{name:'Model version',text:'speech-v1'}]}]};
+ await generatePDF({id:'contract',aq10Score:99,report},null);
+ const all=texts.join('\n');for(const m of report.modalities)for(const row of m.values)expect(all).toContain(`${row.name}: ${row.text}`);
+ expect(all).toContain('Model output: Unavailable');expect(all).not.toContain('99');
+});
+
+it('renders every saved example contract value identically in the UI and PDF',async()=>{
+ const {default:report}=await import('../../backend/reports/research/recorded_demo_example.json');
+ const {render}=await import('@testing-library/react');const {createElement}=await import('react');
+ const {default:UnifiedReport}=await import('../components/results/UnifiedReport');
+ const view=render(createElement(UnifiedReport,{report}));texts.length=0;
+ await generatePDF({report},null,{save:false});const pdf=texts.join('\n');
+ for(const card of report.modalities){
+  expect(view.container.textContent).toContain(card.status);expect(pdf).toContain(card.status);
+  for(const row of card.values){expect(view.container.textContent).toContain(`${row.name}: ${row.text}`);expect(pdf).toContain(`${row.name}: ${row.text}`);}
+ }
+});

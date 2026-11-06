@@ -46,10 +46,11 @@ def analyze(answers: dict, age_months: int, female: Optional[bool]) -> dict:
     try:
         m = TM.load_model()
         x = m.features(Q.recode_vector(a), age_months=months, female=female)
-        p = round(m.predict_proba(x), 4)
+        p = m.predict_proba(x)
         ev = m.meta["metrics"]
         model = {"available": True, "model_version": m.version, "model_used": m.version, "algorithm": m.meta["algorithm"], "config": m.meta["config"],
-                 "value": p, "probability": p, "decision_threshold": round(m.threshold, 4), "above_threshold": p >= m.threshold,
+                 "model_provenance": {"weights_sha256":m.meta["model_file"]["sha256"],"schema":"qchat10-polish-cohort-v1","feature_order":m.cols,"class_order":["control","ASD-group"]},
+                 "value": p, "probability": p, "decision_threshold": m.threshold, "above_threshold": p >= m.threshold,
                  "meaning": "calibrated similarity to the Polish cohort's ASD-group responses (not a population risk)",
                  "role": "preliminary model output (does not affect the Q-CHAT-10 result)", "validated_for_deployment": False,
                  "evaluation": {"dev_nested_cv_auc": ev["dev_oof"]["roc_auc"], "dev_auc_ci95": ev["dev_oof_ci95"]["roc_auc"],

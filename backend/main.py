@@ -133,6 +133,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+try:
+    from .routers import research_examples
+except ImportError:  # backend cwd entry point
+    from routers import research_examples
+app.include_router(research_examples.router)
 app.include_router(auth.router)
 app.include_router(gaze.router)
 app.include_router(screening.router)
