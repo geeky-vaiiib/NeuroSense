@@ -49,6 +49,6 @@ def recording_analysis(mid, base, classifier):
         retry = 'The operator can check the reported service or model error; repeating the recording may not resolve it.'
     return RecordingAnalysis(capture_status='skipped' if status == 'skipped' else 'unknown' if status == 'not_provided' else 'received', decoding_status='decoded' if measured or output is not None else 'not_provided' if skipped else 'unknown',
         measurement_status='available' if measured else 'unavailable', quality_status=quality_status,
-        model_status='available' if output is not None or (classifier.get('model') or {}).get('weights_sha256') else 'unavailable' if classifier.get('status') == 'model_unavailable' else 'unknown',
+        model_status='unavailable' if classifier.get('status') == 'model_unavailable' else 'available' if output is not None or (classifier.get('model') or {}).get('weights_sha256') else 'unknown',
         applicability_status=domain or ('not_assessed' if output is None else 'supported_input_unvalidated_transfer'),
         classification_status=classification, output=output, reason=reason, retry_action=retry).model_dump()

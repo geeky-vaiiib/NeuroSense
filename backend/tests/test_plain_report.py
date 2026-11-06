@@ -116,3 +116,12 @@ def test_recording_contract_output_survives_api_storage_and_reopen(app_client,mo
     assert r['report']==saved==c.get('/cases/'+r['caseId']).json()['display_report']
     stage=saved['presentation']['recordings'][1]['analysis']
     assert stage['output']==output and stage['measurement_status']=='available'
+
+
+def test_incompatible_checkpoint_hash_is_not_evidence_of_model_availability():
+    from backend.core.recording_contract import recording_analysis
+    state={'status':'model_unavailable','model':{'weights_sha256':'hash-of-incompatible-artifact'},
+           'quality':{'valid':True},'measurements':{'descriptive':{'channels':{'gaze_x':{'std_deg':1}}}}}
+    stages=recording_analysis('gaze',state,state)
+    assert stages['model_status']=='unavailable'
+    assert stages['measurement_status']=='available' and stages['output'] is None
