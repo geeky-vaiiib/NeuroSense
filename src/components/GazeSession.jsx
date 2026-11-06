@@ -238,7 +238,7 @@ export default function GazeSession({ onComplete, onSkip, category, keepFeatures
     statusControllerRef.current?.abort();
     const controller = new AbortController(); statusControllerRef.current = controller;
     gazeApi.status(controller.signal).then(
-      (st) => mountedRef.current && !controller.signal.aborted && setStatus({ checking: false, available: Boolean(st.available && st.openface_available && st.media_timing_available !== false), model: st.available, openface: st.openface_available, timing: st.media_timing_available, version: st.model_version }),
+      (st) => mountedRef.current && !controller.signal.aborted && setStatus({ checking: false, available: Boolean(st.openface_available && st.media_timing_available !== false), model: st.available, openface: st.openface_available, timing: st.media_timing_available, version: st.model_version }),
       () => mountedRef.current && !controller.signal.aborted && setStatus({ checking: false, available: null }),
     );
   }, []);
@@ -396,8 +396,8 @@ export default function GazeSession({ onComplete, onSkip, category, keepFeatures
           color: status.checking ? 'var(--ns-n500)' : blocked ? 'var(--ns-risk-high-text)' : 'var(--ns-risk-low-text)' }}>
           <span aria-hidden="true" style={{ width: 8, height: 8, borderRadius: '50%', background: 'currentColor' }} />
           {status.checking ? 'Checking the gaze service…'
-            : blocked ? `Gaze analysis unavailable on the server — ${status.model === false ? 'model not loaded' : status.timing === false ? 'ffprobe media timing is unavailable' : 'OpenFace is not installed'}`
-            : status.available ? `Gaze model loaded; media tools configured (${status.version})` : 'Could not verify the gaze service; the analysis step will report its status.'}
+            : blocked ? `Gaze analysis unavailable on the server — ${status.timing === false ? 'ffprobe media timing is unavailable' : 'OpenFace is not installed'}`
+            : status.available ? (status.model ? `Gaze model loaded; media tools configured (${status.version})` : 'Movement measurements available; the optional gaze model is unavailable.') : 'Could not verify the gaze service; the analysis step will report its status.'}
         </p>
         <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
           <button type="button" onClick={startSetup} disabled={status.checking || blocked} style={{ ...primaryBtn, opacity: status.checking || blocked ? 0.5 : 1 }}>Start camera check</button>
@@ -490,14 +490,14 @@ export default function GazeSession({ onComplete, onSkip, category, keepFeatures
   } else if (phase === 'result' && analysis) {
     const q = analysis.quality;
     if (analysis.status !== 'success') {
-      const poor = analysis.status === 'insufficient_quality' || analysis.status === 'out_of_domain';
+      const poor = analysis.status === 'insufficient_quality';
       body = (
         <section style={{ ...card, border: '1px solid var(--color-risk-high-border)', backgroundColor: 'var(--color-risk-high-bg)' }}>
           <p className="ns-eyebrow" style={{ color: 'var(--color-risk-high)' }}>{analysis.error_code || 'UNAVAILABLE'}</p>
-          <h3 style={{ marginTop: 6, color: 'var(--color-risk-high)' }}>{poor ? 'Recording quality too low' : 'Gaze analysis not available'}</h3>
+          <h3 style={{ marginTop: 6, color: 'var(--color-risk-high)' }}>{poor ? 'Recording quality too low' : analysis.descriptive ? 'Movement measurements available' : 'Gaze analysis not available'}</h3>
           <p role="alert" style={{ color: 'var(--color-neutral-700)', lineHeight: 1.7 }}>
             {reasonText(analysis.reason)}{q ? ` (${q.valid_sample_count} of ${q.sample_count} frames usable, ${q.duration_seconds}s.)` : ''}
-            {' '}Gaze will be reported as <strong>not available</strong>; it will not count as a low or high result.
+            {' '}The model classification will be reported as <strong>not available</strong>; it will not count as a low or high result.
           </p>
           <GazeRecordingSummary quality={q} descriptive={analysis.descriptive} timing={analysis.recording_timing} />
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginTop: 16, alignItems: 'center' }}>

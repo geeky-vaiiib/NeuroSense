@@ -60,7 +60,32 @@ def analyze_face(image_base64: str, *, research_enabled: bool = False) -> dict:
     x, y, bw, bh = (int(v) for v in box)
     feats.update({"face_box": [x, y, bw, bh], "face_area_fraction": round(bw * bh / float(w * h), 4),
                   "face_center_offset": [round((x + bw / 2) / w - 0.5, 3), round((y + bh / 2) / h - 0.5, 3)]})
+    # Live-input hygiene only; these are explicit engineering thresholds, not validated
+    # expression accuracy boundaries. Training crop/CLAHE and frozen weights are unchanged.
+    boxes = (_cv._detect_dnn(cv2, bgr, all_boxes=True) if detector == 'cv2_dnn_res10' else
+             _cv._detect_haar(cv2, bgr, all_boxes=True))
+    crop = grey[max(0,y):min(h,y+bh),max(0,x):min(w,x+bw)]
+    quality = {'policy':'face-input-hygiene-v1', 'detected_face_count':len(boxes) if boxes is not None else None,
+               'valid':False, 'reason':None}
+    if not crop.size:
+        quality['reason'] = 'Detected face bounds are outside the image.'
+    else:
+        resized = cv2.resize(crop,(64,64),interpolation=cv2.INTER_AREA)
+        quality.update(face_brightness=float(resized.mean()), face_sharpness=float(cv2.Laplacian(resized,cv2.CV_64F).var()))
+        if boxes is not None and len(boxes)>1:
+            quality['reason'] = 'More than one face was detected. Capture only the intended adult operator.'
+        elif quality['face_brightness']<20 or quality['face_brightness']>235:
+            quality['reason'] = 'The detected face is too dark or overexposed. Use even lighting and capture again.'
+        elif quality['face_sharpness']<10:
+            quality['reason'] = 'The detected face lacks sharp detail. Hold the camera steady and capture again.'
+        else:
+            quality['valid'] = True
+    if not quality['valid']:
+        result = _result('failed_quality', reason=quality['reason'], code='FACIAL_INPUT_QUALITY',features=feats)
+        result['quality'] = quality
+        return result
     result = _result("model_unavailable", reason="No validated facial ASD classifier is installed.", code=ERR_NO_MODEL, features=feats)
+    result["quality"] = quality
     if research_enabled:
         from .research_inference import face_expression
         result['expression_result'] = face_expression(bgr)

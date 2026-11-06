@@ -27,6 +27,7 @@ export default function UnifiedReport({ report, technicalContent, actions }) {
     <details className="summary-disclosure" data-testid="technical-details"><summary>Technical details</summary>
       <p>Separate research outputs explain what the models did. They do not determine the screening outcome.</p>
       <p>Reference: {report.case_id} · {report.report_version} · {report.generated_at}</p><p>{report.provenance}</p>
+      {p?.recordings.filter(r=>r.analysis).map(r=><section key={r.id} className="summary-technical-card"><h3>{r.label}: processing stages</h3><dl>{Object.entries(r.analysis).filter(([key])=>key!=='output').map(([key,v])=><div key={key}><dt>{key.replaceAll('_',' ')}</dt><dd>{v ?? 'Unavailable'}</dd></div>)}</dl></section>)}
       {report.modalities.map(card => <section key={card.id} className="summary-technical-card" aria-label={card.label}><h3>{card.label}</h3><p>{card.status_label} ({card.status})</p><p>{card.included_in_screening ? 'Used for the questionnaire screening result' : 'Not used for the result'}</p><p>{card.inclusion_reason}</p>
         <ul>{card.values.map((row,i) => <li key={i}>{row.display_label || row.name}: {row.text}</li>)}</ul>
         {card.output === null && <p>Model output: Unavailable</p>}{card.limitations.map((text,i)=><p key={i}>{text}</p>)}

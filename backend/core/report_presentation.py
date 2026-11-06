@@ -1,5 +1,6 @@
 """Presentation only: interpret saved flags, never recompute scores or infer outcomes from text."""
 from copy import deepcopy
+from .recording_contract import recording_analysis
 
 NOTICE = 'Screening does not establish a diagnosis. A below-threshold score cannot rule out concerns.'
 
@@ -31,13 +32,14 @@ def present(report, category=None, example=False):
             label = 'Eye-tracker research example'
         model = cards.get(extra, {}) if extra else base
         status = base.get('status', 'not_provided')
-        measured = bool(base.get('measurements')) and status not in ('failed_quality','analysis_failed','insufficient_data')
+        stages = recording_analysis(mid, base, model)
+        measured = stages['measurement_status'] == 'available'
         available = status not in ('failed_quality','insufficient_data','analysis_failed') and model.get('status') == 'available_experimental' and model.get('output') is not None
         if status == 'skipped':
             plain, text = 'Skipped', 'You chose to continue without this recording.'
-        elif measured or available or status == 'measurements_available':
+        elif (measured and stages['quality_status'] != 'failed') or available or status == 'measurements_available':
             plain = 'Analysed'
-            text = {'gaze':'The recording was processed by the experimental gaze model.', 'speech':('Acoustic measurements were taken from the recording.' if measured else 'A research model classified the supplied audio.'), 'facial':('A face was detected and image quality was checked.' if measured else 'A research model classified the supplied snapshot.')}[mid]
+            text = {'gaze':'Your recording was processed. Gaze direction and head movement measurements are available.', 'speech':('Acoustic measurements were taken from the recording.' if measured else 'A research model classified the supplied audio.'), 'facial':('A face was detected and image quality was checked.' if measured else 'A research model classified the supplied snapshot.')}[mid]
             if eye_example:
                 text = 'An experimental result was saved for an eye-tracker recording. Its input is different from a webcam recording.'
             if extra and available:
@@ -46,8 +48,18 @@ def present(report, category=None, example=False):
                     noun = 'expression' if mid == 'facial' else 'voice-emotion'
                     text += f' The model’s closest {noun} label was {predicted}.'
                 text += ' This research classification does not describe autism or the person’s internal feelings.'
-            elif extra:
-                text += ' No research classification was provided; the measurements are still available in Technical details.'
+            elif not available:
+                plain = 'Measurements available; model result unavailable'
+                if mid == 'gaze':
+                    text = 'Your recording was processed. Movement measurements are available, but this model could not reliably classify this recording.'
+                    if stages['applicability_status'] == 'out_of_domain':
+                        text += ' The movement was outside the model’s supported range.'
+                else:
+                    text += ' No research classification was provided.'
+                if stages['reason']:
+                    text += ' ' + stages['reason']
+            if mid == 'gaze' and measured:
+                text += ' Tracking continuity and movement summaries are in Technical details; these do not measure eye contact or screen position.'
         elif status in ('failed_quality','insufficient_data','out_of_domain','insufficient_quality'):
             plain = 'Recording needs another attempt'
             domain = (base.get('measurements') or {}).get('domain') or {}
@@ -61,8 +73,8 @@ def present(report, category=None, example=False):
         else:
             plain, text = 'Could not analyse', 'The analysis service or required model could not provide a result. Your questionnaire result is still available.'
         if plain == 'Recording needs another attempt' and mid != 'gaze':
-            text = ('The recording was too short or unclear for analysis. ' if mid == 'speech' else 'A usable face could not be detected in the snapshot. ') + 'You can try again in a new screening; the questionnaire result is unchanged.'
-        recordings.append({'id':mid,'label':label,'status':plain,'summary':text})
+            text = (stages['reason'] or ('The recording was too short or unclear for analysis.' if mid == 'speech' else 'A usable face could not be detected in the snapshot.')) + ' You can try again in a new screening; the questionnaire result is unchanged.'
+        recordings.append({'id':mid,'label':label,'status':plain,'summary':text,'analysis':stages})
     result['presentation'] = {'version':'plain-language-v1','category':category or q.get('category'),
         'title':'Your screening summary','outcome':outcome,'meaning':meaning,'next_step':next_step,'notice':NOTICE,
         'score_text':f"{q['total_score']} / {q['max_score']}" if q.get('total_score') is not None and q.get('max_score') is not None else 'Unavailable',

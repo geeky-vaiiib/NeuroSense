@@ -43,3 +43,13 @@ it('preserves historical interpretation and explicitly handles names outside the
  texts.length=0;await generatePDF({report:fixtures.legacy,subjectName:'李明'},null,{mode:'technical',save:false});
  const all=texts.join('\n');expect(all).toContain('Original historical interpretation.');expect(all).toContain('this PDF font cannot represent');expect(all).not.toContain('Name: ??');
 });
+
+it('recording stage contract is technical-only, while summaries match both modes',async()=>{
+ const report=fixtures.partial;
+ for(const mode of ['simple','technical']){
+  texts.length=0;await generatePDF({report},null,{mode,save:false});const text=texts.join('\n');
+  for(const r of report.presentation.recordings)expect(text).toContain(r.status);
+  if(mode==='simple')expect(text).not.toContain('classification status:');
+  else expect(text).toContain('classification status: unavailable');
+ }
+});

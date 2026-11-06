@@ -96,7 +96,9 @@ def analyze_speech(audio_base64: str, mime_type: str = "audio/webm", *, research
             tmp.write(audio_bytes)
             tmp_path = tmp.name
         import librosa
-        y, sr = librosa.load(tmp_path, sr=SF.SAMPLE_RATE, mono=True, duration=SF.MAX_DURATION_S)
+        native_y, native_sr = librosa.load(tmp_path, sr=None, mono=True, duration=SF.MAX_DURATION_S)
+        sr = SF.SAMPLE_RATE
+        y = librosa.resample(native_y, orig_sr=native_sr, target_sr=sr) if native_sr != sr else native_y
     except Exception as exc:
         return _result("analysis_failed", reason=f"Audio could not be processed: {exc}", code=ERR_DECODE)
     finally:
@@ -111,10 +113,24 @@ def analyze_speech(audio_base64: str, mime_type: str = "audio/webm", *, research
         import logging
         logging.getLogger("neurosense.speech").exception("Acoustic measurement failed")
         return _result("analysis_failed", reason="Acoustic measurement failed; see server logs.", code=ERR_DECODE, duration_s=duration)
+    features['spectral_flatness_median'] = float(np.median(librosa.feature.spectral_flatness(y=y)))
+    features['clipped_sample_fraction'] = float(np.mean(np.abs(y) >= 0.999))
+    features['input_quality_policy'] = 'speech-input-hygiene-v1; flatness <0.5 and >=0.5s pYIN voiced-frame evidence; not a speech detector'
+    features['speech_presence_method'] = 'pYIN voiced-frame evidence; not a speech/non-speech classifier. Tones can appear voiced.'
     emotion_result = None
     if research_enabled:
         from .research_inference import speech_emotion
-        emotion_result = speech_emotion(y, sr)
+        if float(np.max(np.abs(y))) < 1e-5:
+            from .research_inference import unavailable
+            emotion_result = unavailable('speech', 'The recording is silent. Measurements are retained; check the microphone and record audible speech.', 'failed_quality')
+        elif features['spectral_flatness_median'] >= 0.5:
+            from .research_inference import unavailable
+            emotion_result = unavailable('speech', 'The recording is predominantly noise-like under the spectral-flatness input check. Measurements are retained; record audible speech in a quiet room.', 'failed_quality')
+        elif features.get('voiced_fraction', 0) * duration < 0.5:
+            from .research_inference import unavailable
+            emotion_result = unavailable('speech', 'Less than half a second of voiced-frame evidence was found by the pitch estimator. Acoustic measurements are retained; record clear audible speech for emotion analysis.', 'failed_quality')
+        else:
+            emotion_result = speech_emotion(native_y, native_sr)
     clf, why = load_classifier()
     if clf is None:
         result = _result("model_unavailable", reason=why, code=ERR_NO_MODEL, features=features, duration_s=duration)

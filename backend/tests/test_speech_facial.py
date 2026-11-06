@@ -110,3 +110,50 @@ def test_unvoiced_pitch_is_null_not_zero():
     features = SF.extract_features(np.zeros(22050 * 5), 22050)
     assert features['pitch_mean'] is None and features['pitch_std'] is None
     assert features['pitch_status'] == 'unavailable_no_voiced_frames'
+
+
+def test_silent_audio_retains_measurements_but_withholds_emotion():
+    import io, soundfile as sf
+    buf=io.BytesIO();sf.write(buf,np.zeros(6*22050),22050,format='WAV')
+    r=SE.analyze_speech(base64.b64encode(buf.getvalue()).decode(),'audio/wav',research_enabled=True)
+    assert r['features']['energy_mean']==0.0  # genuinely measured silence, not a missing score
+    assert r['emotion_result']['output'] is None
+    assert r['emotion_result']['status']=='failed_quality'
+    assert r['emotion_result']['status']=='failed_quality'
+
+
+def test_noise_without_voiced_evidence_does_not_acquire_emotion_output():
+    """Deterministic noise engineering input, not a speech validation dataset."""
+    import io, soundfile as sf
+    buf=io.BytesIO();sf.write(buf,np.random.default_rng(42).normal(0,.05,6*22050),22050,format='WAV')
+    r=SE.analyze_speech(base64.b64encode(buf.getvalue()).decode(),'audio/wav',research_enabled=True)
+    assert r['features']['spectral_flatness_median'] >= .5
+    assert r['features']['energy_mean']>0
+    assert r['emotion_result']['output'] is None
+
+
+def test_emotion_receives_native_audio_not_acoustic_resample(monkeypatch):
+    from backend.ml import research_inference as R
+    seen=[]
+    def classify(y,sr):
+        seen.append((len(y),sr))
+        return R.unavailable('speech','Controlled model boundary')
+    monkeypatch.setattr(R,'speech_emotion',classify)
+    r=SE.analyze_speech(_wav_b64(sr=48000),'audio/wav',research_enabled=True)
+    assert r['features']['pitch_mean']>0
+    assert seen==[(6*48000,48000)]
+
+
+@pytest.mark.parametrize('case',['multiple','dark','blur'])
+def test_detected_face_quality_rejection_retains_measurements(monkeypatch,case):
+    """Controlled detection boundary; no claim about detector accuracy."""
+    from backend.ml import cv_preprocessing as CV
+    from backend.ml import research_inference as R
+    monkeypatch.setattr(CV,'_detect_face',lambda *a:((0,0,64,64),'haar_frontalface'))
+    monkeypatch.setattr(CV,'_detect_haar',lambda *a,**k:[(0,0,64,64)]*(2 if case=='multiple' else 1))
+    monkeypatch.setattr(R,'face_expression',lambda *a:pytest.fail('quality-rejected face reached CNN'))
+    img=np.full((64,64,3),0 if case=='dark' else 128,np.uint8)
+    r=FE.analyze_face(_png_b64(img),research_enabled=True)
+    assert r['status']=='failed_quality' and r['output'] is None
+    assert r['features']['face_detected'] is True
+    assert r['quality']['valid'] is False and r['reason']

@@ -14,7 +14,7 @@ LABELS = {
 UNITS = {'sample_rate_hz': 'Hz', 'window_duration_s': 's', 'pitch_mean': 'Hz', 'pitch_std': 'Hz', 'duration_s': 's', 'duration_ms': 'ms',
          'speech_rate': 'proxy units (not syllables/s)', 'sample_rate': 'Hz', 'fps': 'frames/s', 'image_width': 'px', 'image_height': 'px',
          'mean_brightness': 'gray levels (0–255)', 'sharpness_laplacian_var': 'gray-level variance',
-         'voiced_fraction': 'fraction', 'energy_mean': 'normalized RMS', 'energy_std': 'normalized RMS'}
+         'face_brightness':'gray levels (0–255)', 'face_sharpness':'gray-level variance at 64x64', 'spectral_flatness_median':'ratio', 'clipped_sample_fraction':'fraction', 'voiced_fraction': 'fraction', 'energy_mean': 'normalized RMS', 'energy_std': 'normalized RMS'}
 AVAILABLE = {'available_experimental', 'available_scoring_instrument'}
 
 def value(name, raw, unit=None, percent=False):

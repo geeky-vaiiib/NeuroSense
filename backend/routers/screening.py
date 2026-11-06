@@ -121,7 +121,7 @@ def run_screening(
             candidate = (raw or {}).get(result_key)
             if candidate is None:
                 reason = ('These research models are restricted to adult technical testing; not applied to children or toddlers.'
-                          if category != 'adult' else 'Recording failed the existing quality/measurement stage; no research classification produced.')
+                          if category != 'adult' else (raw or {}).get('reason') or 'Recording failed the existing quality/measurement stage; no research classification produced.')
                 candidate = unavailable(task, reason, 'model_unavailable' if category != 'adult' else 'failed_quality')
             states.append(research_state(candidate))
 

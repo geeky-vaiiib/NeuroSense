@@ -40,6 +40,7 @@ export async function generatePDF(caseData, explanation = null, options = {}) {
     section('Scoring provenance');line(`Instrument: ${q?.instrument || 'Unavailable'}; scoring version: ${q?.scoring_version ?? caseData.scoring_version ?? 'Unavailable'}`);
     line(`Source: ${q?.source || 'Unavailable'}`,9);
     for(const item of q?.items || [])line(`${item.id}: ${item.answer ?? item.letter ?? 'Unavailable'} | ${item.points ?? item.point ?? 'Unavailable'} points`,9);
+    for(const r of p?.recordings || []){if(r.analysis){section(`${r.label}: processing stages`);for(const [key,v] of Object.entries(r.analysis)){if(key!=='output')line(`${key.replaceAll('_',' ')}: ${v ?? 'Unavailable'}`,9);}}}
     for(const card of report?.modalities || caseData.modality_states || []){
       section(card.label || card.id);line(`${card.status_label || card.status} (${card.status})`,10,true);
       line(card.inclusion_reason || card.reason || 'Original inclusion reason unavailable.',9);

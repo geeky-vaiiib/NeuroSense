@@ -88,3 +88,20 @@ it('remounted accepted job resumes polling without camera capture or another upl
  fireEvent.click(screen.getByRole('button',{name:'Resume accepted analysis'}));await act(async()=>{});
  expect(gazeApi.analyze.mock.calls[0][0].jobId).toBe('retained-job');expect(gazeApi.analyze.mock.calls[0][0].blob).toBeNull();
 });
+
+it('missing optional classifier does not block OpenFace measurement capture',async()=>{
+ gazeApi.status.mockResolvedValueOnce({available:false,openface_available:true,media_timing_available:true});
+ render(<GazeSession category="adult" onComplete={vi.fn()} onSkip={vi.fn()}/>);
+ await act(async()=>{});
+ expect(screen.getByRole('button',{name:'Start camera check'})).toBeEnabled();
+ expect(screen.getByRole('status')).toHaveTextContent('Movement measurements available');
+});
+it('domain rejection with measurements is not labelled poor recording quality',async()=>{
+ gazeApi.analyze.mockResolvedValueOnce({job_id:'retained-job',status:'out_of_domain',reason:'motion_outside_training_range',
+  quality:{valid:true,sample_count:900,valid_sample_count:900,duration_seconds:30},descriptive:{channels:{},basis:'numeric fixture',disclaimer:'Engineering boundary only'}});
+ render(<GazeSession category="adult" initialJobId="retained-job" onComplete={vi.fn()} onSkip={vi.fn()}/>);
+ await act(async()=>{});fireEvent.click(screen.getByRole('button',{name:'Resume accepted analysis'}));await act(async()=>{});
+ expect(screen.getByRole('heading',{name:'Movement measurements available'})).toBeVisible();
+ expect(screen.queryByText('Recording quality too low')).not.toBeInTheDocument();
+ expect(screen.queryByRole('button',{name:'Repeat gaze test'})).not.toBeInTheDocument();
+});

@@ -23,7 +23,7 @@ def test_measurements_and_classification_are_distinct_and_domain_rejection_is_ho
       {'id':'speech_emotion','status':'model_unavailable','output':None},
       {'id':'gaze','status':'failed_quality','measurements':{'domain':{'status':'out_of_domain'}}}]})
     voice=r['presentation']['recordings'][1]
-    assert voice['status']=='Analysed' and 'No research classification' in voice['summary']
+    assert voice['status']=='Measurements available; model result unavailable' and 'No research classification' in voice['summary']
     assert 'outside the model' in r['presentation']['recordings'][0]['summary']
     assert r['presentation']['recordings'][0]['status']=='Could not analyse'
 
@@ -33,7 +33,7 @@ def test_new_report_is_saved_and_old_report_adapted_without_rewrite(app_client,m
     response=c.post('/screening/screen',json=screening_body()).json();rid=response['caseId']
     saved=mongo.cases.find_one({'id':rid})
     assert response['report']==saved['report']==c.get('/cases/'+rid).json()['display_report']
-    assert saved['report']['report_version']=='research-report-v2'
+    assert saved['report']['report_version']=='research-report-v3'
     old=deepcopy(saved['report']);old.pop('presentation');old['report_version']='research-report-v1'
     mongo.cases.update_one({'id':rid},{'$set':{'report':old}})
     detail=c.get('/cases/'+rid).json()
@@ -73,3 +73,46 @@ def test_legacy_total_is_retained_without_inventing_a_maximum_or_threshold():
     assert r['presentation']['score_text']=='8 points (original maximum unavailable)'
     assert r['presentation']['threshold_text']=='Original threshold unavailable'
     assert r['presentation']['outcome']=='Original outcome retained'
+
+
+def test_gaze_quality_pass_domain_rejection_retains_measurements_and_null_output():
+    from backend.ml.modality_status import gaze_state
+    s = gaze_state({'status':'out_of_domain', 'reason':'motion_outside_training_range',
+        'quality':{'valid':True}, 'descriptive':{'channels':{'gaze_x':{'std_deg':2.5}}},
+        'domain':{'status':'out_of_domain'}, 'probability':None},False,None)
+    r = build_report({'id':'numeric-boundary','created_at':'2026','category':'adult','modality_states':[s]})
+    card = r['presentation']['recordings'][0]
+    assert card['status']=='Measurements available; model result unavailable'
+    assert card['analysis']['quality_status']=='passed'
+    assert card['analysis']['classification_status']=='withheld'
+    assert card['analysis']['output'] is None
+    assert 'Your recording was processed.' in card['summary']
+    assert r['modalities'][2]['measurements']['descriptive']['channels']['gaze_x']['std_deg']==2.5
+
+
+def test_failed_emotion_reason_reaches_saved_presentation_without_dropping_acoustics():
+    r=present({'modalities':[{'id':'speech','status':'measurements_available','measurements':{'pitch_mean':123}},
+        {'id':'speech_emotion','status':'analysis_failed','reason':'Emotion preprocessing failed.','output':None}]})
+    c=r['presentation']['recordings'][1]
+    assert c['analysis']['measurement_status']=='available'
+    assert c['analysis']['classification_status']=='failed'
+    assert 'Emotion preprocessing failed.' in c['summary']
+    assert c['analysis']['output'] is None
+
+
+def test_recording_contract_output_survives_api_storage_and_reopen(app_client,mongo,monkeypatch):
+    """Controlled processors, real request/state/storage projection. No hardware claim."""
+    from backend.ml import preprocessing_pipeline as preprocessor
+    from backend.tests.conftest import screening_body
+    output={'kind':'speech_emotion','label':'calm','class_scores':{'calm':.7,'happy':.3},'calibrated':False}
+    candidate={'task':'speech_emotion','status':'available_experimental','output':output,
+               'model':{'version':'engineering-boundary','weights_sha256':'fixture-only'},'reason':'Separate task'}
+    monkeypatch.setattr(preprocessor,'analyze_speech',lambda *a,**k:{'status':'model_unavailable','features':{'pitch_mean':120.125},'emotion_result':candidate})
+    c=app_client();c.post('/auth/register',json={'name':'Fixture','email':'stages@example.com','password':'fixture-password-9'})
+    body=screening_body(category='adult',age=30,audioBase64='controlled-boundary',speechSkipped=False)
+    response=c.post('/screening/screen',json=body)
+    assert response.status_code==200,response.text
+    r=response.json();saved=mongo.cases.find_one({'id':r['caseId']})['report']
+    assert r['report']==saved==c.get('/cases/'+r['caseId']).json()['display_report']
+    stage=saved['presentation']['recordings'][1]['analysis']
+    assert stage['output']==output and stage['measurement_status']=='available'

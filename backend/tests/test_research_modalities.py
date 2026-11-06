@@ -102,7 +102,8 @@ def test_adult_expression_and_child_withholding_preserve_face_measurements(app_c
  from backend.ml import facial_engine as FE
  # Controlled detector boundary, not real face/camera evidence. Actual shipped CNN runs.
  monkeypatch.setattr(FE._cv,'_detect_face',lambda cv,bgr:((20,20,80,80),'controlled-test-detector'))
- image=_png_b64(np.full((128,128,3),128,np.uint8))
+ monkeypatch.setattr(FE._cv,'_detect_haar',lambda *a,**k:[(20,20,80,80)])
+ image=_png_b64(np.random.default_rng(7).integers(40,210,(128,128,3),dtype=np.uint8))
  c=app_client();c.post('/auth/register',json={'name':'Fixture','email':'face-model@example.com','password':'fixture-password-9'})
  adult=c.post('/screening/screen',json=screening_body(points=6,category='adult',age=30,facialSkipped=False,facialImageBase64=image));assert adult.status_code==200,adult.text
  states=adult.json()['modalities'];expression=next(s for s in states if s['id']=='facial_expression')

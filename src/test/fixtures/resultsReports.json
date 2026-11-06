@@ -1,6 +1,6 @@
 {
   "adult": {
-    "report_version": "research-report-v2",
+    "report_version": "research-report-v3",
     "presentation": {
       "version": "plain-language-v1",
       "category": "adult",
@@ -18,19 +18,58 @@
           "id": "gaze",
           "label": "Eye-gaze recording",
           "status": "Skipped",
-          "summary": "You chose to continue without this recording."
+          "summary": "You chose to continue without this recording.",
+          "analysis": {
+            "version": "recording-analysis-v1",
+            "capture_status": "skipped",
+            "decoding_status": "not_provided",
+            "measurement_status": "unavailable",
+            "quality_status": "not_assessed",
+            "model_status": "unknown",
+            "applicability_status": "not_assessed",
+            "classification_status": "not_requested",
+            "output": null,
+            "reason": "Excluded from screening: separate experimental task or no usable output.",
+            "retry_action": null
+          }
         },
         {
           "id": "speech",
           "label": "Voice recording",
           "status": "Skipped",
-          "summary": "You chose to continue without this recording."
+          "summary": "You chose to continue without this recording.",
+          "analysis": {
+            "version": "recording-analysis-v1",
+            "capture_status": "skipped",
+            "decoding_status": "not_provided",
+            "measurement_status": "unavailable",
+            "quality_status": "not_assessed",
+            "model_status": "unknown",
+            "applicability_status": "not_assessed",
+            "classification_status": "not_requested",
+            "output": null,
+            "reason": "Excluded from screening: separate experimental task or no usable output.",
+            "retry_action": null
+          }
         },
         {
           "id": "facial",
           "label": "Facial snapshot",
           "status": "Skipped",
-          "summary": "You chose to continue without this recording."
+          "summary": "You chose to continue without this recording.",
+          "analysis": {
+            "version": "recording-analysis-v1",
+            "capture_status": "skipped",
+            "decoding_status": "not_provided",
+            "measurement_status": "unavailable",
+            "quality_status": "not_assessed",
+            "model_status": "unknown",
+            "applicability_status": "not_assessed",
+            "classification_status": "not_requested",
+            "output": null,
+            "reason": "Excluded from screening: separate experimental task or no usable output.",
+            "retry_action": null
+          }
         }
       ],
       "is_example": false,
@@ -385,7 +424,7 @@
     "formatting": "Numeric values: 3 decimals; class scores: 1 decimal percent, uncalibrated. Raw values retained."
   },
   "child": {
-    "report_version": "research-report-v2",
+    "report_version": "research-report-v3",
     "presentation": {
       "version": "plain-language-v1",
       "category": "child",
@@ -403,19 +442,58 @@
           "id": "gaze",
           "label": "Eye-gaze recording",
           "status": "Skipped",
-          "summary": "You chose to continue without this recording."
+          "summary": "You chose to continue without this recording.",
+          "analysis": {
+            "version": "recording-analysis-v1",
+            "capture_status": "skipped",
+            "decoding_status": "not_provided",
+            "measurement_status": "unavailable",
+            "quality_status": "not_assessed",
+            "model_status": "unknown",
+            "applicability_status": "not_assessed",
+            "classification_status": "not_requested",
+            "output": null,
+            "reason": "Excluded from screening: separate experimental task or no usable output.",
+            "retry_action": null
+          }
         },
         {
           "id": "speech",
           "label": "Voice recording",
           "status": "Skipped",
-          "summary": "You chose to continue without this recording."
+          "summary": "You chose to continue without this recording.",
+          "analysis": {
+            "version": "recording-analysis-v1",
+            "capture_status": "skipped",
+            "decoding_status": "not_provided",
+            "measurement_status": "unavailable",
+            "quality_status": "not_assessed",
+            "model_status": "unknown",
+            "applicability_status": "not_assessed",
+            "classification_status": "not_requested",
+            "output": null,
+            "reason": "Excluded from screening: separate experimental task or no usable output.",
+            "retry_action": null
+          }
         },
         {
           "id": "facial",
           "label": "Facial snapshot",
           "status": "Skipped",
-          "summary": "You chose to continue without this recording."
+          "summary": "You chose to continue without this recording.",
+          "analysis": {
+            "version": "recording-analysis-v1",
+            "capture_status": "skipped",
+            "decoding_status": "not_provided",
+            "measurement_status": "unavailable",
+            "quality_status": "not_assessed",
+            "model_status": "unknown",
+            "applicability_status": "not_assessed",
+            "classification_status": "not_requested",
+            "output": null,
+            "reason": "Excluded from screening: separate experimental task or no usable output.",
+            "retry_action": null
+          }
         }
       ],
       "is_example": false,
@@ -770,7 +848,7 @@
     "formatting": "Numeric values: 3 decimals; class scores: 1 decimal percent, uncalibrated. Raw values retained."
   },
   "toddler": {
-    "report_version": "research-report-v2",
+    "report_version": "research-report-v3",
     "presentation": {
       "version": "plain-language-v1",
       "category": "toddler",
@@ -788,19 +866,58 @@
           "id": "gaze",
           "label": "Eye-gaze recording",
           "status": "Skipped",
-          "summary": "You chose to continue without this recording."
+          "summary": "You chose to continue without this recording.",
+          "analysis": {
+            "version": "recording-analysis-v1",
+            "capture_status": "skipped",
+            "decoding_status": "not_provided",
+            "measurement_status": "unavailable",
+            "quality_status": "not_assessed",
+            "model_status": "unknown",
+            "applicability_status": "not_assessed",
+            "classification_status": "not_requested",
+            "output": null,
+            "reason": "Excluded from screening: separate experimental task or no usable output.",
+            "retry_action": null
+          }
         },
         {
           "id": "speech",
           "label": "Voice recording",
           "status": "Skipped",
-          "summary": "You chose to continue without this recording."
+          "summary": "You chose to continue without this recording.",
+          "analysis": {
+            "version": "recording-analysis-v1",
+            "capture_status": "skipped",
+            "decoding_status": "not_provided",
+            "measurement_status": "unavailable",
+            "quality_status": "not_assessed",
+            "model_status": "unknown",
+            "applicability_status": "not_assessed",
+            "classification_status": "not_requested",
+            "output": null,
+            "reason": "Excluded from screening: separate experimental task or no usable output.",
+            "retry_action": null
+          }
         },
         {
           "id": "facial",
           "label": "Facial snapshot",
           "status": "Skipped",
-          "summary": "You chose to continue without this recording."
+          "summary": "You chose to continue without this recording.",
+          "analysis": {
+            "version": "recording-analysis-v1",
+            "capture_status": "skipped",
+            "decoding_status": "not_provided",
+            "measurement_status": "unavailable",
+            "quality_status": "not_assessed",
+            "model_status": "unknown",
+            "applicability_status": "not_assessed",
+            "classification_status": "not_requested",
+            "output": null,
+            "reason": "Excluded from screening: separate experimental task or no usable output.",
+            "retry_action": null
+          }
         }
       ],
       "is_example": false,
@@ -1205,7 +1322,7 @@
     "formatting": "Numeric values: 3 decimals; class scores: 1 decimal percent, uncalibrated. Raw values retained."
   },
   "partial": {
-    "report_version": "research-report-v2",
+    "report_version": "research-report-v3",
     "presentation": {
       "version": "plain-language-v1",
       "category": "adult",
@@ -1223,19 +1340,64 @@
           "id": "gaze",
           "label": "Eye-gaze recording",
           "status": "Could not analyse",
-          "summary": "The recording was outside the model\u2019s supported range, so no model result was provided."
+          "summary": "The recording was outside the model\u2019s supported range, so no model result was provided.",
+          "analysis": {
+            "version": "recording-analysis-v1",
+            "capture_status": "received",
+            "decoding_status": "unknown",
+            "measurement_status": "unavailable",
+            "quality_status": "failed",
+            "model_status": "unknown",
+            "applicability_status": "out_of_domain",
+            "classification_status": "withheld",
+            "output": null,
+            "reason": "Excluded from screening: separate experimental task or no usable output.",
+            "retry_action": "No repeat is needed to obtain a score. This recording is outside the research model\u2019s supported range."
+          }
         },
         {
           "id": "speech",
           "label": "Voice recording",
-          "status": "Analysed",
-          "summary": "Acoustic measurements were taken from the recording. No research classification was provided; the measurements are still available in Technical details."
+          "status": "Measurements available; model result unavailable",
+          "summary": "Acoustic measurements were taken from the recording. No research classification was provided. Excluded from screening: separate experimental task or no usable output.",
+          "analysis": {
+            "version": "recording-analysis-v1",
+            "capture_status": "received",
+            "decoding_status": "decoded",
+            "measurement_status": "available",
+            "quality_status": "not_assessed",
+            "model_status": "unknown",
+            "applicability_status": "not_assessed",
+            "classification_status": "unavailable",
+            "output": null,
+            "reason": "Excluded from screening: separate experimental task or no usable output.",
+            "retry_action": "The operator can check the reported service or model error; repeating the recording may not resolve it."
+          }
         },
         {
           "id": "facial",
           "label": "Facial snapshot",
           "status": "Analysed",
-          "summary": "A face was detected and image quality was checked. The model\u2019s closest expression label was happy. This research classification does not describe autism or the person\u2019s internal feelings."
+          "summary": "A face was detected and image quality was checked. The model\u2019s closest expression label was happy. This research classification does not describe autism or the person\u2019s internal feelings.",
+          "analysis": {
+            "version": "recording-analysis-v1",
+            "capture_status": "received",
+            "decoding_status": "decoded",
+            "measurement_status": "available",
+            "quality_status": "not_assessed",
+            "model_status": "available",
+            "applicability_status": "supported_input_unvalidated_transfer",
+            "classification_status": "available",
+            "output": {
+              "label": "happy",
+              "class_scores": {
+                "happy": 0.625,
+                "sad": 0.375
+              }
+            },
+            "reason": null,
+            "retry_action": null
+          }
         }
       ],
       "is_example": false,
@@ -1707,19 +1869,58 @@
           "id": "gaze",
           "label": "Eye-gaze recording",
           "status": "Could not analyse",
-          "summary": "No recording analysis is available in this saved record."
+          "summary": "No recording analysis is available in this saved record.",
+          "analysis": {
+            "version": "recording-analysis-v1",
+            "capture_status": "unknown",
+            "decoding_status": "not_provided",
+            "measurement_status": "unavailable",
+            "quality_status": "not_assessed",
+            "model_status": "unknown",
+            "applicability_status": "not_assessed",
+            "classification_status": "not_requested",
+            "output": null,
+            "reason": null,
+            "retry_action": null
+          }
         },
         {
           "id": "speech",
           "label": "Voice recording",
           "status": "Could not analyse",
-          "summary": "No recording analysis is available in this saved record."
+          "summary": "No recording analysis is available in this saved record.",
+          "analysis": {
+            "version": "recording-analysis-v1",
+            "capture_status": "unknown",
+            "decoding_status": "not_provided",
+            "measurement_status": "unavailable",
+            "quality_status": "not_assessed",
+            "model_status": "unknown",
+            "applicability_status": "not_assessed",
+            "classification_status": "not_requested",
+            "output": null,
+            "reason": null,
+            "retry_action": null
+          }
         },
         {
           "id": "facial",
           "label": "Facial snapshot",
           "status": "Could not analyse",
-          "summary": "No recording analysis is available in this saved record."
+          "summary": "No recording analysis is available in this saved record.",
+          "analysis": {
+            "version": "recording-analysis-v1",
+            "capture_status": "unknown",
+            "decoding_status": "not_provided",
+            "measurement_status": "unavailable",
+            "quality_status": "not_assessed",
+            "model_status": "unknown",
+            "applicability_status": "not_assessed",
+            "classification_status": "not_requested",
+            "output": null,
+            "reason": null,
+            "retry_action": null
+          }
         }
       ],
       "is_example": false,
@@ -2287,19 +2488,96 @@
           "id": "gaze",
           "label": "Eye-tracker research example",
           "status": "Analysed",
-          "summary": "An experimental result was saved for an eye-tracker recording. Its input is different from a webcam recording."
+          "summary": "An experimental result was saved for an eye-tracker recording. Its input is different from a webcam recording.",
+          "analysis": {
+            "version": "recording-analysis-v1",
+            "capture_status": "received",
+            "decoding_status": "decoded",
+            "measurement_status": "unavailable",
+            "quality_status": "not_assessed",
+            "model_status": "available",
+            "applicability_status": "supported_input_unvalidated_transfer",
+            "classification_status": "available",
+            "output": {
+              "kind": "eye_tracker_cohort_output",
+              "label": "ASD",
+              "class_scores": {
+                "TD": 0.4915843605995178,
+                "ASD": 0.5084156394004822
+              },
+              "calibrated": false,
+              "meaning": "Source cohort class scores, not diagnosis or calibrated probability. Not webcam compatible."
+            },
+            "reason": null,
+            "retry_action": null
+          }
         },
         {
           "id": "speech",
           "label": "Voice recording",
           "status": "Analysed",
-          "summary": "A research model classified the supplied audio. The model\u2019s closest voice-emotion label was neutral. This research classification does not describe autism or the person\u2019s internal feelings."
+          "summary": "A research model classified the supplied audio. The model\u2019s closest voice-emotion label was neutral. This research classification does not describe autism or the person\u2019s internal feelings.",
+          "analysis": {
+            "version": "recording-analysis-v1",
+            "capture_status": "unknown",
+            "decoding_status": "decoded",
+            "measurement_status": "unavailable",
+            "quality_status": "not_assessed",
+            "model_status": "available",
+            "applicability_status": "supported_input_unvalidated_transfer",
+            "classification_status": "available",
+            "output": {
+              "kind": "speech_emotion",
+              "label": "neutral",
+              "class_scores": {
+                "neutral": 0.44641274213790894,
+                "calm": 0.12928074598312378,
+                "happy": 0.16930505633354187,
+                "sad": 0.16531318426132202,
+                "angry": 0.015625983476638794,
+                "fearful": 0.04210125282406807,
+                "disgust": 0.015775326639413834,
+                "surprised": 0.016185658052563667
+              },
+              "calibrated": false,
+              "meaning": "Uncalibrated posed-expression/emotion class scores; not autism prediction or a measurement of internal feelings."
+            },
+            "reason": null,
+            "retry_action": null
+          }
         },
         {
           "id": "facial",
           "label": "Facial snapshot",
           "status": "Analysed",
-          "summary": "A research model classified the supplied snapshot. The model\u2019s closest expression label was neutral. This research classification does not describe autism or the person\u2019s internal feelings."
+          "summary": "A research model classified the supplied snapshot. The model\u2019s closest expression label was neutral. This research classification does not describe autism or the person\u2019s internal feelings.",
+          "analysis": {
+            "version": "recording-analysis-v1",
+            "capture_status": "unknown",
+            "decoding_status": "decoded",
+            "measurement_status": "unavailable",
+            "quality_status": "not_assessed",
+            "model_status": "available",
+            "applicability_status": "supported_input_unvalidated_transfer",
+            "classification_status": "available",
+            "output": {
+              "kind": "facial_expression",
+              "label": "neutral",
+              "class_scores": {
+                "neutral": 0.58034747838974,
+                "happy": 0.008638394065201283,
+                "sad": 0.32242757081985474,
+                "fearful": 0.06064072623848915,
+                "angry": 5.713714472221909e-06,
+                "surprised": 7.635728252353147e-05,
+                "disgusted": 0.02786371298134327
+              },
+              "calibrated": false,
+              "meaning": "Uncalibrated posed-expression/emotion class scores; not autism prediction or a measurement of internal feelings."
+            },
+            "reason": null,
+            "retry_action": null
+          }
         }
       ],
       "is_example": true,

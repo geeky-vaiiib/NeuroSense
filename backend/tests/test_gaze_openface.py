@@ -532,3 +532,16 @@ def test_crop_centres_on_the_crop_only():
     w = A.windows_from(rs, 0, A.CROP_STEPS)
     assert w.shape[1] == 60 and 1 <= len(w) <= 2
     assert abs(w[:, :, 0].mean()) < 0.2          # centred on the cropped 7 s, not on the whole session
+
+@pytest.mark.parametrize('corrupt', [False, True])
+def test_measurements_survive_missing_or_corrupt_checkpoint(tmp_path, corrupt):
+    """Synthetic OpenFace numeric boundary; not webcam/participant evidence."""
+    ckpt = tmp_path / 'missing.pt'
+    if corrupt:
+        ckpt.write_bytes(b'not a checkpoint')
+    service = S.GazeService(checkpoint=ckpt, metadata=tmp_path / 'missing.json')
+    result = service.analyze_frames(synth())
+    assert result['quality']['valid'] is True
+    assert result['descriptive']['channels']['gaze_x']['std_deg'] is not None
+    assert result['probability'] is None
+    assert result['reason'] == 'model_unavailable'

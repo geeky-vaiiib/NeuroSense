@@ -104,4 +104,4 @@ def facial_state(facial: Optional[dict], skipped: bool) -> dict:
     st = facial.get("status")
     status = st if st in (INSUFFICIENT_DATA, FAILED_QUALITY, MODEL_UNAVAILABLE, ANALYSIS_FAILED) else ANALYSIS_FAILED
     return _state("facial", label, status, reason=facial.get("reason"), error_code=facial.get("error_code"),
-                  measurements=facial.get("features") or None)
+                  measurements=facial.get("features") or None, quality=facial.get("quality"))

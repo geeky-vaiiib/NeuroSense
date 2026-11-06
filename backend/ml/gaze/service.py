@@ -34,7 +34,7 @@ class GazeService:
             checkpoint, metadata = M.REGISTRY[model_version]
         self.model = None
         self.meta: dict = {}
-        self.cfg: Optional[C.PreprocessConfig] = None
+        self.cfg: Optional[C.PreprocessConfig] = C.MODEL_CONFIGS.get(model_version, C.DEPLOYED)
         self.load_error: Optional[tuple[str, str]] = None
         self.validation_path = validation
         try:
@@ -45,10 +45,14 @@ class GazeService:
             if (expected is None or self.cfg != expected
                     or self.meta.get("feature_schema_version") != C.FEATURE_SCHEMA_VERSION):
                 self.model = None
+                self.cfg = C.MODEL_CONFIGS.get(model_version, C.DEPLOYED)
                 self.load_error = (C.ERR_MODEL_MISMATCH, "checkpoint preprocessing differs from ml/gaze/config.py")
         except FileNotFoundError as exc:
+            self.cfg = C.MODEL_CONFIGS.get(model_version, C.DEPLOYED)
             self.load_error = (C.ERR_MODEL_MISSING, str(exc))
         except Exception as exc:  # corrupt checkpoint
+            self.model = None
+            self.cfg = C.MODEL_CONFIGS.get(model_version, C.DEPLOYED)
             self.load_error = (C.ERR_MODEL_MISSING, f"checkpoint failed to load: {exc}")
 
     # ── status ──
@@ -94,15 +98,13 @@ class GazeService:
         base.update(status=status, model_status="available" if self.available else "unavailable",
                     error_code=code, reason=reason, detail=detail,
                     quality=quality.to_dict() if quality else None,
-                    interpretation=f"Gaze could not be analysed ({reason}). It is treated as unavailable.")
+                    interpretation=(f"Gaze classification unavailable ({reason}). Descriptive movement measurements were retained."
+                                    if base.get("descriptive") else f"Gaze could not be analysed ({reason}). No model output was produced."))
         return base
 
     def analyze_frames(self, df: pd.DataFrame, session_id: Optional[str] = None) -> dict:
         """OpenFace dataframe -> result dict (the response contract)."""
         base = self._base(session_id)
-        if not self.available:
-            code, msg = self.load_error
-            return self._fail(base, "unavailable", code, "model_unavailable", msg)
         try:
             prep = P.prepare_session(df, self.cfg)
         except P.SchemaError as exc:
@@ -111,6 +113,9 @@ class GazeService:
         base["descriptive"] = Q.descriptive_summary(prep)       # shown whenever frames exist, whatever the classifier does
         if not q.valid:
             return self._fail(base, "insufficient_quality", q.error_code, q.reason, quality=q)
+        if not self.available:
+            code, msg = self.load_error
+            return self._fail(base, "unavailable", code, "model_unavailable", msg, q)
         domain = None
         if self.meta.get("domain_reference"):
             domain = Q.domain_check(Q.domain_stats(prep, self.cfg), self.meta["domain_reference"])

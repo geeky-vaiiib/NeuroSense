@@ -183,7 +183,7 @@ def _detect_face(
     return None, "none"
 
 
-def _detect_dnn(cv2, bgr: np.ndarray) -> Optional[tuple[int, int, int, int]]:
+def _detect_dnn(cv2, bgr: np.ndarray, all_boxes=False) -> Optional[tuple[int, int, int, int]]:
     """Face detection via OpenCV's built-in DNN face model (res10_300x300_ssd).
 
     OpenCV 4.x ships this model inside its data directory.  We locate it
@@ -209,20 +209,24 @@ def _detect_dnn(cv2, bgr: np.ndarray) -> Optional[tuple[int, int, int, int]]:
         detections = net.forward()
 
         best_conf, best_box = 0.0, None
+        boxes = []
         for i in range(detections.shape[2]):
             conf = float(detections[0, 0, i, 2])
+            if conf > MIN_FACE_CONFIDENCE:
+                raw_box = detections[0, 0, i, 3:7] * np.array([w, h, w, h])
+                boxes.append(raw_box.tolist())
             if conf > MIN_FACE_CONFIDENCE and conf > best_conf:
                 box = detections[0, 0, i, 3:7] * np.array([w, h, w, h])
                 x1, y1, x2, y2 = box.astype(int)
                 best_conf = conf
                 best_box = (int(x1), int(y1), int(x2 - x1), int(y2 - y1))
 
-        return best_box
+        return boxes if all_boxes else best_box
     except Exception:
         return None
 
 
-def _detect_haar(cv2, bgr: np.ndarray) -> Optional[tuple[int, int, int, int]]:
+def _detect_haar(cv2, bgr: np.ndarray, all_boxes=False) -> Optional[tuple[int, int, int, int]]:
     """Face detection via Haar CascadeClassifier (always present with OpenCV)."""
     try:
         cascade_path = cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
@@ -235,6 +239,8 @@ def _detect_haar(cv2, bgr: np.ndarray) -> Optional[tuple[int, int, int, int]]:
             minSize=(30, 30),
             flags=cv2.CASCADE_SCALE_IMAGE,
         )
+        if all_boxes:
+            return list(faces)
         if len(faces) == 0:
             return None
         # Return the largest detected face
