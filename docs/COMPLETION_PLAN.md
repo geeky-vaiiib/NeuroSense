@@ -66,3 +66,7 @@ The baseline-only instruction was honored by writing this plan before reliabilit
 ## Academic demo integration (2026-11-06)
 
 Implemented: backend-owned saved report v1 and shared UI/PDF text, explicit eight-card modality inventory, independent saved research example, eye-tracker schema-checked offline inference, disposable launcher/execution preflight, same-tab owner-scoped expiry recovery and accepted-job resume. Questionnaire scoring, ownership, historical records and experimental exclusions remain. See DEMO_RUNBOOK.md and docs/evidence/demo_execution.json for acceptance scope. Remaining: adult-operator physical webcam/microphone tests and usable-face webcam inference, authorized ASD speech data, paired multimodal data, external/clinical validation. No new model training or diagnostic fusion occurred.
+
+## Plain-language results redesign (2026-11-06)
+
+New reports use version 2 with a typed plain-language presentation. One results component now serves new and historical records through a read-only display adapter. Default content prioritizes saved questionnaire score, meaning, next steps and three recording summaries; optional technical disclosure and two PDF modes preserve full evidence. Local acceptance: 356 backend passed / 7 skipped, 109 frontend passed, lint/build/consistency passed, 7 browser E2E passed; all 33 QA PDF pages visually inspected. See RESULTS_CONTRACT_AUDIT.md and docs/evidence/results_execution.json. No checkpoints/scoring rules changed; no clinical or participant usability validation is claimed.
