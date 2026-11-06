@@ -24,7 +24,9 @@ def value(name, raw, unit=None, percent=False):
         text = f'{raw * 100:.1f}%' if percent else (str(raw) if isinstance(raw, int) else f'{raw:.3f}')
     else: text = str(raw)
     if unit and raw is not None: text += f' {unit}'
-    return ReportValue(name=name, value=raw, unit=unit, text=text)
+    labels={'pitch_mean':'Mean pitch','pitch_std':'Pitch variation','speech_rate':'Speech-rate proxy','voiced_fraction':'Voiced fraction','energy_mean':'Mean audio energy','energy_std':'Audio energy variation','image_width':'Image width','image_height':'Image height','mean_brightness':'Image brightness','sharpness_laplacian_var':'Image sharpness','face_detected':'Face detected','valid_sample_ratio':'Usable frame fraction','sample_count':'Recorded frame count','valid_sample_count':'Usable frame count','data_quality_score':'Recording quality (not confidence)','Model schema':'Input format','Model weights_sha256':'Checkpoint SHA-256'}
+    label=labels.get(name,labels.get(name.split('.')[-1]))
+    return ReportValue(name=name, value=raw, unit=unit, text=text,display_label=label)
 
 def measurements(values, prefix=''):
     rows = []
@@ -37,6 +39,10 @@ def measurements(values, prefix=''):
 def build_report(record):
     basis = deepcopy(record.get('questionnaire_basis'))
     states = {s['id']: deepcopy(s) for s in record.get('modality_states', [])}
+    if basis:
+        states.setdefault('questionnaire', {'status':'available_scoring_instrument','status_label':'Saved questionnaire score',
+            'output':{'kind':'screening_score','total':basis.get('total_score'),'max':basis.get('max_score'),'threshold':basis.get('threshold'),'meets_threshold':basis.get('meets_threshold')},
+            'reason':'Saved questionnaire scoring basis. Original values retained.'})
     mo = record.get('questionnaire_model')
     states['questionnaire_model'] = {'status': 'available_experimental' if mo else 'model_unavailable',
         'output': {'kind': 'supplementary_model', 'value': mo.get('probability'), 'original_model_output':deepcopy(mo),
@@ -56,8 +62,8 @@ def build_report(record):
         rows = []
         if mid=='questionnaire' and basis:
             rows = [value('Instrument', basis.get('instrument')), value('Scoring version', basis.get('scoring_version')),
-                    ReportValue(name='Score',value=basis['total_score'],unit='points',text=f"{basis['total_score']}/{basis['max_score']} points", accessible_label=f"Score {basis['total_score']} out of {basis['max_score']}"),
-                    value('Threshold',basis['threshold'],'points'),value('Threshold rule',f"Score >= {basis['threshold']} points"),value('Interpretation',basis['interpretation'])]
+                    ReportValue(name='Score',value=basis.get('total_score'),unit='points',text=f"{basis['total_score']}/{basis['max_score']} points" if basis.get('total_score') is not None and basis.get('max_score') is not None else 'Unavailable', accessible_label=None),
+                    value('Threshold',basis.get('threshold'),'points'),value('Threshold rule',f"Score >= {basis['threshold']} points" if basis.get('threshold') is not None else 'Original threshold unavailable'),value('Interpretation',basis.get('interpretation'))]
         elif output:
             if 'label' in output: rows.append(value('Predicted class',output['label']))
             if 'value' in output: rows.append(value('Model output (not population probability)',output['value']))
@@ -83,5 +89,14 @@ def build_report(record):
     for card in cards[1:]:
         finding = next((v.text for v in card.values if v.name in ('Predicted class','Model output (not population probability)')), None)
         summary.append(f'{card.label}: {card.status_label}.' + (f' Output: {finding}.' if finding else '') + ' ' + card.inclusion_reason)
-    return ResearchReport(case_id=record['id'],generated_at=record['created_at'],questionnaire=basis,
+    try:
+        from .report_presentation import present
+    except ImportError:
+        from core.report_presentation import present
+    report = ResearchReport(case_id=record['id'],generated_at=record['created_at'],questionnaire=basis,
                           screening_conclusion=conclusion,summary=summary,modalities=cards).model_dump(mode='json')
+    view = present(report, record.get('category'))
+    if not basis and record.get('aq10_score') is not None:
+        view['presentation']['score_text'] = f"{record['aq10_score']} points (original maximum unavailable)"
+        view['presentation']['score_accessible_label'] = f"Stored score {record['aq10_score']} points"
+    return view

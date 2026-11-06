@@ -106,3 +106,13 @@ Final local acceptance: **343 backend passed / 7 skipped / 0 failed**, **102 fro
 Clean setup verification: a new ignored `.venv-demo` was populated with all 86 applicable hash-locked packages. Testing the exact direct-script command with `PYTHONPATH` removed exposed and fixed a launcher import-path defect; a subprocess regression now checks that invocation from an arbitrary working directory. The launcher explicitly adds its repository root for imports and still overrides child-process database/security configuration. The prepared environment is local only and is excluded from Git.
 
 The clean demo environment, no-PYTHONPATH direct launcher, actual OpenFace execution, both HTTP endpoints and graceful shutdown passed. The isolated full suite in that fresh environment passed 343 tests with 7 optional-data skips. Local subprocess OpenMP verification required execution access outside the tool sandbox; no assertion or dependency check was suppressed.
+
+## Plain-language results and export choices
+
+Results now open with **Your screening summary**: saved score/threshold, what it means, a next step and three optional recording summaries. **View answer breakdown** and **Technical details** are native keyboard-accessible disclosures, collapsed initially. Technical details retain model outputs, class scores, quality, model versions and provenance. **Load model explanations** is optional; no explanation request delays the default result.
+
+**Download report** produces the simple report. **Detailed technical report** includes the same summary followed by scoring/model evidence and any actual loaded explanations. Both use the same backend presentation, never a new calculation. Recorded examples remain labelled as examples on screen and throughout PDF footers. Existing records are adapted for display without rescoring or overwriting their stored report. See RESULTS_CONTRACT_AUDIT.md for field provenance and compatibility details.
+
+Browser QA can run on separate disposable ports while preserving an already running demo:
+`NS_E2E_API=http://127.0.0.1:8002 NS_E2E_WEB=http://127.0.0.1:5180 NEUROSENSE_PYTHON=.venv-demo/bin/python npm run test:e2e`.
+Use an absolute Python path if running outside the repository root. Physical recording checks remain separate. A running backend must load this revision before it can return the new presentation fields; hot-reloading frontend code alone does not update a running Python process.

@@ -45,7 +45,7 @@ def test_report_withholds_failed_outputs_preserves_precision_and_units():
     assert record==original
     gaze=next(m for m in r['modalities'] if m['id']=='gaze');assert gaze['output'] is None
     speech=next(m for m in r['modalities'] if m['id']=='speech')
-    assert speech['values'][0]=={'name':'measurements.pitch_mean','value':180.123456,'unit':'Hz','text':'180.123 Hz','accessible_label':None}
+    assert speech['values'][0]=={'name':'measurements.pitch_mean','value':180.123456,'unit':'Hz','text':'180.123 Hz','accessible_label':None,'display_label':'Mean pitch'}
     emotion=next(m for m in r['modalities'] if m['id']=='speech_emotion')
     assert emotion['output']['class_scores']['calm']==.123456789 and emotion['values'][1]['text']=='12.3%'
 

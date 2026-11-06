@@ -15,4 +15,8 @@ EXAMPLE=Path(__file__).resolve().parents[1]/'reports/research/recorded_demo_exam
 @router.get('/recorded-example',response_model=ResearchReport)
 def recorded_example(user: CurrentUser=Depends(get_current_user)):
     if not EXAMPLE.exists():raise HTTPException(503,'Recorded research example not installed. No live result substituted.')
-    return ResearchReport.model_validate(json.loads(EXAMPLE.read_text()))
+    try:
+        from ..core.report_presentation import present
+    except ImportError:
+        from core.report_presentation import present
+    return ResearchReport.model_validate(present(json.loads(EXAMPLE.read_text()), example=True))

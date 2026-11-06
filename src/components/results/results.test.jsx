@@ -72,7 +72,7 @@ describe('result presentation', () => {
 });
 
 // ── whole results page against a mocked API: it must show the stored server values only ──
-vi.mock('../../services/api', () => {
+vi.mock('../../services/api', async () => {
   const stored = {
     id: 'NS-C-1', category: 'child', categoryLabel: 'Child', subjectName: 'T', riskLevel: 'Low', riskScore: null, aq10Score: 3, age: 8, gender: 'Male',
     screeningTool: 'Child AQ-10', modelUsed: 'child_AdaBoostClassifier', status: 'pending-review', interpretation: 'Lower concentration of traits.',
@@ -81,6 +81,8 @@ vi.mock('../../services/api', () => {
     screening_result: screeningResult, modality_states: states, modality_breakdown: [], speech_features: {}, gaze_status: 'success',
     gaze_score: 0.97, gaze_quality: { sample_count: 900, valid_sample_count: 890, duration_seconds: 30, valid_sample_ratio: 0.99, tracking_continuity: 1, data_quality_score: 0.97 },
     gaze_features: { prediction: 'asd_signal' }, gaze_fusion_eligible: false, gaze_model_version: 'gaze-openface-dasd-v3' };
+  const fixtures = (await import('../../test/fixtures/resultsReports.json')).default;
+  stored.display_report = {...fixtures.child, case_id:stored.id, presentation:{...fixtures.child.presentation,score_text:'3 / 10',score_accessible_label:'Score 3 out of 10',threshold_text:'Screening threshold: 7'}};
   return {
     casesApi: { list: vi.fn(async () => [stored]), get: vi.fn(async () => stored) },
     explainApi: { get: vi.fn(async () => ({ caseId: 'NS-C-1', shap: [], lime: [], summary: 'x', scoreExplanation: null, modelExplanation: { available: false, reason: 'No questionnaire ML model is loaded on the server.', scope: 's' } })) },
@@ -94,10 +96,10 @@ describe('Results page consistency', () => {
     const { default: Results } = await import('../../pages/Results');
     render(<MemoryRouter initialEntries={['/app/results/NS-C-1']}><Routes><Route path="/app/results/:caseId" element={<Results />} /></Routes></MemoryRouter>);
     expect(await screen.findByLabelText('Score 3 out of 10')).toBeInTheDocument();
-    expect(screen.getAllByText(/Used for the result/).length).toBe(1);                       // only the questionnaire
-    expect(screen.getAllByText(/Not used for the result/).length).toBe(3);
-    expect(screen.getByText(/Score against threshold — no combined probability/)).toBeInTheDocument();
-    expect(screen.getByText(/Model explanation unavailable: No questionnaire ML model/)).toBeInTheDocument();
+    expect(screen.getByText('Screening threshold: 7')).toBeInTheDocument();
+    expect(screen.getByText('Technical details')).toBeInTheDocument();
+    expect(screen.getByTestId('technical-details')).not.toHaveAttribute('open');
+    expect((await import('../../services/api')).explainApi.get).not.toHaveBeenCalled();
     expect(screen.queryByText(/Overall indicator/i)).toBeNull();
     expect(screen.queryByText(/Speech risk score/)).toBeNull();
   });

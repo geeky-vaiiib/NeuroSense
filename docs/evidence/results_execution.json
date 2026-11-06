@@ -1,0 +1,45 @@
+{
+  "baseline": "e0d893285e4c46adaf4f8513dc10e198379e7450",
+  "date": "2026-11-06",
+  "environment": {
+    "python": "3.11.14",
+    "node": "25.9.0",
+    "platform": "macOS-26.6.2-arm64-arm-64bit",
+    "database": "isolated mongomock; no production data; source export excludes raw datasets and .env"
+  },
+  "checks": {
+    "backend_full": "356 passed, 7 skipped, 934 upstream warnings (17.26s); clean isolated source export",
+    "frontend": "109 passed across 15 files",
+    "lint": "PASS",
+    "build": "PASS; existing large chunk advisory",
+    "browser": "7 passed (22.1s); Chromium 1440x1100/390x844, reduced motion; native keyboard disclosure, refresh/history/retry/session recovery; forced explanation 503 leaves result usable",
+    "consistency": "Both saved-research checks PASS; no new training/evaluation reproduction",
+    "pdf": "12 PDFs / 33 pages rendered and visually inspected. Six simple samples each one A4 page. Technical reports 2\u20135 pages. Partial technical pages rerendered and reinspected after final saved-score label correction."
+  },
+  "artifacts": {
+    "location": "/tmp/neurosense-results-qa (non-identifying local QA artifacts, excluded from Git)",
+    "screenshots": [
+      "results-desktop-simple.png",
+      "results-desktop-expanded.png",
+      "results-mobile-simple.png",
+      "results-mobile-expanded.png"
+    ],
+    "pdfs": [
+      "adult-simple.pdf",
+      "adult-technical.pdf",
+      "partial-simple.pdf",
+      "partial-technical.pdf",
+      "example-simple.pdf",
+      "example-technical.pdf",
+      "legacy-simple.pdf",
+      "legacy-technical.pdf"
+    ]
+  },
+  "coverage": {
+    "actual": "Server questionnaire scoring, artifact inference/security regression suite, real speech CNN on generated tone, actual browser/backend/save/reopen/PDF flow; recorded example retains prior permitted genuine outputs",
+    "synthetic": "Backend-generated QA contract fixtures; mocked expression label for partial visual fixture; forced explanation failure and controlled media permission boundary",
+    "not_run": "New physical camera/microphone test, participant usability study, new accuracy or clinical validation"
+  },
+  "compatibility": "v2 saved presentation; v1 and pre-report read-only adapters; no historical database rewrite or rescoring; raw stored report preserved; unknown outcomes remain unknown",
+  "privacy": "No participant recordings/images, credentials or private manifests committed; model artifacts unchanged"
+}

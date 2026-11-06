@@ -1,4 +1,6 @@
+import process from 'node:process';
 import { test, expect } from '@playwright/test';
+const API=process.env.NS_E2E_API || 'http://127.0.0.1:8000';
 
 async function register(page, track) {
   await page.goto('/auth?mode=register');
@@ -124,16 +126,34 @@ test('adult speech-emotion: numeric audio fixture, real model, saved refresh and
   wav.writeUInt16LE(1,20);wav.writeUInt16LE(1,22);wav.writeUInt32LE(sr,24);wav.writeUInt32LE(sr*2,28);
   wav.writeUInt16LE(2,32);wav.writeUInt16LE(16,34);wav.write('data',36);wav.writeUInt32LE(n*2,40);
   for(let i=0;i<n;i++) wav.writeInt16LE(Math.round(8000*Math.sin(2*Math.PI*180*i/sr)),44+i*2);
-  const res=await page.request.post('http://127.0.0.1:8000/screening/screen', {
+  const res=await page.request.post(`${API}/screening/screen`, {
     headers:{'X-Requested-With':'NeuroSense'},data:{category:'adult',demo:{subjectName:'Technical fixture',respondentName:'Operator',respondentRelationship:'Self',age:30,gender:'Prefer not to say',jaundice:'No',familyAsd:'No'},
       answers:Object.fromEntries(Array.from({length:10},(_,i)=>[`A${i+1}`,'Definitely agree'])),gazeSkipped:true,speechSkipped:false,facialSkipped:true,audioMimeType:'audio/wav',audioBase64:wav.toString('base64')}});
   expect(res.ok()).toBeTruthy();const body=await res.json();
   expect(body.result.modalities_in_result).toEqual(['questionnaire']);
   await page.goto(`/app/results/${body.caseId}`);
+  await expect(page.getByRole('heading',{name:'Your screening summary'})).toBeVisible();
+  const details=page.getByTestId('technical-details');await expect(details).not.toHaveAttribute('open');
+  await expect(page.getByText('Mean pitch:',{exact:false})).not.toBeVisible();
+  if(process.env.NS_RESULTS_QA_DIR){
+    const {mkdir}=await import('node:fs/promises');await mkdir(process.env.NS_RESULTS_QA_DIR,{recursive:true});
+    await page.screenshot({path:`${process.env.NS_RESULTS_QA_DIR}/results-mobile-simple.png`,fullPage:true});
+    await page.setViewportSize({width:1440,height:1100});
+    await page.screenshot({path:`${process.env.NS_RESULTS_QA_DIR}/results-desktop-simple.png`,fullPage:true});
+  }
+  await page.getByText('Technical details',{exact:true}).focus();
+  await page.keyboard.press('Enter');
+  await expect(details).toHaveAttribute('open');
+  if(process.env.NS_RESULTS_QA_DIR){await page.getByRole('heading',{name:'Supplementary questionnaire model',exact:true}).scrollIntoViewIfNeeded();await page.screenshot({path:`${process.env.NS_RESULTS_QA_DIR}/results-desktop-expanded.png`});}
+  if(process.env.NS_RESULTS_QA_DIR){await page.setViewportSize({width:390,height:844});await page.getByText('Technical details',{exact:true}).scrollIntoViewIfNeeded();await page.screenshot({path:`${process.env.NS_RESULTS_QA_DIR}/results-mobile-expanded.png`});}
+  await page.route('**/explain/**',r=>r.fulfill({status:503,json:{detail:'Controlled explanation failure'}}));
+  await page.getByRole('button',{name:'Load model explanations'}).click();
+  await expect(page.getByRole('alert')).toContainText('saved result is unchanged');
+  await expect(page.getByRole('heading',{name:'Your screening summary'})).toBeVisible();
   const card=page.getByLabel(/^Speech emotion \(CNN/);
   await expect(card.getByText(/Predicted class:/)).toBeVisible();
   await expect(card.getByText('Not used for the result')).toBeVisible();
-  const before=await card.getByRole('listitem').allTextContents();await page.reload();await expect(card.getByRole('listitem')).toHaveText(before);
+  const before=await card.getByRole('listitem').allTextContents();await page.reload();await page.getByText('Technical details',{exact:true}).click();await expect(card.getByRole('listitem')).toHaveText(before);
   await expect(page.getByLabel('Score 4 out of 10')).toBeVisible();
   const download=page.waitForEvent('download');await page.locator('#download-pdf-btn').click();
   expect((await download).suggestedFilename()).toContain(body.caseId);
@@ -142,15 +162,16 @@ test('adult speech-emotion: numeric audio fixture, real model, saved refresh and
 
 test('recorded example is explicit, uses saved model versions, downloads without creating a case',async({page})=>{
  await register(page,'recorded-example');
- const before=await (await page.request.get('http://127.0.0.1:8000/cases/')).json();
+ const before=await (await page.request.get(`${API}/cases/`)).json();
  await page.goto('/app/recorded-example');
  await expect(page.getByText(/not a multimodal participant/)).toBeVisible();
  await page.getByRole('button',{name:'Load recorded example'}).click();
  await expect(page.getByLabel('Unified research report')).toBeVisible();
+ await page.getByText('Technical details',{exact:true}).click();
  for(const version of ['facial-v1','speech-v1','gaze-v1'])await expect(page.getByText(`Model version: ${version}`,{exact:true})).toBeVisible();
- const download=page.waitForEvent('download');await page.getByRole('button',{name:'Download example PDF'}).click();
+ const download=page.waitForEvent('download');await page.getByRole('button',{name:'Download example report'}).click();
  expect((await download).suggestedFilename()).toContain('RECORDED-RESEARCH-EXAMPLE');
- const after=await (await page.request.get('http://127.0.0.1:8000/cases/')).json();expect(after).toEqual(before);
+ const after=await (await page.request.get(`${API}/cases/`)).json();expect(after).toEqual(before);
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
 });
 
@@ -161,7 +182,7 @@ test('expired session restores owner-scoped answers in the same tab after sign-i
  await page.getByRole('button',{name:'Continue',exact:true}).click();
  await page.getByRole('radio',{name:'Definitely agree',exact:true}).click();
  // Controlled expiry notification, with real logout/re-authentication. No server authentication bypass.
- await page.request.post('http://127.0.0.1:8000/auth/logout',{headers:{'X-Requested-With':'NeuroSense'}});
+ await page.request.post(`${API}/auth/logout`,{headers:{'X-Requested-With':'NeuroSense'}});
  await page.evaluate(()=>window.dispatchEvent(new Event('ns:session-expired')));
  await expect(page).toHaveURL(/\/auth/);
  await page.locator('#login-email').fill(email);await page.locator('#login-password').fill('research-fixture-9');await page.locator('#login-submit-btn').click();

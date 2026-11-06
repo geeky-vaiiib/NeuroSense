@@ -423,6 +423,17 @@ def case_detail(record: dict[str, Any]) -> dict[str, Any]:
             "gaze": _gaze_object(normalized),
         }
     )
+    try:
+        from .report_presentation import present
+        from .reports import build_report
+    except ImportError:
+        from core.report_presentation import present
+        from core.reports import build_report
+    # Read-only adapter: preserve the original stored report and scoring basis.
+    detail['display_report'] = present(normalized['report'], normalized['category']) if normalized.get('report') else present(build_report(normalized), normalized['category'])
+    if normalized.get('is_mock') and not normalized.get('report'):
+        p = detail['display_report']['presentation']
+        p.update(provenance_label='Historical synthetic record', outcome='Historical synthetic record', meaning='This older record was marked synthetic. It does not represent measured screening data.')
     return detail
 
 

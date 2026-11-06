@@ -1,0 +1,2310 @@
+{
+  "adult": {
+    "report_version": "research-report-v2",
+    "presentation": {
+      "version": "plain-language-v1",
+      "category": "adult",
+      "title": "Your screening summary",
+      "outcome": "Below the screening threshold",
+      "meaning": "The answers did not reach the questionnaire\u2019s screening threshold. This is one part of understanding development and everyday experiences.",
+      "next_step": "If you have concerns, discuss them with a qualified health professional even with a below-threshold score.",
+      "notice": "Screening does not establish a diagnosis. A below-threshold score cannot rule out concerns.",
+      "score_text": "4 / 10",
+      "threshold_text": "Screening threshold: 6",
+      "score_accessible_label": "Score 4 out of 10",
+      "instrument": "AQ-10 (adult)",
+      "recordings": [
+        {
+          "id": "gaze",
+          "label": "Eye-gaze recording",
+          "status": "Skipped",
+          "summary": "You chose to continue without this recording."
+        },
+        {
+          "id": "speech",
+          "label": "Voice recording",
+          "status": "Skipped",
+          "summary": "You chose to continue without this recording."
+        },
+        {
+          "id": "facial",
+          "label": "Facial snapshot",
+          "status": "Skipped",
+          "summary": "You chose to continue without this recording."
+        }
+      ],
+      "is_example": false,
+      "provenance_label": "Saved screening",
+      "provenance_note": "Only the saved questionnaire score determines the screening result. Optional recordings provide separate research information."
+    },
+    "case_id": "QA-adult",
+    "generated_at": "2026-11-06T12:00:00Z",
+    "provenance": "Live submission; server calculations",
+    "questionnaire": {
+      "scoring_version": 3,
+      "category": "adult",
+      "instrument": "AQ-10 (adult)",
+      "total_score": 4,
+      "max_score": 10,
+      "threshold": 6,
+      "threshold_source": "ARC AQ-10 form (2012), referral cutoff 6 or above; accessed 2026-11-02",
+      "source": "https://docs.autismresearchcentre.com/tests/AQ10.pdf",
+      "source_accessed": "2026-11-02",
+      "interpretation": "Below threshold",
+      "meets_threshold": false,
+      "risk_band": "Low",
+      "items": [
+        {
+          "id": "A1",
+          "answer": "Definitely agree",
+          "scores_on": "agree",
+          "points": 1
+        },
+        {
+          "id": "A2",
+          "answer": "Definitely agree",
+          "scores_on": "disagree",
+          "points": 0
+        },
+        {
+          "id": "A3",
+          "answer": "Definitely agree",
+          "scores_on": "disagree",
+          "points": 0
+        },
+        {
+          "id": "A4",
+          "answer": "Definitely agree",
+          "scores_on": "disagree",
+          "points": 0
+        },
+        {
+          "id": "A5",
+          "answer": "Definitely agree",
+          "scores_on": "disagree",
+          "points": 0
+        },
+        {
+          "id": "A6",
+          "answer": "Definitely agree",
+          "scores_on": "disagree",
+          "points": 0
+        },
+        {
+          "id": "A7",
+          "answer": "Definitely agree",
+          "scores_on": "agree",
+          "points": 1
+        },
+        {
+          "id": "A8",
+          "answer": "Definitely agree",
+          "scores_on": "agree",
+          "points": 1
+        },
+        {
+          "id": "A9",
+          "answer": "Definitely agree",
+          "scores_on": "disagree",
+          "points": 0
+        },
+        {
+          "id": "A10",
+          "answer": "Definitely agree",
+          "scores_on": "agree",
+          "points": 1
+        }
+      ],
+      "validated_against_clinical_labels": false,
+      "notice": "This is a threshold-based screening score. The machine-learning model shown beside it was trained on labels using the legacy dataset threshold (7, not the instrument cutoff 6), so it models that legacy rule; it is not an independently validated probability and does not change the result. A screening score is not a diagnosis."
+    },
+    "screening_conclusion": "Below threshold",
+    "summary": [
+      "Below threshold",
+      "These analyses describe different tasks. No diagnostic fusion or average of model scores is calculated.",
+      "Supplementary questionnaire model: model unavailable. Excluded from screening: separate experimental task or no usable output.",
+      "Webcam gaze (experimental): skipped. Excluded from screening: separate experimental task or no usable output.",
+      "Eye-tracker gaze-v1 (separate research workflow): not provided. Separate screen-pixel workflow; incompatible with webcam angles. No eye-tracker recording submitted in this screening.",
+      "Facial detection and image quality: skipped. Excluded from screening: separate experimental task or no usable output.",
+      "Facial expression (CNN, experimental): skipped. Excluded from screening: separate experimental task or no usable output.",
+      "Acoustic measurements / ASD speech classifier: skipped. Excluded from screening: separate experimental task or no usable output.",
+      "Speech emotion (CNN, experimental): skipped. Excluded from screening: separate experimental task or no usable output."
+    ],
+    "modalities": [
+      {
+        "id": "questionnaire",
+        "label": "Questionnaire score",
+        "status": "available_scoring_instrument",
+        "status_label": "Scoring rule \u00b7 used",
+        "output": {
+          "kind": "screening_score",
+          "total": 4,
+          "max": 10,
+          "threshold": 6,
+          "meets_threshold": false
+        },
+        "model": null,
+        "quality": {
+          "answered_items": 10,
+          "required_items": 10
+        },
+        "measurements": null,
+        "included_in_screening": true,
+        "inclusion_reason": "Only the server questionnaire score determines screening.",
+        "limitations": [
+          "Not clinically validated. Does not establish diagnosis."
+        ],
+        "values": [
+          {
+            "name": "Instrument",
+            "value": "AQ-10 (adult)",
+            "unit": null,
+            "text": "AQ-10 (adult)",
+            "accessible_label": null,
+            "display_label": null
+          },
+          {
+            "name": "Scoring version",
+            "value": 3,
+            "unit": null,
+            "text": "3",
+            "accessible_label": null,
+            "display_label": null
+          },
+          {
+            "name": "Score",
+            "value": 4,
+            "unit": "points",
+            "text": "4/10 points",
+            "accessible_label": null,
+            "display_label": null
+          },
+          {
+            "name": "Threshold",
+            "value": 6,
+            "unit": "points",
+            "text": "6 points",
+            "accessible_label": null,
+            "display_label": null
+          },
+          {
+            "name": "Threshold rule",
+            "value": "Score >= 6 points",
+            "unit": null,
+            "text": "Score >= 6 points",
+            "accessible_label": null,
+            "display_label": null
+          },
+          {
+            "name": "Interpretation",
+            "value": "Below threshold",
+            "unit": null,
+            "text": "Below threshold",
+            "accessible_label": null,
+            "display_label": null
+          },
+          {
+            "name": "Scoring source",
+            "value": "https://docs.autismresearchcentre.com/tests/AQ10.pdf",
+            "unit": null,
+            "text": "https://docs.autismresearchcentre.com/tests/AQ10.pdf",
+            "accessible_label": null,
+            "display_label": null
+          },
+          {
+            "name": "Source accessed",
+            "value": "2026-11-02",
+            "unit": null,
+            "text": "2026-11-02",
+            "accessible_label": null,
+            "display_label": null
+          },
+          {
+            "name": "Instrument notice",
+            "value": "This is a threshold-based screening score. The machine-learning model shown beside it was trained on labels using the legacy dataset threshold (7, not the instrument cutoff 6), so it models that legacy rule; it is not an independently validated probability and does not change the result. A screening score is not a diagnosis.",
+            "unit": null,
+            "text": "This is a threshold-based screening score. The machine-learning model shown beside it was trained on labels using the legacy dataset threshold (7, not the instrument cutoff 6), so it models that legacy rule; it is not an independently validated probability and does not change the result. A screening score is not a diagnosis.",
+            "accessible_label": null,
+            "display_label": null
+          },
+          {
+            "name": "quality.answered_items",
+            "value": 10,
+            "unit": null,
+            "text": "10",
+            "accessible_label": null,
+            "display_label": null
+          },
+          {
+            "name": "quality.required_items",
+            "value": 10,
+            "unit": null,
+            "text": "10",
+            "accessible_label": null,
+            "display_label": null
+          }
+        ]
+      },
+      {
+        "id": "questionnaire_model",
+        "label": "Supplementary questionnaire model",
+        "status": "model_unavailable",
+        "status_label": "model unavailable",
+        "output": null,
+        "model": null,
+        "quality": null,
+        "measurements": null,
+        "included_in_screening": false,
+        "inclusion_reason": "Excluded from screening: separate experimental task or no usable output.",
+        "limitations": [
+          "Not clinically validated. Does not establish diagnosis.",
+          "Experimental output; task, age, device and language transfer may be unsupported. Class scores are not population probabilities."
+        ],
+        "values": []
+      },
+      {
+        "id": "gaze",
+        "label": "Webcam gaze (experimental)",
+        "status": "skipped",
+        "status_label": "skipped",
+        "output": null,
+        "model": null,
+        "quality": null,
+        "measurements": null,
+        "included_in_screening": false,
+        "inclusion_reason": "Excluded from screening: separate experimental task or no usable output.",
+        "limitations": [
+          "Not clinically validated. Does not establish diagnosis.",
+          "Experimental output; task, age, device and language transfer may be unsupported. Class scores are not population probabilities."
+        ],
+        "values": [
+          {
+            "name": "recording_timing",
+            "value": null,
+            "unit": null,
+            "text": "Unavailable",
+            "accessible_label": null,
+            "display_label": null
+          },
+          {
+            "name": "timings_s",
+            "value": null,
+            "unit": null,
+            "text": "Unavailable",
+            "accessible_label": null,
+            "display_label": null
+          }
+        ]
+      },
+      {
+        "id": "eye_tracker",
+        "label": "Eye-tracker gaze-v1 (separate research workflow)",
+        "status": "not_provided",
+        "status_label": "not provided",
+        "output": null,
+        "model": null,
+        "quality": null,
+        "measurements": null,
+        "included_in_screening": false,
+        "inclusion_reason": "Separate screen-pixel workflow; incompatible with webcam angles. No eye-tracker recording submitted in this screening.",
+        "limitations": [
+          "Not clinically validated. Does not establish diagnosis.",
+          "Experimental output; task, age, device and language transfer may be unsupported. Class scores are not population probabilities."
+        ],
+        "values": []
+      },
+      {
+        "id": "facial",
+        "label": "Facial detection and image quality",
+        "status": "skipped",
+        "status_label": "skipped",
+        "output": null,
+        "model": null,
+        "quality": null,
+        "measurements": null,
+        "included_in_screening": false,
+        "inclusion_reason": "Excluded from screening: separate experimental task or no usable output.",
+        "limitations": [
+          "Not clinically validated. Does not establish diagnosis.",
+          "Experimental output; task, age, device and language transfer may be unsupported. Class scores are not population probabilities."
+        ],
+        "values": []
+      },
+      {
+        "id": "facial_expression",
+        "label": "Facial expression (CNN, experimental)",
+        "status": "skipped",
+        "status_label": "skipped",
+        "output": null,
+        "model": null,
+        "quality": null,
+        "measurements": null,
+        "included_in_screening": false,
+        "inclusion_reason": "Excluded from screening: separate experimental task or no usable output.",
+        "limitations": [
+          "Not clinically validated. Does not establish diagnosis.",
+          "Experimental output; task, age, device and language transfer may be unsupported. Class scores are not population probabilities."
+        ],
+        "values": []
+      },
+      {
+        "id": "speech",
+        "label": "Acoustic measurements / ASD speech classifier",
+        "status": "skipped",
+        "status_label": "skipped",
+        "output": null,
+        "model": null,
+        "quality": null,
+        "measurements": null,
+        "included_in_screening": false,
+        "inclusion_reason": "Excluded from screening: separate experimental task or no usable output.",
+        "limitations": [
+          "Not clinically validated. Does not establish diagnosis.",
+          "Experimental output; task, age, device and language transfer may be unsupported. Class scores are not population probabilities."
+        ],
+        "values": []
+      },
+      {
+        "id": "speech_emotion",
+        "label": "Speech emotion (CNN, experimental)",
+        "status": "skipped",
+        "status_label": "skipped",
+        "output": null,
+        "model": null,
+        "quality": null,
+        "measurements": null,
+        "included_in_screening": false,
+        "inclusion_reason": "Excluded from screening: separate experimental task or no usable output.",
+        "limitations": [
+          "Not clinically validated. Does not establish diagnosis.",
+          "Experimental output; task, age, device and language transfer may be unsupported. Class scores are not population probabilities."
+        ],
+        "values": []
+      }
+    ],
+    "formatting": "Numeric values: 3 decimals; class scores: 1 decimal percent, uncalibrated. Raw values retained."
+  },
+  "child": {
+    "report_version": "research-report-v2",
+    "presentation": {
+      "version": "plain-language-v1",
+      "category": "child",
+      "title": "Your screening summary",
+      "outcome": "Below the screening threshold",
+      "meaning": "The answers did not reach the questionnaire\u2019s screening threshold. This is one part of understanding development and everyday experiences.",
+      "next_step": "If you have concerns, discuss them with a qualified health professional even with a below-threshold score.",
+      "notice": "Screening does not establish a diagnosis. A below-threshold score cannot rule out concerns.",
+      "score_text": "4 / 10",
+      "threshold_text": "Screening threshold: 6",
+      "score_accessible_label": "Score 4 out of 10",
+      "instrument": "AQ-10 (child, caregiver-completed)",
+      "recordings": [
+        {
+          "id": "gaze",
+          "label": "Eye-gaze recording",
+          "status": "Skipped",
+          "summary": "You chose to continue without this recording."
+        },
+        {
+          "id": "speech",
+          "label": "Voice recording",
+          "status": "Skipped",
+          "summary": "You chose to continue without this recording."
+        },
+        {
+          "id": "facial",
+          "label": "Facial snapshot",
+          "status": "Skipped",
+          "summary": "You chose to continue without this recording."
+        }
+      ],
+      "is_example": false,
+      "provenance_label": "Saved screening",
+      "provenance_note": "Only the saved questionnaire score determines the screening result. Optional recordings provide separate research information."
+    },
+    "case_id": "QA-child",
+    "generated_at": "2026-11-06T12:00:00Z",
+    "provenance": "Live submission; server calculations",
+    "questionnaire": {
+      "scoring_version": 3,
+      "category": "child",
+      "instrument": "AQ-10 (child, caregiver-completed)",
+      "total_score": 4,
+      "max_score": 10,
+      "threshold": 6,
+      "threshold_source": "ARC AQ-10 form (2012), referral cutoff 6 or above; accessed 2026-11-02",
+      "source": "https://docs.autismresearchcentre.com/tests/AQ10-Child.pdf",
+      "source_accessed": "2026-11-02",
+      "interpretation": "Below threshold",
+      "meets_threshold": false,
+      "risk_band": "Low",
+      "items": [
+        {
+          "id": "A1",
+          "answer": "Definitely agree",
+          "scores_on": "agree",
+          "points": 1
+        },
+        {
+          "id": "A2",
+          "answer": "Definitely agree",
+          "scores_on": "disagree",
+          "points": 0
+        },
+        {
+          "id": "A3",
+          "answer": "Definitely agree",
+          "scores_on": "disagree",
+          "points": 0
+        },
+        {
+          "id": "A4",
+          "answer": "Definitely agree",
+          "scores_on": "disagree",
+          "points": 0
+        },
+        {
+          "id": "A5",
+          "answer": "Definitely agree",
+          "scores_on": "agree",
+          "points": 1
+        },
+        {
+          "id": "A6",
+          "answer": "Definitely agree",
+          "scores_on": "disagree",
+          "points": 0
+        },
+        {
+          "id": "A7",
+          "answer": "Definitely agree",
+          "scores_on": "agree",
+          "points": 1
+        },
+        {
+          "id": "A8",
+          "answer": "Definitely agree",
+          "scores_on": "disagree",
+          "points": 0
+        },
+        {
+          "id": "A9",
+          "answer": "Definitely agree",
+          "scores_on": "disagree",
+          "points": 0
+        },
+        {
+          "id": "A10",
+          "answer": "Definitely agree",
+          "scores_on": "agree",
+          "points": 1
+        }
+      ],
+      "validated_against_clinical_labels": false,
+      "notice": "This is a threshold-based screening score. The machine-learning model shown beside it was trained on labels using the legacy dataset threshold (7, not the instrument cutoff 6), so it models that legacy rule; it is not an independently validated probability and does not change the result. A screening score is not a diagnosis."
+    },
+    "screening_conclusion": "Below threshold",
+    "summary": [
+      "Below threshold",
+      "These analyses describe different tasks. No diagnostic fusion or average of model scores is calculated.",
+      "Supplementary questionnaire model: model unavailable. Excluded from screening: separate experimental task or no usable output.",
+      "Webcam gaze (experimental): skipped. Excluded from screening: separate experimental task or no usable output.",
+      "Eye-tracker gaze-v1 (separate research workflow): not provided. Separate screen-pixel workflow; incompatible with webcam angles. No eye-tracker recording submitted in this screening.",
+      "Facial detection and image quality: skipped. Excluded from screening: separate experimental task or no usable output.",
+      "Facial expression (CNN, experimental): skipped. Excluded from screening: separate experimental task or no usable output.",
+      "Acoustic measurements / ASD speech classifier: skipped. Excluded from screening: separate experimental task or no usable output.",
+      "Speech emotion (CNN, experimental): skipped. Excluded from screening: separate experimental task or no usable output."
+    ],
+    "modalities": [
+      {
+        "id": "questionnaire",
+        "label": "Questionnaire score",
+        "status": "available_scoring_instrument",
+        "status_label": "Scoring rule \u00b7 used",
+        "output": {
+          "kind": "screening_score",
+          "total": 4,
+          "max": 10,
+          "threshold": 6,
+          "meets_threshold": false
+        },
+        "model": null,
+        "quality": {
+          "answered_items": 10,
+          "required_items": 10
+        },
+        "measurements": null,
+        "included_in_screening": true,
+        "inclusion_reason": "Only the server questionnaire score determines screening.",
+        "limitations": [
+          "Not clinically validated. Does not establish diagnosis."
+        ],
+        "values": [
+          {
+            "name": "Instrument",
+            "value": "AQ-10 (child, caregiver-completed)",
+            "unit": null,
+            "text": "AQ-10 (child, caregiver-completed)",
+            "accessible_label": null,
+            "display_label": null
+          },
+          {
+            "name": "Scoring version",
+            "value": 3,
+            "unit": null,
+            "text": "3",
+            "accessible_label": null,
+            "display_label": null
+          },
+          {
+            "name": "Score",
+            "value": 4,
+            "unit": "points",
+            "text": "4/10 points",
+            "accessible_label": null,
+            "display_label": null
+          },
+          {
+            "name": "Threshold",
+            "value": 6,
+            "unit": "points",
+            "text": "6 points",
+            "accessible_label": null,
+            "display_label": null
+          },
+          {
+            "name": "Threshold rule",
+            "value": "Score >= 6 points",
+            "unit": null,
+            "text": "Score >= 6 points",
+            "accessible_label": null,
+            "display_label": null
+          },
+          {
+            "name": "Interpretation",
+            "value": "Below threshold",
+            "unit": null,
+            "text": "Below threshold",
+            "accessible_label": null,
+            "display_label": null
+          },
+          {
+            "name": "Scoring source",
+            "value": "https://docs.autismresearchcentre.com/tests/AQ10-Child.pdf",
+            "unit": null,
+            "text": "https://docs.autismresearchcentre.com/tests/AQ10-Child.pdf",
+            "accessible_label": null,
+            "display_label": null
+          },
+          {
+            "name": "Source accessed",
+            "value": "2026-11-02",
+            "unit": null,
+            "text": "2026-11-02",
+            "accessible_label": null,
+            "display_label": null
+          },
+          {
+            "name": "Instrument notice",
+            "value": "This is a threshold-based screening score. The machine-learning model shown beside it was trained on labels using the legacy dataset threshold (7, not the instrument cutoff 6), so it models that legacy rule; it is not an independently validated probability and does not change the result. A screening score is not a diagnosis.",
+            "unit": null,
+            "text": "This is a threshold-based screening score. The machine-learning model shown beside it was trained on labels using the legacy dataset threshold (7, not the instrument cutoff 6), so it models that legacy rule; it is not an independently validated probability and does not change the result. A screening score is not a diagnosis.",
+            "accessible_label": null,
+            "display_label": null
+          },
+          {
+            "name": "quality.answered_items",
+            "value": 10,
+            "unit": null,
+            "text": "10",
+            "accessible_label": null,
+            "display_label": null
+          },
+          {
+            "name": "quality.required_items",
+            "value": 10,
+            "unit": null,
+            "text": "10",
+            "accessible_label": null,
+            "display_label": null
+          }
+        ]
+      },
+      {
+        "id": "questionnaire_model",
+        "label": "Supplementary questionnaire model",
+        "status": "model_unavailable",
+        "status_label": "model unavailable",
+        "output": null,
+        "model": null,
+        "quality": null,
+        "measurements": null,
+        "included_in_screening": false,
+        "inclusion_reason": "Excluded from screening: separate experimental task or no usable output.",
+        "limitations": [
+          "Not clinically validated. Does not establish diagnosis.",
+          "Experimental output; task, age, device and language transfer may be unsupported. Class scores are not population probabilities."
+        ],
+        "values": []
+      },
+      {
+        "id": "gaze",
+        "label": "Webcam gaze (experimental)",
+        "status": "skipped",
+        "status_label": "skipped",
+        "output": null,
+        "model": null,
+        "quality": null,
+        "measurements": null,
+        "included_in_screening": false,
+        "inclusion_reason": "Excluded from screening: separate experimental task or no usable output.",
+        "limitations": [
+          "Not clinically validated. Does not establish diagnosis.",
+          "Experimental output; task, age, device and language transfer may be unsupported. Class scores are not population probabilities."
+        ],
+        "values": [
+          {
+            "name": "recording_timing",
+            "value": null,
+            "unit": null,
+            "text": "Unavailable",
+            "accessible_label": null,
+            "display_label": null
+          },
+          {
+            "name": "timings_s",
+            "value": null,
+            "unit": null,
+            "text": "Unavailable",
+            "accessible_label": null,
+            "display_label": null
+          }
+        ]
+      },
+      {
+        "id": "eye_tracker",
+        "label": "Eye-tracker gaze-v1 (separate research workflow)",
+        "status": "not_provided",
+        "status_label": "not provided",
+        "output": null,
+        "model": null,
+        "quality": null,
+        "measurements": null,
+        "included_in_screening": false,
+        "inclusion_reason": "Separate screen-pixel workflow; incompatible with webcam angles. No eye-tracker recording submitted in this screening.",
+        "limitations": [
+          "Not clinically validated. Does not establish diagnosis.",
+          "Experimental output; task, age, device and language transfer may be unsupported. Class scores are not population probabilities."
+        ],
+        "values": []
+      },
+      {
+        "id": "facial",
+        "label": "Facial detection and image quality",
+        "status": "skipped",
+        "status_label": "skipped",
+        "output": null,
+        "model": null,
+        "quality": null,
+        "measurements": null,
+        "included_in_screening": false,
+        "inclusion_reason": "Excluded from screening: separate experimental task or no usable output.",
+        "limitations": [
+          "Not clinically validated. Does not establish diagnosis.",
+          "Experimental output; task, age, device and language transfer may be unsupported. Class scores are not population probabilities."
+        ],
+        "values": []
+      },
+      {
+        "id": "facial_expression",
+        "label": "Facial expression (CNN, experimental)",
+        "status": "skipped",
+        "status_label": "skipped",
+        "output": null,
+        "model": null,
+        "quality": null,
+        "measurements": null,
+        "included_in_screening": false,
+        "inclusion_reason": "Excluded from screening: separate experimental task or no usable output.",
+        "limitations": [
+          "Not clinically validated. Does not establish diagnosis.",
+          "Experimental output; task, age, device and language transfer may be unsupported. Class scores are not population probabilities."
+        ],
+        "values": []
+      },
+      {
+        "id": "speech",
+        "label": "Acoustic measurements / ASD speech classifier",
+        "status": "skipped",
+        "status_label": "skipped",
+        "output": null,
+        "model": null,
+        "quality": null,
+        "measurements": null,
+        "included_in_screening": false,
+        "inclusion_reason": "Excluded from screening: separate experimental task or no usable output.",
+        "limitations": [
+          "Not clinically validated. Does not establish diagnosis.",
+          "Experimental output; task, age, device and language transfer may be unsupported. Class scores are not population probabilities."
+        ],
+        "values": []
+      },
+      {
+        "id": "speech_emotion",
+        "label": "Speech emotion (CNN, experimental)",
+        "status": "skipped",
+        "status_label": "skipped",
+        "output": null,
+        "model": null,
+        "quality": null,
+        "measurements": null,
+        "included_in_screening": false,
+        "inclusion_reason": "Excluded from screening: separate experimental task or no usable output.",
+        "limitations": [
+          "Not clinically validated. Does not establish diagnosis.",
+          "Experimental output; task, age, device and language transfer may be unsupported. Class scores are not population probabilities."
+        ],
+        "values": []
+      }
+    ],
+    "formatting": "Numeric values: 3 decimals; class scores: 1 decimal percent, uncalibrated. Raw values retained."
+  },
+  "toddler": {
+    "report_version": "research-report-v2",
+    "presentation": {
+      "version": "plain-language-v1",
+      "category": "toddler",
+      "title": "Your screening summary",
+      "outcome": "Below the screening threshold",
+      "meaning": "The answers did not reach the questionnaire\u2019s screening threshold. This is one part of understanding development and everyday experiences.",
+      "next_step": "If you have concerns, discuss them with a qualified health professional even with a below-threshold score.",
+      "notice": "Screening does not establish a diagnosis. A below-threshold score cannot rule out concerns.",
+      "score_text": "1 / 10",
+      "threshold_text": "Screening threshold: 3",
+      "score_accessible_label": "Score 1 out of 10",
+      "instrument": "Q-CHAT-10",
+      "recordings": [
+        {
+          "id": "gaze",
+          "label": "Eye-gaze recording",
+          "status": "Skipped",
+          "summary": "You chose to continue without this recording."
+        },
+        {
+          "id": "speech",
+          "label": "Voice recording",
+          "status": "Skipped",
+          "summary": "You chose to continue without this recording."
+        },
+        {
+          "id": "facial",
+          "label": "Facial snapshot",
+          "status": "Skipped",
+          "summary": "You chose to continue without this recording."
+        }
+      ],
+      "is_example": false,
+      "provenance_label": "Saved screening",
+      "provenance_note": "Only the saved questionnaire score determines the screening result. Optional recordings provide separate research information."
+    },
+    "case_id": "QA-toddler",
+    "generated_at": "2026-11-06T12:00:00Z",
+    "provenance": "Live submission; server calculations",
+    "questionnaire": {
+      "scoring_version": 3,
+      "category": "toddler",
+      "instrument": "Q-CHAT-10",
+      "total_score": 1,
+      "max_score": 10,
+      "source": "https://docs.autismresearchcentre.com/tests/QCHAT-10.pdf",
+      "source_accessed": "2026-11-02",
+      "threshold": 3,
+      "threshold_source": "ARC Q-CHAT-10 form: score of 3 or above -> consider referral",
+      "meets_threshold": false,
+      "risk_band": "Low",
+      "interpretation": "Score below the Q-CHAT-10 cut-point of 3. This does not rule out developmental differences; talk to a health professional if you have concerns.",
+      "items": [
+        {
+          "id": "Q1",
+          "qchat25_item": 1,
+          "question": "Does your child look at you when you call his/her name?",
+          "short": "Looks when name is called",
+          "answer": "A",
+          "answer_label": "Always",
+          "recode": 0,
+          "points": 0,
+          "scores_on": "option(s) C/D/E"
+        },
+        {
+          "id": "Q2",
+          "qchat25_item": 2,
+          "question": "How easy is it for you to get eye contact with your child?",
+          "short": "Eye contact",
+          "answer": "A",
+          "answer_label": "Very easy",
+          "recode": 0,
+          "points": 0,
+          "scores_on": "option(s) C/D/E"
+        },
+        {
+          "id": "Q3",
+          "qchat25_item": 5,
+          "question": "Does your child point to indicate that s/he wants something? (e.g. a toy that is out of reach)",
+          "short": "Points to ask for something",
+          "answer": "A",
+          "answer_label": "Many times a day",
+          "recode": 0,
+          "points": 0,
+          "scores_on": "option(s) C/D/E"
+        },
+        {
+          "id": "Q4",
+          "qchat25_item": 6,
+          "question": "Does your child point to share interest with you? (e.g. pointing at an interesting sight)",
+          "short": "Points to share interest",
+          "answer": "A",
+          "answer_label": "Many times a day",
+          "recode": 0,
+          "points": 0,
+          "scores_on": "option(s) C/D/E"
+        },
+        {
+          "id": "Q5",
+          "qchat25_item": 9,
+          "question": "Does your child pretend? (e.g. care for dolls, talk on a toy phone)",
+          "short": "Pretend play",
+          "answer": "A",
+          "answer_label": "Many times a day",
+          "recode": 0,
+          "points": 0,
+          "scores_on": "option(s) C/D/E"
+        },
+        {
+          "id": "Q6",
+          "qchat25_item": 10,
+          "question": "Does your child follow where you're looking?",
+          "short": "Follows your gaze",
+          "answer": "A",
+          "answer_label": "Many times a day",
+          "recode": 0,
+          "points": 0,
+          "scores_on": "option(s) C/D/E"
+        },
+        {
+          "id": "Q7",
+          "qchat25_item": 15,
+          "question": "If you or someone else in the family is visibly upset, does your child show signs of wanting to comfort them? (e.g. stroking hair, hugging them)",
+          "short": "Comforts someone who is upset",
+          "answer": "A",
+          "answer_label": "Always",
+          "recode": 0,
+          "points": 0,
+          "scores_on": "option(s) C/D/E"
+        },
+        {
+          "id": "Q8",
+          "qchat25_item": 17,
+          "question": "Would you describe your child's first words as:",
+          "short": "First words",
+          "answer": "A",
+          "answer_label": "Very typical",
+          "recode": 0,
+          "points": 0,
+          "scores_on": "option(s) C/D/E"
+        },
+        {
+          "id": "Q9",
+          "qchat25_item": 19,
+          "question": "Does your child use simple gestures? (e.g. wave goodbye)",
+          "short": "Simple gestures",
+          "answer": "A",
+          "answer_label": "Many times a day",
+          "recode": 0,
+          "points": 0,
+          "scores_on": "option(s) C/D/E"
+        },
+        {
+          "id": "Q10",
+          "qchat25_item": 25,
+          "question": "Does your child stare at nothing with no apparent purpose?",
+          "short": "Stares at nothing",
+          "answer": "A",
+          "answer_label": "Many times a day",
+          "recode": 4,
+          "points": 1,
+          "scores_on": "option(s) A/B/C"
+        }
+      ],
+      "validated_against_clinical_labels": false,
+      "notice": "The Q-CHAT-10 score is the official screening rule (3 or more suggests considering a referral for assessment). It is not a diagnosis. The separate model output below is a preliminary research model trained on one Polish clinical-vs-control cohort; it is not validated for NeuroSense's population and does not change the Q-CHAT-10 result."
+    },
+    "screening_conclusion": "Score below the Q-CHAT-10 cut-point of 3. This does not rule out developmental differences; talk to a health professional if you have concerns.",
+    "summary": [
+      "Score below the Q-CHAT-10 cut-point of 3. This does not rule out developmental differences; talk to a health professional if you have concerns.",
+      "These analyses describe different tasks. No diagnostic fusion or average of model scores is calculated.",
+      "Supplementary questionnaire model: model unavailable. Excluded from screening: separate experimental task or no usable output.",
+      "Webcam gaze (experimental): skipped. Excluded from screening: separate experimental task or no usable output.",
+      "Eye-tracker gaze-v1 (separate research workflow): not provided. Separate screen-pixel workflow; incompatible with webcam angles. No eye-tracker recording submitted in this screening.",
+      "Facial detection and image quality: skipped. Excluded from screening: separate experimental task or no usable output.",
+      "Facial expression (CNN, experimental): skipped. Excluded from screening: separate experimental task or no usable output.",
+      "Acoustic measurements / ASD speech classifier: skipped. Excluded from screening: separate experimental task or no usable output.",
+      "Speech emotion (CNN, experimental): skipped. Excluded from screening: separate experimental task or no usable output."
+    ],
+    "modalities": [
+      {
+        "id": "questionnaire",
+        "label": "Questionnaire score",
+        "status": "available_scoring_instrument",
+        "status_label": "Scoring rule \u00b7 used",
+        "output": {
+          "kind": "screening_score",
+          "total": 1,
+          "max": 10,
+          "threshold": 3,
+          "meets_threshold": false
+        },
+        "model": null,
+        "quality": {
+          "answered_items": 10,
+          "required_items": 10
+        },
+        "measurements": null,
+        "included_in_screening": true,
+        "inclusion_reason": "Only the server questionnaire score determines screening.",
+        "limitations": [
+          "Not clinically validated. Does not establish diagnosis."
+        ],
+        "values": [
+          {
+            "name": "Instrument",
+            "value": "Q-CHAT-10",
+            "unit": null,
+            "text": "Q-CHAT-10",
+            "accessible_label": null,
+            "display_label": null
+          },
+          {
+            "name": "Scoring version",
+            "value": 3,
+            "unit": null,
+            "text": "3",
+            "accessible_label": null,
+            "display_label": null
+          },
+          {
+            "name": "Score",
+            "value": 1,
+            "unit": "points",
+            "text": "1/10 points",
+            "accessible_label": null,
+            "display_label": null
+          },
+          {
+            "name": "Threshold",
+            "value": 3,
+            "unit": "points",
+            "text": "3 points",
+            "accessible_label": null,
+            "display_label": null
+          },
+          {
+            "name": "Threshold rule",
+            "value": "Score >= 3 points",
+            "unit": null,
+            "text": "Score >= 3 points",
+            "accessible_label": null,
+            "display_label": null
+          },
+          {
+            "name": "Interpretation",
+            "value": "Score below the Q-CHAT-10 cut-point of 3. This does not rule out developmental differences; talk to a health professional if you have concerns.",
+            "unit": null,
+            "text": "Score below the Q-CHAT-10 cut-point of 3. This does not rule out developmental differences; talk to a health professional if you have concerns.",
+            "accessible_label": null,
+            "display_label": null
+          },
+          {
+            "name": "Scoring source",
+            "value": "https://docs.autismresearchcentre.com/tests/QCHAT-10.pdf",
+            "unit": null,
+            "text": "https://docs.autismresearchcentre.com/tests/QCHAT-10.pdf",
+            "accessible_label": null,
+            "display_label": null
+          },
+          {
+            "name": "Source accessed",
+            "value": "2026-11-02",
+            "unit": null,
+            "text": "2026-11-02",
+            "accessible_label": null,
+            "display_label": null
+          },
+          {
+            "name": "Instrument notice",
+            "value": "The Q-CHAT-10 score is the official screening rule (3 or more suggests considering a referral for assessment). It is not a diagnosis. The separate model output below is a preliminary research model trained on one Polish clinical-vs-control cohort; it is not validated for NeuroSense's population and does not change the Q-CHAT-10 result.",
+            "unit": null,
+            "text": "The Q-CHAT-10 score is the official screening rule (3 or more suggests considering a referral for assessment). It is not a diagnosis. The separate model output below is a preliminary research model trained on one Polish clinical-vs-control cohort; it is not validated for NeuroSense's population and does not change the Q-CHAT-10 result.",
+            "accessible_label": null,
+            "display_label": null
+          },
+          {
+            "name": "quality.answered_items",
+            "value": 10,
+            "unit": null,
+            "text": "10",
+            "accessible_label": null,
+            "display_label": null
+          },
+          {
+            "name": "quality.required_items",
+            "value": 10,
+            "unit": null,
+            "text": "10",
+            "accessible_label": null,
+            "display_label": null
+          }
+        ]
+      },
+      {
+        "id": "questionnaire_model",
+        "label": "Supplementary questionnaire model",
+        "status": "model_unavailable",
+        "status_label": "model unavailable",
+        "output": null,
+        "model": null,
+        "quality": null,
+        "measurements": null,
+        "included_in_screening": false,
+        "inclusion_reason": "Excluded from screening: separate experimental task or no usable output.",
+        "limitations": [
+          "Not clinically validated. Does not establish diagnosis.",
+          "Experimental output; task, age, device and language transfer may be unsupported. Class scores are not population probabilities."
+        ],
+        "values": []
+      },
+      {
+        "id": "gaze",
+        "label": "Webcam gaze (experimental)",
+        "status": "skipped",
+        "status_label": "skipped",
+        "output": null,
+        "model": null,
+        "quality": null,
+        "measurements": null,
+        "included_in_screening": false,
+        "inclusion_reason": "Excluded from screening: separate experimental task or no usable output.",
+        "limitations": [
+          "Not clinically validated. Does not establish diagnosis.",
+          "Experimental output; task, age, device and language transfer may be unsupported. Class scores are not population probabilities."
+        ],
+        "values": [
+          {
+            "name": "recording_timing",
+            "value": null,
+            "unit": null,
+            "text": "Unavailable",
+            "accessible_label": null,
+            "display_label": null
+          },
+          {
+            "name": "timings_s",
+            "value": null,
+            "unit": null,
+            "text": "Unavailable",
+            "accessible_label": null,
+            "display_label": null
+          }
+        ]
+      },
+      {
+        "id": "eye_tracker",
+        "label": "Eye-tracker gaze-v1 (separate research workflow)",
+        "status": "not_provided",
+        "status_label": "not provided",
+        "output": null,
+        "model": null,
+        "quality": null,
+        "measurements": null,
+        "included_in_screening": false,
+        "inclusion_reason": "Separate screen-pixel workflow; incompatible with webcam angles. No eye-tracker recording submitted in this screening.",
+        "limitations": [
+          "Not clinically validated. Does not establish diagnosis.",
+          "Experimental output; task, age, device and language transfer may be unsupported. Class scores are not population probabilities."
+        ],
+        "values": []
+      },
+      {
+        "id": "facial",
+        "label": "Facial detection and image quality",
+        "status": "skipped",
+        "status_label": "skipped",
+        "output": null,
+        "model": null,
+        "quality": null,
+        "measurements": null,
+        "included_in_screening": false,
+        "inclusion_reason": "Excluded from screening: separate experimental task or no usable output.",
+        "limitations": [
+          "Not clinically validated. Does not establish diagnosis.",
+          "Experimental output; task, age, device and language transfer may be unsupported. Class scores are not population probabilities."
+        ],
+        "values": []
+      },
+      {
+        "id": "facial_expression",
+        "label": "Facial expression (CNN, experimental)",
+        "status": "skipped",
+        "status_label": "skipped",
+        "output": null,
+        "model": null,
+        "quality": null,
+        "measurements": null,
+        "included_in_screening": false,
+        "inclusion_reason": "Excluded from screening: separate experimental task or no usable output.",
+        "limitations": [
+          "Not clinically validated. Does not establish diagnosis.",
+          "Experimental output; task, age, device and language transfer may be unsupported. Class scores are not population probabilities."
+        ],
+        "values": []
+      },
+      {
+        "id": "speech",
+        "label": "Acoustic measurements / ASD speech classifier",
+        "status": "skipped",
+        "status_label": "skipped",
+        "output": null,
+        "model": null,
+        "quality": null,
+        "measurements": null,
+        "included_in_screening": false,
+        "inclusion_reason": "Excluded from screening: separate experimental task or no usable output.",
+        "limitations": [
+          "Not clinically validated. Does not establish diagnosis.",
+          "Experimental output; task, age, device and language transfer may be unsupported. Class scores are not population probabilities."
+        ],
+        "values": []
+      },
+      {
+        "id": "speech_emotion",
+        "label": "Speech emotion (CNN, experimental)",
+        "status": "skipped",
+        "status_label": "skipped",
+        "output": null,
+        "model": null,
+        "quality": null,
+        "measurements": null,
+        "included_in_screening": false,
+        "inclusion_reason": "Excluded from screening: separate experimental task or no usable output.",
+        "limitations": [
+          "Not clinically validated. Does not establish diagnosis.",
+          "Experimental output; task, age, device and language transfer may be unsupported. Class scores are not population probabilities."
+        ],
+        "values": []
+      }
+    ],
+    "formatting": "Numeric values: 3 decimals; class scores: 1 decimal percent, uncalibrated. Raw values retained."
+  },
+  "partial": {
+    "report_version": "research-report-v2",
+    "presentation": {
+      "version": "plain-language-v1",
+      "category": "adult",
+      "title": "Your screening summary",
+      "outcome": "Below the screening threshold",
+      "meaning": "The answers did not reach the questionnaire\u2019s screening threshold. This is one part of understanding development and everyday experiences.",
+      "next_step": "If you have concerns, discuss them with a qualified health professional even with a below-threshold score.",
+      "notice": "Screening does not establish a diagnosis. A below-threshold score cannot rule out concerns.",
+      "score_text": "4 / 10",
+      "threshold_text": "Screening threshold: 6",
+      "score_accessible_label": "Score 4 out of 10",
+      "instrument": "AQ-10 (adult)",
+      "recordings": [
+        {
+          "id": "gaze",
+          "label": "Eye-gaze recording",
+          "status": "Could not analyse",
+          "summary": "The recording was outside the model\u2019s supported range, so no model result was provided."
+        },
+        {
+          "id": "speech",
+          "label": "Voice recording",
+          "status": "Analysed",
+          "summary": "Acoustic measurements were taken from the recording. No research classification was provided; the measurements are still available in Technical details."
+        },
+        {
+          "id": "facial",
+          "label": "Facial snapshot",
+          "status": "Analysed",
+          "summary": "A face was detected and image quality was checked. The model\u2019s closest expression label was happy. This research classification does not describe autism or the person\u2019s internal feelings."
+        }
+      ],
+      "is_example": false,
+      "provenance_label": "Saved screening",
+      "provenance_note": "Only the saved questionnaire score determines the screening result. Optional recordings provide separate research information."
+    },
+    "case_id": "QA-partial",
+    "generated_at": "2026-11-06T12:00:00Z",
+    "provenance": "Live submission; server calculations",
+    "questionnaire": {
+      "scoring_version": 3,
+      "category": "adult",
+      "instrument": "AQ-10 (adult)",
+      "total_score": 4,
+      "max_score": 10,
+      "threshold": 6,
+      "threshold_source": "ARC AQ-10 form (2012), referral cutoff 6 or above; accessed 2026-11-02",
+      "source": "https://docs.autismresearchcentre.com/tests/AQ10.pdf",
+      "source_accessed": "2026-11-02",
+      "interpretation": "Below threshold",
+      "meets_threshold": false,
+      "risk_band": "Low",
+      "items": [
+        {
+          "id": "A1",
+          "answer": "Definitely agree",
+          "scores_on": "agree",
+          "points": 1
+        },
+        {
+          "id": "A2",
+          "answer": "Definitely agree",
+          "scores_on": "disagree",
+          "points": 0
+        },
+        {
+          "id": "A3",
+          "answer": "Definitely agree",
+          "scores_on": "disagree",
+          "points": 0
+        },
+        {
+          "id": "A4",
+          "answer": "Definitely agree",
+          "scores_on": "disagree",
+          "points": 0
+        },
+        {
+          "id": "A5",
+          "answer": "Definitely agree",
+          "scores_on": "disagree",
+          "points": 0
+        },
+        {
+          "id": "A6",
+          "answer": "Definitely agree",
+          "scores_on": "disagree",
+          "points": 0
+        },
+        {
+          "id": "A7",
+          "answer": "Definitely agree",
+          "scores_on": "agree",
+          "points": 1
+        },
+        {
+          "id": "A8",
+          "answer": "Definitely agree",
+          "scores_on": "agree",
+          "points": 1
+        },
+        {
+          "id": "A9",
+          "answer": "Definitely agree",
+          "scores_on": "disagree",
+          "points": 0
+        },
+        {
+          "id": "A10",
+          "answer": "Definitely agree",
+          "scores_on": "agree",
+          "points": 1
+        }
+      ],
+      "validated_against_clinical_labels": false,
+      "notice": "This is a threshold-based screening score. The machine-learning model shown beside it was trained on labels using the legacy dataset threshold (7, not the instrument cutoff 6), so it models that legacy rule; it is not an independently validated probability and does not change the result. A screening score is not a diagnosis."
+    },
+    "screening_conclusion": "Original interpretation unavailable; not rescored.",
+    "summary": [
+      "Original interpretation unavailable; not rescored.",
+      "These analyses describe different tasks. No diagnostic fusion or average of model scores is calculated.",
+      "Supplementary questionnaire model: model unavailable. Excluded from screening: separate experimental task or no usable output.",
+      "Webcam gaze (experimental): failed quality. Excluded from screening: separate experimental task or no usable output.",
+      "Eye-tracker gaze-v1 (separate research workflow): not provided. Separate screen-pixel workflow; incompatible with webcam angles. No eye-tracker recording submitted in this screening.",
+      "Facial detection and image quality: measurements available. Excluded from screening: separate experimental task or no usable output.",
+      "Facial expression (CNN, experimental): available experimental. Output: happy. Excluded from screening: separate experimental task or no usable output.",
+      "Acoustic measurements / ASD speech classifier: measurements available. Excluded from screening: separate experimental task or no usable output.",
+      "Speech emotion (CNN, experimental): not provided. Excluded from screening: separate experimental task or no usable output."
+    ],
+    "modalities": [
+      {
+        "id": "questionnaire",
+        "label": "Questionnaire score",
+        "status": "available_scoring_instrument",
+        "status_label": "Saved questionnaire score",
+        "output": {
+          "kind": "screening_score",
+          "total": 4,
+          "max": 10,
+          "threshold": 6,
+          "meets_threshold": false
+        },
+        "model": null,
+        "quality": {
+          "answered_items": 10,
+          "required_items": 10
+        },
+        "measurements": null,
+        "included_in_screening": true,
+        "inclusion_reason": "Saved questionnaire scoring basis. Original values retained.",
+        "limitations": [
+          "Not clinically validated. Does not establish diagnosis."
+        ],
+        "values": [
+          {
+            "name": "Instrument",
+            "value": "AQ-10 (adult)",
+            "unit": null,
+            "text": "AQ-10 (adult)",
+            "accessible_label": null,
+            "display_label": null
+          },
+          {
+            "name": "Scoring version",
+            "value": 3,
+            "unit": null,
+            "text": "3",
+            "accessible_label": null,
+            "display_label": null
+          },
+          {
+            "name": "Score",
+            "value": 4,
+            "unit": "points",
+            "text": "4/10 points",
+            "accessible_label": null,
+            "display_label": null
+          },
+          {
+            "name": "Threshold",
+            "value": 6,
+            "unit": "points",
+            "text": "6 points",
+            "accessible_label": null,
+            "display_label": null
+          },
+          {
+            "name": "Threshold rule",
+            "value": "Score >= 6 points",
+            "unit": null,
+            "text": "Score >= 6 points",
+            "accessible_label": null,
+            "display_label": null
+          },
+          {
+            "name": "Interpretation",
+            "value": "Below threshold",
+            "unit": null,
+            "text": "Below threshold",
+            "accessible_label": null,
+            "display_label": null
+          },
+          {
+            "name": "Scoring source",
+            "value": "https://docs.autismresearchcentre.com/tests/AQ10.pdf",
+            "unit": null,
+            "text": "https://docs.autismresearchcentre.com/tests/AQ10.pdf",
+            "accessible_label": null,
+            "display_label": null
+          },
+          {
+            "name": "Source accessed",
+            "value": "2026-11-02",
+            "unit": null,
+            "text": "2026-11-02",
+            "accessible_label": null,
+            "display_label": null
+          },
+          {
+            "name": "Instrument notice",
+            "value": "This is a threshold-based screening score. The machine-learning model shown beside it was trained on labels using the legacy dataset threshold (7, not the instrument cutoff 6), so it models that legacy rule; it is not an independently validated probability and does not change the result. A screening score is not a diagnosis.",
+            "unit": null,
+            "text": "This is a threshold-based screening score. The machine-learning model shown beside it was trained on labels using the legacy dataset threshold (7, not the instrument cutoff 6), so it models that legacy rule; it is not an independently validated probability and does not change the result. A screening score is not a diagnosis.",
+            "accessible_label": null,
+            "display_label": null
+          },
+          {
+            "name": "quality.answered_items",
+            "value": 10,
+            "unit": null,
+            "text": "10",
+            "accessible_label": null,
+            "display_label": null
+          },
+          {
+            "name": "quality.required_items",
+            "value": 10,
+            "unit": null,
+            "text": "10",
+            "accessible_label": null,
+            "display_label": null
+          }
+        ]
+      },
+      {
+        "id": "questionnaire_model",
+        "label": "Supplementary questionnaire model",
+        "status": "model_unavailable",
+        "status_label": "model unavailable",
+        "output": null,
+        "model": null,
+        "quality": null,
+        "measurements": null,
+        "included_in_screening": false,
+        "inclusion_reason": "Excluded from screening: separate experimental task or no usable output.",
+        "limitations": [
+          "Not clinically validated. Does not establish diagnosis.",
+          "Experimental output; task, age, device and language transfer may be unsupported. Class scores are not population probabilities."
+        ],
+        "values": []
+      },
+      {
+        "id": "gaze",
+        "label": "Webcam gaze (experimental)",
+        "status": "failed_quality",
+        "status_label": "failed quality",
+        "output": null,
+        "model": null,
+        "quality": null,
+        "measurements": {
+          "domain": {
+            "status": "out_of_domain"
+          }
+        },
+        "included_in_screening": false,
+        "inclusion_reason": "Excluded from screening: separate experimental task or no usable output.",
+        "limitations": [
+          "Not clinically validated. Does not establish diagnosis.",
+          "Experimental output; task, age, device and language transfer may be unsupported. Class scores are not population probabilities."
+        ],
+        "values": [
+          {
+            "name": "measurements.domain.status",
+            "value": "out_of_domain",
+            "unit": null,
+            "text": "out_of_domain",
+            "accessible_label": null,
+            "display_label": null
+          },
+          {
+            "name": "recording_timing",
+            "value": null,
+            "unit": null,
+            "text": "Unavailable",
+            "accessible_label": null,
+            "display_label": null
+          },
+          {
+            "name": "timings_s",
+            "value": null,
+            "unit": null,
+            "text": "Unavailable",
+            "accessible_label": null,
+            "display_label": null
+          }
+        ]
+      },
+      {
+        "id": "eye_tracker",
+        "label": "Eye-tracker gaze-v1 (separate research workflow)",
+        "status": "not_provided",
+        "status_label": "not provided",
+        "output": null,
+        "model": null,
+        "quality": null,
+        "measurements": null,
+        "included_in_screening": false,
+        "inclusion_reason": "Separate screen-pixel workflow; incompatible with webcam angles. No eye-tracker recording submitted in this screening.",
+        "limitations": [
+          "Not clinically validated. Does not establish diagnosis.",
+          "Experimental output; task, age, device and language transfer may be unsupported. Class scores are not population probabilities."
+        ],
+        "values": []
+      },
+      {
+        "id": "facial",
+        "label": "Facial detection and image quality",
+        "status": "measurements_available",
+        "status_label": "measurements available",
+        "output": null,
+        "model": null,
+        "quality": null,
+        "measurements": {
+          "face_detected": true
+        },
+        "included_in_screening": false,
+        "inclusion_reason": "Excluded from screening: separate experimental task or no usable output.",
+        "limitations": [
+          "Not clinically validated. Does not establish diagnosis.",
+          "Experimental output; task, age, device and language transfer may be unsupported. Class scores are not population probabilities."
+        ],
+        "values": [
+          {
+            "name": "measurements.face_detected",
+            "value": true,
+            "unit": null,
+            "text": "Yes",
+            "accessible_label": null,
+            "display_label": "Face detected"
+          }
+        ]
+      },
+      {
+        "id": "facial_expression",
+        "label": "Facial expression (CNN, experimental)",
+        "status": "available_experimental",
+        "status_label": "available experimental",
+        "output": {
+          "label": "happy",
+          "class_scores": {
+            "happy": 0.625,
+            "sad": 0.375
+          }
+        },
+        "model": {
+          "version": "QA-mocked-model",
+          "weights_sha256": "QA-HASH-DO-NOT-SHOW-BY-DEFAULT"
+        },
+        "quality": null,
+        "measurements": null,
+        "included_in_screening": false,
+        "inclusion_reason": "Excluded from screening: separate experimental task or no usable output.",
+        "limitations": [
+          "Not clinically validated. Does not establish diagnosis.",
+          "Experimental output; task, age, device and language transfer may be unsupported. Class scores are not population probabilities."
+        ],
+        "values": [
+          {
+            "name": "Predicted class",
+            "value": "happy",
+            "unit": null,
+            "text": "happy",
+            "accessible_label": null,
+            "display_label": null
+          },
+          {
+            "name": "happy",
+            "value": 0.625,
+            "unit": null,
+            "text": "62.5%",
+            "accessible_label": null,
+            "display_label": null
+          },
+          {
+            "name": "sad",
+            "value": 0.375,
+            "unit": null,
+            "text": "37.5%",
+            "accessible_label": null,
+            "display_label": null
+          },
+          {
+            "name": "Model version",
+            "value": "QA-mocked-model",
+            "unit": null,
+            "text": "QA-mocked-model",
+            "accessible_label": null,
+            "display_label": null
+          },
+          {
+            "name": "Model schema",
+            "value": null,
+            "unit": null,
+            "text": "Unavailable",
+            "accessible_label": null,
+            "display_label": "Input format"
+          },
+          {
+            "name": "Model weights_sha256",
+            "value": "QA-HASH-DO-NOT-SHOW-BY-DEFAULT",
+            "unit": null,
+            "text": "QA-HASH-DO-NOT-SHOW-BY-DEFAULT",
+            "accessible_label": null,
+            "display_label": "Checkpoint SHA-256"
+          }
+        ]
+      },
+      {
+        "id": "speech",
+        "label": "Acoustic measurements / ASD speech classifier",
+        "status": "measurements_available",
+        "status_label": "measurements available",
+        "output": null,
+        "model": null,
+        "quality": null,
+        "measurements": {
+          "pitch_mean": 180.123456
+        },
+        "included_in_screening": false,
+        "inclusion_reason": "Excluded from screening: separate experimental task or no usable output.",
+        "limitations": [
+          "Not clinically validated. Does not establish diagnosis.",
+          "Experimental output; task, age, device and language transfer may be unsupported. Class scores are not population probabilities."
+        ],
+        "values": [
+          {
+            "name": "measurements.pitch_mean",
+            "value": 180.123456,
+            "unit": "Hz",
+            "text": "180.123 Hz",
+            "accessible_label": null,
+            "display_label": "Mean pitch"
+          }
+        ]
+      },
+      {
+        "id": "speech_emotion",
+        "label": "Speech emotion (CNN, experimental)",
+        "status": "not_provided",
+        "status_label": "not provided",
+        "output": null,
+        "model": null,
+        "quality": null,
+        "measurements": null,
+        "included_in_screening": false,
+        "inclusion_reason": "Excluded from screening: separate experimental task or no usable output.",
+        "limitations": [
+          "Not clinically validated. Does not establish diagnosis.",
+          "Experimental output; task, age, device and language transfer may be unsupported. Class scores are not population probabilities."
+        ],
+        "values": []
+      }
+    ],
+    "formatting": "Numeric values: 3 decimals; class scores: 1 decimal percent, uncalibrated. Raw values retained."
+  },
+  "legacy": {
+    "case_id": "QA-legacy",
+    "report_version": "historical",
+    "generated_at": "2020-01-01",
+    "questionnaire": null,
+    "modalities": [],
+    "screening_conclusion": "Original historical interpretation.",
+    "summary": [],
+    "formatting": "Original values retained.",
+    "presentation": {
+      "version": "plain-language-v1",
+      "category": null,
+      "title": "Your screening summary",
+      "outcome": "Original outcome retained",
+      "meaning": "This older record does not contain a structured threshold outcome. Its original interpretation is available in Technical details; it has not been rescored.",
+      "next_step": "A qualified health professional can help you understand this older record alongside your current concerns.",
+      "notice": "Screening does not establish a diagnosis. A below-threshold score cannot rule out concerns.",
+      "score_text": "Unavailable",
+      "threshold_text": "Original threshold unavailable",
+      "score_accessible_label": "Score unavailable",
+      "instrument": "Historical screening record",
+      "recordings": [
+        {
+          "id": "gaze",
+          "label": "Eye-gaze recording",
+          "status": "Could not analyse",
+          "summary": "No recording analysis is available in this saved record."
+        },
+        {
+          "id": "speech",
+          "label": "Voice recording",
+          "status": "Could not analyse",
+          "summary": "No recording analysis is available in this saved record."
+        },
+        {
+          "id": "facial",
+          "label": "Facial snapshot",
+          "status": "Could not analyse",
+          "summary": "No recording analysis is available in this saved record."
+        }
+      ],
+      "is_example": false,
+      "provenance_label": "Saved screening",
+      "provenance_note": "Only the saved questionnaire score determines the screening result. Optional recordings provide separate research information."
+    }
+  },
+  "example": {
+    "report_version": "research-report-v1",
+    "case_id": "RECORDED-RESEARCH-EXAMPLE-v1",
+    "generated_at": "2026-11-05T15:19:28.697605+00:00",
+    "provenance": "Recorded research example: independent V_Expression CC BY 4.0, RAVDESS CC BY-NC-SA 4.0 and Cilia Figshare CC BY 4.0 development fixtures. Real frozen inference from cached training-schema inputs; not live capture, not held-out evaluation, not aligned participants. Questionnaire answers synthetic. See MODEL_TRAINING_PROTOCOL and MULTIMODAL_TRAINING_REPORT for source versions, licences, preprocessing and hashes.",
+    "questionnaire": {
+      "scoring_version": 3,
+      "category": "adult",
+      "instrument": "AQ-10 (adult)",
+      "total_score": 4,
+      "max_score": 10,
+      "threshold": 6,
+      "threshold_source": "ARC AQ-10 form (2012), referral cutoff 6 or above; accessed 2026-11-02",
+      "source": "https://docs.autismresearchcentre.com/tests/AQ10.pdf",
+      "source_accessed": "2026-11-02",
+      "interpretation": "Below threshold",
+      "meets_threshold": false,
+      "risk_band": "Low",
+      "items": [
+        {
+          "id": "A1",
+          "answer": "Definitely agree",
+          "scores_on": "agree",
+          "points": 1
+        },
+        {
+          "id": "A2",
+          "answer": "Definitely agree",
+          "scores_on": "disagree",
+          "points": 0
+        },
+        {
+          "id": "A3",
+          "answer": "Definitely agree",
+          "scores_on": "disagree",
+          "points": 0
+        },
+        {
+          "id": "A4",
+          "answer": "Definitely agree",
+          "scores_on": "disagree",
+          "points": 0
+        },
+        {
+          "id": "A5",
+          "answer": "Definitely agree",
+          "scores_on": "disagree",
+          "points": 0
+        },
+        {
+          "id": "A6",
+          "answer": "Definitely agree",
+          "scores_on": "disagree",
+          "points": 0
+        },
+        {
+          "id": "A7",
+          "answer": "Definitely agree",
+          "scores_on": "agree",
+          "points": 1
+        },
+        {
+          "id": "A8",
+          "answer": "Definitely agree",
+          "scores_on": "agree",
+          "points": 1
+        },
+        {
+          "id": "A9",
+          "answer": "Definitely agree",
+          "scores_on": "disagree",
+          "points": 0
+        },
+        {
+          "id": "A10",
+          "answer": "Definitely agree",
+          "scores_on": "agree",
+          "points": 1
+        }
+      ],
+      "validated_against_clinical_labels": false,
+      "notice": "This is a threshold-based screening score. The machine-learning model shown beside it was trained on labels using the legacy dataset threshold (7, not the instrument cutoff 6), so it models that legacy rule; it is not an independently validated probability and does not change the result. A screening score is not a diagnosis."
+    },
+    "screening_conclusion": "Synthetic questionnaire answers only; these separate research examples do not describe one person.",
+    "summary": [
+      "No raw participant media or identifying metadata is included. Speech uses a source 4-second model chunk, not the live 5-second acoustic-quality workflow. Facial input uses the cached detector-processed face; original detection was verified in the training audit.",
+      "Synthetic questionnaire answers only; these separate research examples do not describe one person.",
+      "These analyses describe different tasks. No diagnostic fusion or average of model scores is calculated.",
+      "Supplementary questionnaire model: model unavailable. Excluded from screening: separate experimental task or no usable output.",
+      "Webcam gaze (experimental): not provided. Excluded from screening: separate experimental task or no usable output.",
+      "Eye-tracker gaze-v1 (separate research workflow): available experimental. Output: ASD. Separate eye-tracker research only; never included in questionnaire screening.",
+      "Facial detection and image quality: not provided. Excluded from screening: separate experimental task or no usable output.",
+      "Facial expression (CNN, experimental): Experimental \u00b7 not used in result. Output: neutral. Adult technical research only; age/device/task/language transfer unvalidated. Excluded from screening.",
+      "Acoustic measurements / ASD speech classifier: not provided. Excluded from screening: separate experimental task or no usable output.",
+      "Speech emotion (CNN, experimental): Experimental \u00b7 not used in result. Output: neutral. Adult technical research only; age/device/task/language transfer unvalidated. Excluded from screening."
+    ],
+    "modalities": [
+      {
+        "id": "questionnaire",
+        "label": "Questionnaire score",
+        "status": "available_scoring_instrument",
+        "status_label": "Scoring rule \u00b7 used",
+        "output": {
+          "kind": "screening_score",
+          "total": 4,
+          "max": 10,
+          "threshold": 6,
+          "meets_threshold": false
+        },
+        "model": null,
+        "quality": null,
+        "measurements": null,
+        "included_in_screening": true,
+        "inclusion_reason": "Only the server questionnaire score determines screening.",
+        "limitations": [
+          "Not clinically validated. Does not establish diagnosis."
+        ],
+        "values": [
+          {
+            "name": "Instrument",
+            "value": "AQ-10 (adult)",
+            "unit": null,
+            "text": "AQ-10 (adult)"
+          },
+          {
+            "name": "Scoring version",
+            "value": 3,
+            "unit": null,
+            "text": "3"
+          },
+          {
+            "name": "Score",
+            "value": 4,
+            "unit": "points",
+            "text": "4/10 points"
+          },
+          {
+            "name": "Threshold",
+            "value": 6,
+            "unit": "points",
+            "text": "6 points"
+          },
+          {
+            "name": "Interpretation",
+            "value": "Below threshold",
+            "unit": null,
+            "text": "Below threshold"
+          }
+        ]
+      },
+      {
+        "id": "questionnaire_model",
+        "label": "Supplementary questionnaire model",
+        "status": "model_unavailable",
+        "status_label": "model unavailable",
+        "output": null,
+        "model": null,
+        "quality": null,
+        "measurements": null,
+        "included_in_screening": false,
+        "inclusion_reason": "Excluded from screening: separate experimental task or no usable output.",
+        "limitations": [
+          "Not clinically validated. Does not establish diagnosis.",
+          "Uncalibrated experimental outputs; task, age, device and language transfer may be unsupported."
+        ],
+        "values": []
+      },
+      {
+        "id": "gaze",
+        "label": "Webcam gaze (experimental)",
+        "status": "not_provided",
+        "status_label": "not provided",
+        "output": null,
+        "model": null,
+        "quality": null,
+        "measurements": null,
+        "included_in_screening": false,
+        "inclusion_reason": "Excluded from screening: separate experimental task or no usable output.",
+        "limitations": [
+          "Not clinically validated. Does not establish diagnosis.",
+          "Uncalibrated experimental outputs; task, age, device and language transfer may be unsupported."
+        ],
+        "values": [
+          {
+            "name": "recording_timing",
+            "value": null,
+            "unit": null,
+            "text": "Unavailable"
+          },
+          {
+            "name": "timings_s",
+            "value": null,
+            "unit": null,
+            "text": "Unavailable"
+          }
+        ]
+      },
+      {
+        "id": "eye_tracker",
+        "label": "Eye-tracker gaze-v1 (separate research workflow)",
+        "status": "available_experimental",
+        "status_label": "available experimental",
+        "output": {
+          "kind": "eye_tracker_cohort_output",
+          "label": "ASD",
+          "class_scores": {
+            "TD": 0.4915843605995178,
+            "ASD": 0.5084156394004822
+          },
+          "calibrated": false,
+          "meaning": "Source cohort class scores, not diagnosis or calibrated probability. Not webcam compatible."
+        },
+        "model": {
+          "version": "gaze-v1",
+          "schema": "eye-tracker-screen-pixels20hz-4s-centered-v1",
+          "weights_sha256": "89a84eef07cfbf243a49e649980ca91fad9ccfd0cac4c83822cde8d325dcca02",
+          "licence": "CC BY 4.0"
+        },
+        "quality": {
+          "window_count": 30,
+          "sample_rate_hz": 20,
+          "window_duration_s": 4
+        },
+        "measurements": null,
+        "included_in_screening": false,
+        "inclusion_reason": "Separate eye-tracker research only; never included in questionnaire screening.",
+        "limitations": [
+          "Not clinically validated. Does not establish diagnosis.",
+          "Uncalibrated experimental outputs; task, age, device and language transfer may be unsupported.",
+          "Source cohort class scores, not diagnosis or calibrated probability. Not webcam compatible."
+        ],
+        "values": [
+          {
+            "name": "Predicted class",
+            "value": "ASD",
+            "unit": null,
+            "text": "ASD"
+          },
+          {
+            "name": "TD",
+            "value": 0.4915843605995178,
+            "unit": null,
+            "text": "49.2%"
+          },
+          {
+            "name": "ASD",
+            "value": 0.5084156394004822,
+            "unit": null,
+            "text": "50.8%"
+          },
+          {
+            "name": "Model version",
+            "value": "gaze-v1",
+            "unit": null,
+            "text": "gaze-v1"
+          },
+          {
+            "name": "Model schema",
+            "value": "eye-tracker-screen-pixels20hz-4s-centered-v1",
+            "unit": null,
+            "text": "eye-tracker-screen-pixels20hz-4s-centered-v1"
+          },
+          {
+            "name": "Model weights_sha256",
+            "value": "89a84eef07cfbf243a49e649980ca91fad9ccfd0cac4c83822cde8d325dcca02",
+            "unit": null,
+            "text": "89a84eef07cfbf243a49e649980ca91fad9ccfd0cac4c83822cde8d325dcca02"
+          },
+          {
+            "name": "quality.window_count",
+            "value": 30,
+            "unit": null,
+            "text": "30"
+          },
+          {
+            "name": "quality.sample_rate_hz",
+            "value": 20,
+            "unit": null,
+            "text": "20"
+          },
+          {
+            "name": "quality.window_duration_s",
+            "value": 4,
+            "unit": null,
+            "text": "4"
+          }
+        ]
+      },
+      {
+        "id": "facial",
+        "label": "Facial detection and image quality",
+        "status": "not_provided",
+        "status_label": "not provided",
+        "output": null,
+        "model": null,
+        "quality": null,
+        "measurements": null,
+        "included_in_screening": false,
+        "inclusion_reason": "Excluded from screening: separate experimental task or no usable output.",
+        "limitations": [
+          "Not clinically validated. Does not establish diagnosis.",
+          "Uncalibrated experimental outputs; task, age, device and language transfer may be unsupported."
+        ],
+        "values": []
+      },
+      {
+        "id": "facial_expression",
+        "label": "Facial expression (CNN, experimental)",
+        "status": "available_experimental",
+        "status_label": "Experimental \u00b7 not used in result",
+        "output": {
+          "kind": "facial_expression",
+          "label": "neutral",
+          "class_scores": {
+            "neutral": 0.58034747838974,
+            "happy": 0.008638394065201283,
+            "sad": 0.32242757081985474,
+            "fearful": 0.06064072623848915,
+            "angry": 5.713714472221909e-06,
+            "surprised": 7.635728252353147e-05,
+            "disgusted": 0.02786371298134327
+          },
+          "calibrated": false,
+          "meaning": "Uncalibrated posed-expression/emotion class scores; not autism prediction or a measurement of internal feelings."
+        },
+        "model": {
+          "version": "facial-v1",
+          "dataset": "V_Expression v1 / attributed course v1.0",
+          "schema": "face-gray64-clahe-v1",
+          "validated": false,
+          "weights_sha256": "898faddc571bbac2d456346d221f9ea33573190e6501337a8b9712993ba5009e",
+          "licence": "CC BY 4.0"
+        },
+        "quality": null,
+        "measurements": null,
+        "included_in_screening": false,
+        "inclusion_reason": "Adult technical research only; age/device/task/language transfer unvalidated. Excluded from screening.",
+        "limitations": [
+          "Not clinically validated. Does not establish diagnosis.",
+          "Uncalibrated experimental outputs; task, age, device and language transfer may be unsupported.",
+          "Uncalibrated posed-expression/emotion class scores; not autism prediction or a measurement of internal feelings."
+        ],
+        "values": [
+          {
+            "name": "Predicted class",
+            "value": "neutral",
+            "unit": null,
+            "text": "neutral"
+          },
+          {
+            "name": "neutral",
+            "value": 0.58034747838974,
+            "unit": null,
+            "text": "58.0%"
+          },
+          {
+            "name": "happy",
+            "value": 0.008638394065201283,
+            "unit": null,
+            "text": "0.9%"
+          },
+          {
+            "name": "sad",
+            "value": 0.32242757081985474,
+            "unit": null,
+            "text": "32.2%"
+          },
+          {
+            "name": "fearful",
+            "value": 0.06064072623848915,
+            "unit": null,
+            "text": "6.1%"
+          },
+          {
+            "name": "angry",
+            "value": 5.713714472221909e-06,
+            "unit": null,
+            "text": "0.0%"
+          },
+          {
+            "name": "surprised",
+            "value": 7.635728252353147e-05,
+            "unit": null,
+            "text": "0.0%"
+          },
+          {
+            "name": "disgusted",
+            "value": 0.02786371298134327,
+            "unit": null,
+            "text": "2.8%"
+          },
+          {
+            "name": "Model version",
+            "value": "facial-v1",
+            "unit": null,
+            "text": "facial-v1"
+          },
+          {
+            "name": "Model schema",
+            "value": "face-gray64-clahe-v1",
+            "unit": null,
+            "text": "face-gray64-clahe-v1"
+          },
+          {
+            "name": "Model weights_sha256",
+            "value": "898faddc571bbac2d456346d221f9ea33573190e6501337a8b9712993ba5009e",
+            "unit": null,
+            "text": "898faddc571bbac2d456346d221f9ea33573190e6501337a8b9712993ba5009e"
+          }
+        ]
+      },
+      {
+        "id": "speech",
+        "label": "Acoustic measurements / ASD speech classifier",
+        "status": "not_provided",
+        "status_label": "not provided",
+        "output": null,
+        "model": null,
+        "quality": null,
+        "measurements": null,
+        "included_in_screening": false,
+        "inclusion_reason": "Excluded from screening: separate experimental task or no usable output.",
+        "limitations": [
+          "Not clinically validated. Does not establish diagnosis.",
+          "Uncalibrated experimental outputs; task, age, device and language transfer may be unsupported."
+        ],
+        "values": []
+      },
+      {
+        "id": "speech_emotion",
+        "label": "Speech emotion (CNN, experimental)",
+        "status": "available_experimental",
+        "status_label": "Experimental \u00b7 not used in result",
+        "output": {
+          "kind": "speech_emotion",
+          "label": "neutral",
+          "class_scores": {
+            "neutral": 0.44641274213790894,
+            "calm": 0.12928074598312378,
+            "happy": 0.16930505633354187,
+            "sad": 0.16531318426132202,
+            "angry": 0.015625983476638794,
+            "fearful": 0.04210125282406807,
+            "disgust": 0.015775326639413834,
+            "surprised": 0.016185658052563667
+          },
+          "calibrated": false,
+          "meaning": "Uncalibrated posed-expression/emotion class scores; not autism prediction or a measurement of internal feelings."
+        },
+        "model": {
+          "version": "speech-v1",
+          "dataset": "RAVDESS audio speech v1.0.0",
+          "schema": "audio16k-trim30db-mel64-hop512-4s-v1",
+          "validated": false,
+          "weights_sha256": "c043f3f63e12cfce492e5de0111f6edafede8657cd51169b923f99bd0ec2885a",
+          "licence": "CC BY-NC-SA 4.0, noncommercial research only"
+        },
+        "quality": null,
+        "measurements": null,
+        "included_in_screening": false,
+        "inclusion_reason": "Adult technical research only; age/device/task/language transfer unvalidated. Excluded from screening.",
+        "limitations": [
+          "Not clinically validated. Does not establish diagnosis.",
+          "Uncalibrated experimental outputs; task, age, device and language transfer may be unsupported.",
+          "Uncalibrated posed-expression/emotion class scores; not autism prediction or a measurement of internal feelings."
+        ],
+        "values": [
+          {
+            "name": "Predicted class",
+            "value": "neutral",
+            "unit": null,
+            "text": "neutral"
+          },
+          {
+            "name": "neutral",
+            "value": 0.44641274213790894,
+            "unit": null,
+            "text": "44.6%"
+          },
+          {
+            "name": "calm",
+            "value": 0.12928074598312378,
+            "unit": null,
+            "text": "12.9%"
+          },
+          {
+            "name": "happy",
+            "value": 0.16930505633354187,
+            "unit": null,
+            "text": "16.9%"
+          },
+          {
+            "name": "sad",
+            "value": 0.16531318426132202,
+            "unit": null,
+            "text": "16.5%"
+          },
+          {
+            "name": "angry",
+            "value": 0.015625983476638794,
+            "unit": null,
+            "text": "1.6%"
+          },
+          {
+            "name": "fearful",
+            "value": 0.04210125282406807,
+            "unit": null,
+            "text": "4.2%"
+          },
+          {
+            "name": "disgust",
+            "value": 0.015775326639413834,
+            "unit": null,
+            "text": "1.6%"
+          },
+          {
+            "name": "surprised",
+            "value": 0.016185658052563667,
+            "unit": null,
+            "text": "1.6%"
+          },
+          {
+            "name": "Model version",
+            "value": "speech-v1",
+            "unit": null,
+            "text": "speech-v1"
+          },
+          {
+            "name": "Model schema",
+            "value": "audio16k-trim30db-mel64-hop512-4s-v1",
+            "unit": null,
+            "text": "audio16k-trim30db-mel64-hop512-4s-v1"
+          },
+          {
+            "name": "Model weights_sha256",
+            "value": "c043f3f63e12cfce492e5de0111f6edafede8657cd51169b923f99bd0ec2885a",
+            "unit": null,
+            "text": "c043f3f63e12cfce492e5de0111f6edafede8657cd51169b923f99bd0ec2885a"
+          }
+        ]
+      }
+    ],
+    "formatting": "Numeric values: 3 decimals; class scores: 1 decimal percent, uncalibrated. Raw values retained.",
+    "presentation": {
+      "version": "plain-language-v1",
+      "category": "adult",
+      "title": "Your screening summary",
+      "outcome": "Below the screening threshold",
+      "meaning": "The answers did not reach the questionnaire\u2019s screening threshold. This is one part of understanding development and everyday experiences.",
+      "next_step": "If you have concerns, discuss them with a qualified health professional even with a below-threshold score.",
+      "notice": "Screening does not establish a diagnosis. A below-threshold score cannot rule out concerns.",
+      "score_text": "4 / 10",
+      "threshold_text": "Screening threshold: 6",
+      "score_accessible_label": "Score 4 out of 10",
+      "instrument": "AQ-10 (adult)",
+      "recordings": [
+        {
+          "id": "gaze",
+          "label": "Eye-tracker research example",
+          "status": "Analysed",
+          "summary": "An experimental result was saved for an eye-tracker recording. Its input is different from a webcam recording."
+        },
+        {
+          "id": "speech",
+          "label": "Voice recording",
+          "status": "Analysed",
+          "summary": "A research model classified the supplied audio. The model\u2019s closest voice-emotion label was neutral. This research classification does not describe autism or the person\u2019s internal feelings."
+        },
+        {
+          "id": "facial",
+          "label": "Facial snapshot",
+          "status": "Analysed",
+          "summary": "A research model classified the supplied snapshot. The model\u2019s closest expression label was neutral. This research classification does not describe autism or the person\u2019s internal feelings."
+        }
+      ],
+      "is_example": true,
+      "provenance_label": "Recorded research example",
+      "provenance_note": "These examples use separate dataset participants and synthetic questionnaire answers. They do not describe one live person."
+    }
+  }
+}

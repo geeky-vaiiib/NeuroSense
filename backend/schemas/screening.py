@@ -340,6 +340,7 @@ class CaseSummaryResponse(BaseModel):
 
 
 class CaseDetailResponse(CaseSummaryResponse):
+    display_report: ResearchReport | None = None
     report: ResearchReport | None = None
     referral_date: str = Field("", alias="referralDate")
     clinician: str = ""
