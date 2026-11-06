@@ -6,7 +6,7 @@
     "python": "3.11.14",
     "node": "25.9.0",
     "platform": "macOS-26.6.2-arm64-arm-64bit",
-    "runtime": "backend/requirements.lock; package-lock.json",
+    "runtime": "Fresh .venv-demo from backend/requirements.lock (86 packages); package-lock.json",
     "database": "mongomock; isolated source export without .env, DASD or research-data"
   },
   "checks": [
@@ -14,11 +14,11 @@
       "command": "PYTHONPATH=backend:. python -m pytest backend/tests -q",
       "cwd": "isolated source export",
       "status": "PASS",
-      "passed": 342,
+      "passed": 343,
       "skipped": 7,
       "failed": 0,
       "warnings": 934,
-      "seconds": 24.76
+      "seconds": 28.46
     },
     {
       "command": "npm test",
@@ -88,7 +88,8 @@
     "Precision regression initially expected rounded stored probabilities; updated assertion now checks the original full-precision captured model reference exactly. A new test import collided with backend/scripts and was corrected to explicit run_path.",
     "Original-motion browser runs intermittently stalled on animation actionability/session restoration on this host; no assertion was removed. Supported reduced-motion runs passed twice (36.4s and final 21.2s). Physical-device/original-motion reliability is not newly validated.",
     "Starting the launcher while E2E occupied its ports failed explicitly; final launcher now checks port availability and was verified after stopping conflicting task services.",
-    "Docker access was denied in a sandbox-only preflight; the authorized local execution preflight passed with real Docker/OpenFace access."
+    "Docker access was denied in a sandbox-only preflight; the authorized local execution preflight passed with real Docker/OpenFace access.",
+    "The direct-entry subprocess needed local OpenMP shared-memory access outside the tool sandbox; the same regression passed with local execution access in the isolated export."
   ],
   "coverage_boundaries": {
     "real": "Frozen models; permitted cached development examples; permitted image/direct audio inference; FFmpeg/FFprobe/OpenFace blank execution; actual API persistence/auth; browser generated-tone inference",
@@ -96,5 +97,23 @@
     "not_established": "Usable-face live webcam inference, camera unplug behavior on real hardware, new-domain accuracy, population calibration, diagnosis, ASD speech or multimodal diagnostic fusion"
   },
   "artifact_review": "Only intended source/docs and aggregate outputs; no changed checkpoint binaries, raw participant recordings/images, credentials or private manifests. Pinned model hashes unchanged.",
-  "ci": "Local checks do not establish CI success; inspect the Actions run for the pushed commit."
+  "ci": "Local checks do not establish CI success; inspect the Actions run for the pushed commit.",
+  "clean_setup": {
+    "status": "PASS: fresh dependency installation, exact no-PYTHONPATH launcher, real OpenFace preflight, both HTTP endpoints, graceful shutdown and 343-test isolated backend suite",
+    "packages": 86,
+    "python": "3.11.14",
+    "environment": ".venv-demo (ignored)",
+    "defect": "Direct script did not import backend without inherited PYTHONPATH; explicit repository import root and subprocess regression added."
+  },
+  "verified_implementation_ci": {
+    "commit": "acba70ceab03d4c3f539c5a8cb616afe0a8fb3cf",
+    "run": "https://github.com/geeky-vaiiib/NeuroSense/actions/runs/42190146095",
+    "status": "completed",
+    "conclusion": "success",
+    "backend_passed": 342,
+    "backend_skipped": 7,
+    "frontend_passed": 102,
+    "e2e_passed": 7,
+    "scope": "Implementation commit before the direct-entry setup correction; verify the correction commit independently."
+  }
 }

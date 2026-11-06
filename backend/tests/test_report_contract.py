@@ -101,3 +101,16 @@ def test_demo_environment_cannot_inherit_production_database_or_secret(monkeypat
     assert env['MONGODB_URI']=='mongomock://academic-demo'
     assert env['JWT_SECRET']!='not-a-demo-secret' and len(env['JWT_SECRET'])>=32
     assert env['VITE_API_URL']=='http://127.0.0.1:8000' and env['CORS_ALLOWED_ORIGINS']=='http://127.0.0.1:5173'
+
+
+def test_documented_demo_entry_point_needs_no_inherited_pythonpath(tmp_path):
+    import os,subprocess,sys
+    from pathlib import Path
+    script=Path(__file__).resolve().parents[2]/'scripts/demo.py'
+    env=os.environ.copy();env.pop('PYTHONPATH',None)
+    # This starts only a bounded numeric/model/tool preflight, never servers or a camera.
+    result=subprocess.run([sys.executable,str(script),'--preflight-only','--without-webcam'],cwd=tmp_path,
+                          env=env,text=True,capture_output=True,timeout=90)
+    assert result.returncode==0,result.stdout+result.stderr
+    assert 'PASS preflight; database is disposable in-memory' in result.stdout
+    assert 'NOT RUN OpenFace execution' in result.stdout

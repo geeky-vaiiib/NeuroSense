@@ -16,6 +16,9 @@ import time
 import urllib.request
 
 ROOT=Path(__file__).resolve().parents[1]
+# Direct script execution puts scripts/, not the repository, on sys.path.
+# PYTHONPATH in environment() applies to child processes only.
+sys.path.insert(0, str(ROOT))
 
 def environment(spool):
     env=os.environ.copy()
