@@ -120,3 +120,7 @@ Use an absolute Python path if running outside the repository root. Physical rec
 ## Recording-stage reporting (v3)
 
 New submissions save `research-report-v3` with separate measurement and classification stages. A gaze domain rejection or absent classifier can retain useful movement measurements. "Measurements available; model result unavailable" does not mean the entire recording failed. Exact failure/retry information and technical stages are saved, shown on demand, and included in the detailed PDF. Historical reports retain their original presentation. Speech input hygiene and facial single-face/lighting/sharpness checks are explicit engineering heuristics, not validated speech/quality classifiers; see MODALITY_PIPELINE_EXECUTION.md before describing the demo's coverage.
+
+## Repeatable local acceptance
+
+Use `.venv-demo/bin/python scripts/check_backend_isolated.py` for the backend suite and saved-metric checks. It exports tracked working-tree source into private temporary storage, verifies import isolation and excludes optional raw datasets and real environment files before collection. Stage intended new tests first. This prevents local corpus presence or an inherited `PYTHONPATH` from changing routine acceptance coverage. See DEMO_READINESS.md for the latest execution results and physical-session gate. Keep the Python interpreter backing the virtual environment in persistent storage; a removed `/tmp` interpreter breaks future launches. Start Docker before the full OpenFace preflight.

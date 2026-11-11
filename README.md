@@ -85,3 +85,7 @@ OPENFACE_DOCKER_IMAGE=algebr/openface .venv-demo/bin/python scripts/demo.py
 Open `http://127.0.0.1:5173`. New submissions use a saved backend-owned `research-report-v3` for UI/PDF agreement. The explicit **Recorded example** page shows genuine, independently sourced model outputs with provenance; it never substitutes for a live result. Eye-tracker `gaze-v1` has a separate schema-checked offline research CLI. Physical webcam validation remains an operator check; see the runbook's verified scope.
 
 Results now open with a plain-language questionnaire summary, next steps and three recording summaries. Technical details are optional, and model explanations load on request. Download either a simple report or a detailed technical appendix. [Results contract audit](docs/RESULTS_CONTRACT_AUDIT.md) documents field provenance and historical compatibility.
+
+For repeatable backend acceptance without optional participant data, use
+`.venv-demo/bin/python scripts/check_backend_isolated.py` (current tracked working-tree source; stage intended new files first).
+See [current demo readiness and remaining operator checks](docs/DEMO_READINESS.md).
