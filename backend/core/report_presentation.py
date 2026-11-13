@@ -52,6 +52,8 @@ def present(report, category=None, example=False):
                 plain = 'Measurements available; model result unavailable'
                 if mid == 'gaze':
                     text = 'Your recording was processed. Movement measurements are available, but this model could not reliably classify this recording.'
+                    if stages['applicability_status'] == 'unsupported_population':
+                        text = 'Your toddler’s recording was processed. Movement measurements are available; no toddler gaze classifier is installed.'
                     if stages['applicability_status'] == 'out_of_domain':
                         text += ' The movement was outside the model’s supported range.'
                 else:

@@ -75,6 +75,8 @@ def gaze_state(gaze: Optional[dict], skipped: bool, skip_reason: Optional[str]) 
         return _state("gaze", label, AVAILABLE_EXPERIMENTAL, output={"kind": "experimental_classifier_output", "value": gaze.get("probability"),
                       "meaning": "BiLSTM trained on DASD (82 children); not shown to beat recording-context controls; not validated on webcam data"},
                       reason="Excluded from the result: no webcam / labelled deployment validation.", **common)
+    if st == "measurements_available":
+        return _state("gaze", label, MODEL_UNAVAILABLE, reason=gaze.get("reason"), **common)
     if st in ("insufficient_quality", "out_of_domain"):
         return _state("gaze", label, FAILED_QUALITY, reason=gaze.get("reason"), **common)
     code = gaze.get("error_code") or ""

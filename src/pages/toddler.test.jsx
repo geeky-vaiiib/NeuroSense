@@ -8,6 +8,9 @@ import RiskBadge from '../components/RiskBadge';
 import ToddlerScreening from './ToddlerScreening';
 import ScreeningStart from './ScreeningStart';
 
+vi.mock('../components/GazeSession',()=>({default:({onComplete})=><button onClick={()=>onComplete({analysisId:'toddler-job'})}>Complete toddler gaze fixture</button>}));
+vi.mock('../components/SpeechSession',()=>({default:({onComplete})=><button onClick={()=>onComplete({type:'audio/wav',arrayBuffer:async()=>new Uint8Array([1,2]).buffer})}>Complete toddler audio fixture</button>}));
+vi.mock('../components/FacialSession',()=>({default:({onComplete})=><button onClick={()=>onComplete('fixture-image')}>Complete toddler face fixture</button>}));
 const submit = vi.fn();
 vi.mock('../hooks/useScreening', () => ({ useScreening: () => ({ submit: (...a) => submit(...a), loading: false, error: mockError.value }) }));
 const mockError = { value: null };
@@ -151,6 +154,20 @@ describe('toddler screening page', () => {
     expect(payload.answers).toEqual({ Q1: 'D', Q2: 'C', Q3: 'A', Q4: 'D', Q5: 'A', Q6: 'B', Q7: 'A', Q8: 'A', Q9: 'C', Q10: 'E' });
     expect(payload.gazeSkipped && payload.speechSkipped && payload.facialSkipped).toBe(true);
     for (const k of ['aq10Score', 'riskLevel', 'modelOutput', 'questionnaireProbability', 'score', 'total']) expect(payload).not.toHaveProperty(k);
+  });
+  it('includes toddler recordings in the canonical submission without any client predictions',async()=>{
+    submit.mockResolvedValue({caseId:'NS-T-recorded'});renderPage();reachQuestions('20');
+    fireEvent.click(screen.getByRole('button',{name:'Begin the questions'}));
+    for(let i=0;i<10;i++){fireEvent.click(screen.getAllByRole('radio')[0]);fireEvent.click(screen.getByRole('button',{name:i<9?/Next/:'Review answers'}));}
+    fireEvent.click(screen.getByText('Add or retry optional recordings'));
+    fireEvent.click(screen.getByText('Complete toddler gaze fixture'));
+    fireEvent.click(screen.getByText('Complete toddler audio fixture'));
+    fireEvent.click(screen.getByText('Complete toddler face fixture'));
+    fireEvent.click(screen.getByText('Send my answers'));
+    await waitFor(()=>expect(submit).toHaveBeenCalled());
+    const payload=submit.mock.calls[0][0];expect(payload.gazeAnalysisId).toBe('toddler-job');
+    expect(payload.audioBase64).toBe('AQI=');expect(payload.facialImageBase64).toBe('fixture-image');
+    expect(payload.gazeSkipped || payload.speechSkipped || payload.facialSkipped).toBe(false);
   });
   it('shows a recoverable error and keeps the answers when the API fails', () => {
     mockError.value = 'The server could not be reached.';

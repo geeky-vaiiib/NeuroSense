@@ -135,17 +135,18 @@ export const gazeApi = {
   labClear: () => api.delete('/gaze/lab/sessions'),
 
   /** GET /gaze/status: is the gaze model loaded, and is OpenFace installed on the server? */
-  status: (signal) => api.get('/gaze/status', { signal }),
+  status: (signal, population) => api.get(population === 'toddler' ? '/gaze/status?population=toddler' : '/gaze/status', { signal }),
 
   /**
    * Upload the recording (multipart) and poll the background job.  The probability is computed
    * by the backend only.  onStage(stage) receives the server's real processing stage.
    * Rejects with ApiError; never returns synthetic data.
    */
-  async analyze({ blob, durationMs, sessionId, onStage, keepFeatures = false, signal, jobId, onAccepted }) {
+  async analyze({ blob, durationMs, sessionId, onStage, keepFeatures = false, signal, jobId, onAccepted, population = 'adult' }) {
     if (signal?.aborted) throw stoppedWaiting();
     if (!jobId) {
       const form = new FormData();
+      form.append('population', population);
       form.append('video', blob, blob.type.includes('mp4') ? 'gaze.mp4' : 'gaze.webm');
       form.append('duration_ms', String(Math.round(durationMs)));
       if (sessionId) form.append('session_id', sessionId);

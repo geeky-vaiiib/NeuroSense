@@ -149,6 +149,7 @@ const STAGE_TEXT = {
   normalizing_video: 'Processing video',
   extracting_gaze_features: 'Extracting gaze features (OpenFace)',
   running_model: 'Running the gaze model',
+  measuring_toddler_gaze: 'Measuring toddler gaze and head movement',
   complete: 'Generating result',
 };
 
@@ -237,11 +238,11 @@ export default function GazeSession({ onComplete, onSkip, category, keepFeatures
   const loadStatus = useCallback(() => {
     statusControllerRef.current?.abort();
     const controller = new AbortController(); statusControllerRef.current = controller;
-    gazeApi.status(controller.signal).then(
+    gazeApi.status(controller.signal, category).then(
       (st) => mountedRef.current && !controller.signal.aborted && setStatus({ checking: false, available: Boolean(st.openface_available && st.media_timing_available !== false), model: st.available, openface: st.openface_available, timing: st.media_timing_available, version: st.model_version }),
       () => mountedRef.current && !controller.signal.aborted && setStatus({ checking: false, available: null }),
     );
-  }, []);
+  }, [category]);
   const checkStatus = () => { setStatus({ checking: true }); loadStatus(); };
 
   useEffect(() => {
@@ -298,7 +299,7 @@ export default function GazeSession({ onComplete, onSkip, category, keepFeatures
     setPhase('processing'); setStage(jobRef.current ? 'uploaded' : 'uploading');
     const current = () => mountedRef.current && attempt === attemptRef.current && !controller.signal.aborted;
     try {
-      const res = await gazeApi.analyze({ blob, durationMs, sessionId: idRef.current, keepFeatures,
+      const res = await gazeApi.analyze({ population: category, blob, durationMs, sessionId: idRef.current, keepFeatures,
         signal: controller.signal, jobId: jobRef.current,
         onAccepted: (id) => { if (current()) { jobRef.current = id; setAcceptedJob(id); onAcceptedJob?.(id); } },
         onStage: (s) => { if (current()) setStage(s); } });
@@ -383,13 +384,14 @@ export default function GazeSession({ onComplete, onSkip, category, keepFeatures
     body = (
       <section style={{ ...card, position: 'relative' }}>
         <div style={{ marginBottom: 18 }}><GazeVisualizer size={150} /></div>
-        <h2 style={{ marginTop: 0, marginBottom: 12 }}>Eye gaze session {category === 'child' ? '(child)' : ''}</h2>
+        <h2 style={{ marginTop: 0, marginBottom: 12 }}>Eye gaze session {category === 'toddler' ? '(toddler measurements)' : category === 'child' ? '(child)' : ''}</h2>
         <p style={{ color: 'var(--color-neutral-600)', lineHeight: 1.7, maxWidth: 640, marginBottom: 6 }}>
           The camera records a <strong>30-second</strong> picture task. When it ends, the recording is sent to the NeuroSense server,
-          where OpenFace measures gaze direction and head pose and the frozen model may produce an experimental output, excluded from the questionnaire result.
+          {category === 'toddler' ? 'where the toddler service extracts descriptive gaze/head measurements only. No child or adult classifier is used.' : 'where OpenFace measures gaze direction and head pose and the frozen model may produce an experimental output, excluded from the questionnaire result.'}
           The result is calculated <strong>after</strong> the recording, not live. The video is deleted as soon as it has been processed.
         </p>
         <p style={{ color: 'var(--color-neutral-500)', fontSize: '0.88rem', lineHeight: 1.6, marginBottom: 18 }}>
+          {category === 'toddler' && 'Caregiver: participation must be voluntary. This picture recording is for descriptive measurements only, not a validated toddler attention task. Stop or skip if your child is uncomfortable. No toddler gaze classifier is installed. '}
           Sit about an arm&apos;s length from the screen in a well-lit room, face the screen, and keep the head fairly steady. There is no calibration step.
         </p>
         <p role="status" style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.86rem', fontWeight: 600, marginBottom: 18,

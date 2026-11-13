@@ -101,6 +101,8 @@ def run_screening(
         gaze_result = gaze_jobs.result_for(body.gaze_analysis_id, user.user_id)
         if gaze_result is None:
             raise HTTPException(status_code=422, detail="gazeAnalysisId is unknown, expired or not finished")
+    if category == 'toddler' and gaze_result and gaze_result.get('input_population') != 'toddler':
+        raise HTTPException(status_code=422, detail='Toddler cases require a toddler measurement-only gaze job; record again in the toddler workflow.')
     pre = preprocess_screening_input(
         category, gaze_result=gaze_result, gaze_skipped=body.gaze_skipped or False,
         audio_base64=body.audio_base64, audio_mime_type=body.audio_mime_type or "audio/webm",
@@ -120,7 +122,7 @@ def run_screening(
         if submitted:
             candidate = (raw or {}).get(result_key)
             if candidate is None:
-                reason = ('These research models are restricted to adult technical testing; not applied to children or toddlers.'
+                reason = ('No toddler-trained recording classifier is installed; toddler measurements are retained separately.' if category == 'toddler' else 'These research models are restricted to adult technical testing; not applied to children or toddlers.'
                           if category != 'adult' else (raw or {}).get('reason') or 'Recording failed the existing quality/measurement stage; no research classification produced.')
                 candidate = unavailable(task, reason, 'model_unavailable' if category != 'adult' else 'analysis_failed' if (raw or {}).get('status') == 'analysis_failed' else 'failed_quality')
             states.append(research_state(candidate))

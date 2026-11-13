@@ -81,7 +81,7 @@ def _result(status: str, *, reason: str | None = None, code: str | None = None, 
                                "installed, so no speech screening result is produced.") if status == "model_unavailable" else (reason or "")}
 
 
-def analyze_speech(audio_base64: str, mime_type: str = "audio/webm", *, research_enabled: bool = False) -> dict:
+def analyze_speech(audio_base64: str, mime_type: str = "audio/webm", *, research_enabled: bool = False, measurements_only: bool = False) -> dict:
     """Decode + measure.  Returns a status dict (see modality_status.speech_state); never invents a score."""
     if not audio_base64:
         return _result("insufficient_data", reason="No audio provided.", code=ERR_NO_AUDIO)
@@ -127,6 +127,8 @@ def analyze_speech(audio_base64: str, mime_type: str = "audio/webm", *, research
     features['clipped_sample_fraction'] = float(np.mean(np.abs(y) >= 0.999))
     features['input_quality_policy'] = 'speech-input-hygiene-v1; flatness <0.5 and >=0.5s pYIN voiced-frame evidence; not a speech detector'
     features['speech_presence_method'] = 'pYIN voiced-frame evidence; not a speech/non-speech classifier. Tones can appear voiced.'
+    if measurements_only:
+        return _result('model_unavailable', reason='Toddler acoustic measurements retained; no toddler speech classifier is installed.', code='TODDLER_CLASSIFIER_NOT_INSTALLED', features=features, duration_s=duration)
     emotion_result = None
     if research_enabled:
         from .research_inference import speech_emotion

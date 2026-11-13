@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import tempfile
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Literal
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 
@@ -34,6 +34,7 @@ async def analyze_gaze(
     duration_ms: Optional[float] = Form(default=None, ge=1000, le=180_000),
     session_id: Optional[str] = Form(default=None, max_length=64),
     keep_features: bool = Form(default=False),
+    population: Literal["adult", "child", "toddler"] = Form(default="adult"),
     user: CurrentUser = Depends(get_current_user),
 ):
     """Accept a recording and start analysis.  202 + job id; no raw video is retained."""
@@ -59,7 +60,7 @@ async def analyze_gaze(
         Path(tmp).unlink(missing_ok=True)
         raise
     try:
-        job_id = jobs.submit(user.user_id, Path(tmp), duration_ms / 1000.0 if duration_ms else None, session_id, keep_features)
+        job_id = jobs.submit(user.user_id, Path(tmp), duration_ms / 1000.0 if duration_ms else None, session_id, keep_features, population)
     except jobs.TooManyJobs as exc:
         Path(tmp).unlink(missing_ok=True)
         raise HTTPException(status_code=429, detail=str(exc)) from exc
@@ -80,7 +81,12 @@ def gaze_job(job_id: str, user: CurrentUser = Depends(get_current_user)):
 
 
 @router.get("/status")
-def gaze_status() -> dict:
+def gaze_status(population: Literal['adult','child','toddler'] = 'adult') -> dict:
+    if population == 'toddler':
+        from ..ml.gaze import openface as OF
+        return {'available':False,'model_version':'toddler-measurements-v1',
+                'openface_available':OF.is_available(),'media_timing_available':bool(OF.shutil.which('ffprobe')),
+                'population':'toddler','classification_status':'not_installed','fusion_eligible':False}
     return get_gaze_service().status()
 
 

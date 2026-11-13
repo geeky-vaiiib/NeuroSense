@@ -299,6 +299,7 @@ export default function SpeechSession({ onComplete, onSkip, category }) {
           features (pitch, loudness, speech rate). These measurements are shown for information; no validated speech
           classifier exists, so they do not affect the screening result. You do not need to say anything specific. You can describe
           what you did today, or read the prompt shown on screen.
+          {category === 'toddler' && ' Caregiver: capture only your toddler’s natural comfortable vocalisations; do not ask them to read or speak on their behalf. Acoustic measurements only; no toddler emotion or ASD speech model is installed.'}
           {category === 'adult' && ' Adult technical testing also reports experimental speech-emotion classes trained on acted North American English. They are not autism predictions or a measure of internal feelings, and transfer to spontaneous speech or other languages is unvalidated.'}
         </p>
         <p

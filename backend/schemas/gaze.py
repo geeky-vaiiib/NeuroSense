@@ -28,6 +28,7 @@ class GazeQuality(BaseModel):
 class GazeAnalyzeResponse(BaseModel):
     model_config = ConfigDict(protected_namespaces=())
 
+    input_population: str | None = None
     modality: str = "gaze"
     status: str                         # success | insufficient_quality | out_of_domain | unavailable
     model_status: str                   # available | unavailable

@@ -155,7 +155,7 @@ export default function FacialSession({ onComplete, onSkip, category }) {
       <section style={{ ...card, position: 'relative' }}>
         {capabilityNote && <p role="status">{capabilityNote}</p>}
         <h2 style={{ marginTop: 0, color: 'var(--color-neutral-900)', marginBottom: '12px' }}>
-          Facial Check {category === 'child' ? '(Child)' : '(Adult)'}
+          Facial Check {category === 'toddler' ? '(Toddler)' : category === 'child' ? '(Child)' : '(Adult)'}
         </h2>
         <p style={{ color: 'var(--color-neutral-600)', lineHeight: 1.7, maxWidth: '640px', marginBottom: '6px' }}>
           We will briefly use your webcam to take one still image and check that a face is detected and the image is usable.

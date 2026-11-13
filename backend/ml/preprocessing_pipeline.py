@@ -42,14 +42,22 @@ def preprocess_screening_input(
     speech_result = facial_result = None
     if audio_base64 and not speech_skipped:
         try:
-            speech_result = analyze_speech(audio_base64, audio_mime_type, research_enabled=category == 'adult')
+            if category == 'toddler':
+                from .toddler_recordings import analyze_toddler_speech
+                speech_result = analyze_toddler_speech(audio_base64, audio_mime_type)
+            else:
+                speech_result = analyze_speech(audio_base64, audio_mime_type, research_enabled=category == 'adult')
         except Exception as exc:
             errors["speech"] = str(exc)
             speech_result = {"modality": "speech", "status": "analysis_failed", "reason": f"Speech processing error: {exc}",
                              "error_code": "SPEECH_INTERNAL", "features": {}, "output": None, "model": None}
     if facial_image_base64 and not facial_skipped:
         try:
-            facial_result = analyze_face(facial_image_base64, research_enabled=category == 'adult')
+            if category == 'toddler':
+                from .toddler_recordings import analyze_toddler_face
+                facial_result = analyze_toddler_face(facial_image_base64)
+            else:
+                facial_result = analyze_face(facial_image_base64, research_enabled=category == 'adult')
         except Exception as exc:
             errors["facial"] = str(exc)
             facial_result = {"modality": "facial", "status": "analysis_failed", "reason": f"Facial processing error: {exc}",

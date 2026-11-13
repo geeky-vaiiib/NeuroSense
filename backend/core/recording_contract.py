@@ -29,11 +29,11 @@ def recording_analysis(mid, base, classifier):
                       'failed' if status in ('failed_quality', 'insufficient_data') else 'not_assessed')
     output = classifier.get('output') if classifier.get('status') == 'available_experimental' else None
     # Classification cannot override an explicit failed input gate.
-    if quality_status == 'failed' or domain == 'out_of_domain':
+    if quality_status == 'failed' or domain in ('out_of_domain','unsupported_population'):
         output = None
     classifier_failed_quality = classifier.get('status') == 'failed_quality'
     classification = ('available' if output is not None else 'not_requested' if skipped else
-                      'withheld' if quality_status == 'failed' or classifier_failed_quality or domain == 'out_of_domain' else
+                      'withheld' if quality_status == 'failed' or classifier_failed_quality or domain in ('out_of_domain','unsupported_population') else
                       'failed' if classifier.get('status') == 'analysis_failed' else 'unavailable')
     reason = None if output is not None else classifier.get('inclusion_reason') or classifier.get('reason') or base.get('inclusion_reason') or base.get('reason')
     reasons = {'model_unavailable': 'The gaze checkpoint is missing or could not be loaded.',
@@ -43,8 +43,10 @@ def recording_analysis(mid, base, classifier):
     retry = ('Record again with the face visible throughout in even lighting.' if mid == 'gaze' else
              'Record at least five seconds of audible speech in a quiet room.' if mid == 'speech' else
              'Capture one clearly visible face in even lighting.') if quality_status == 'failed' or classifier_failed_quality else None
-    if domain == 'out_of_domain':
+    if domain in ('out_of_domain','unsupported_population'):
         retry = 'No repeat is needed to obtain a score. This recording is outside the research model’s supported range.'
+    if domain == 'unsupported_population':
+        retry = 'No toddler classifier is installed; another recording will not enable classification.'
     if classification in ('failed', 'unavailable') and not skipped:
         retry = 'The operator can check the reported service or model error; repeating the recording may not resolve it.'
     return RecordingAnalysis(capture_status='skipped' if status == 'skipped' else 'unknown' if status == 'not_provided' else 'received', decoding_status='decoded' if measured or output is not None else 'not_provided' if skipped else 'unknown',

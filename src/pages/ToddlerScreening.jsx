@@ -9,12 +9,15 @@ import { clearDraft } from '../utils/flowDrafts';
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ToddlerQuestionFlow from '../components/screening/ToddlerQuestionFlow';
+import GazeSession from '../components/GazeSession';
+import SpeechSession from '../components/SpeechSession';
+import FacialSession from '../components/FacialSession';
 import AnalysisState from '../components/screening/AnalysisState';
 import { useScreening } from '../hooks/useScreening';
 import { AGE_MAX, AGE_MIN, TODDLER_ITEMS, validateAgeMonths } from '../data/toddler';
 
-const STEPS = ['welcome', 'age', 'instructions', 'questions', 'review'];
-const LABELS = { welcome: 'Welcome', age: 'Your child', instructions: 'How to answer', questions: 'Questions', review: 'Review' };
+const STEPS = ['welcome', 'age', 'instructions', 'questions', 'review', 'gaze', 'speech', 'facial'];
+const LABELS = { welcome: 'Welcome', age: 'Your child', instructions: 'How to answer', questions: 'Questions', review: 'Review', gaze: 'Gaze recording', speech: 'Voice recording', facial: 'Facial snapshot' };
 const GENDERS = ['Prefer not to say', 'Female', 'Male'];
 
 export default function ToddlerScreening() {
@@ -28,6 +31,10 @@ export default function ToddlerScreening() {
   const [gender, setGender] = useDraftState('toddler', 'gender', 'Prefer not to say');
   const [childName, setChildName] = useDraftState('toddler', 'childName', '');
   const [answers, setAnswers] = useDraftState('toddler', 'answers', {});
+  const [gaze, setGaze] = useDraftState('toddler','recordedGaze',null);
+  const [acceptedJob, setAcceptedJob] = useDraftState('toddler','acceptedJob',null);
+  const [audio, setAudio] = useDraftState('toddler','recordedAudio',null);
+  const [face, setFace] = useDraftState('toddler','recordedFace',null);
   const [notice, setNotice] = useState('');
   const [startAt, setStartAt] = useState(undefined);
   const headingRef = useRef(null);
@@ -42,11 +49,18 @@ export default function ToddlerScreening() {
     if (!age.valid) { setStep('age'); setAgeTouched(true); return; }
     setNotice('');
     try {
+      let audioBase64 = null;
+      if (audio) {
+        const bytes = new Uint8Array(await audio.arrayBuffer());
+        let text = ''; for (const byte of bytes) text += String.fromCharCode(byte);
+        audioBase64 = btoa(text);
+      }
       const result = await submit({
         category: 'toddler',
         demo: { ageMonths: age.months, gender, subjectName: childName.trim() || undefined },
         answers,
-        gazeSkipped: true, gazeSkipReason: 'toddler_questionnaire_only', speechSkipped: true, facialSkipped: true,
+        gazeAnalysisId:gaze?.analysisId || null, gazeSkipped:!gaze, gazeSkipReason:!gaze?'caregiver_continued_without_recording':null,
+        audioBase64, audioMimeType:audio?.type || null, speechSkipped:!audio, facialImageBase64:face, facialSkipped:!face,
       });
       clearDraft(draftOwner, 'toddler');
       navigate(`/app/results/${result.caseId}`);
@@ -61,7 +75,7 @@ export default function ToddlerScreening() {
   return (
     <main id="toddler-screening" style={{ maxWidth: 720, margin: '0 auto', width: '100%' }}>
       <nav aria-label="Screening progress" style={{ marginBottom: 28 }}>
-        <p style={{ fontSize: '0.85rem', color: 'var(--ns-n600)' }}>Step {stepIndex + 1} of {STEPS.length} · {LABELS[step]}</p>
+        <p style={{ fontSize: '0.85rem', color: 'var(--ns-n600)' }}>{stepIndex < 5 ? `Questionnaire step ${stepIndex + 1} of 5` : 'Optional recording'} · {LABELS[step]}</p>
       </nav>
 
       <section className="ns-card" style={{ padding: 'clamp(20px, 4vw, 36px)' }}>
@@ -129,6 +143,10 @@ export default function ToddlerScreening() {
             onAnswer={(id, v) => setAnswers((a) => ({ ...a, [id]: v }))} onFinish={() => setStep('review')} onExit={() => setStep('instructions')} />
         )}
 
+        {step === 'gaze' && <GazeSession category="toddler" initialJobId={acceptedJob} onAcceptedJob={setAcceptedJob}
+          onComplete={(session)=>{setGaze(session);setStep('speech');}} onSkip={()=>{setGaze(null);setAcceptedJob(null);setStep('speech');}} />}
+        {step === 'speech' && <SpeechSession category="toddler" onComplete={(blob)=>{setAudio(blob);setStep('facial');}} onSkip={()=>{setAudio(null);setStep('facial');}} />}
+        {step === 'facial' && <FacialSession category="toddler" onComplete={(image)=>{setFace(image);setStep('review');}} onSkip={()=>{setFace(null);setStep('review');}} />}
         {step === 'review' && loading && <AnalysisState />}
 
         {step === 'review' && !loading && (
@@ -137,6 +155,12 @@ export default function ToddlerScreening() {
             <p style={{ marginTop: 12, color: 'var(--ns-n600)', lineHeight: 1.6 }}>
               Your child is <strong>{age.valid ? `${age.months} months` : 'age not entered'}</strong>. Choose “Change” beside any answer to edit it.
             </p>
+            <section aria-label="Optional toddler recordings" style={{marginTop:18}}>
+              <h2>Optional recordings</h2>
+              <p>With your supervision, you can add gaze/head movement, acoustic and facial-quality measurements. This toddler-specific system has no installed toddler-trained recording classifiers; no expression, emotion or gaze classification will be generated. These recordings never change Q-CHAT-10 scoring. Do not force participation; you can skip or stop.</p>
+              <p>Gaze: {gaze?'Recorded':'Not recorded'} · Voice: {audio?'Recorded':'Not recorded'} · Face: {face?'Captured':'Not captured'}</p>
+              <button type="button" className="btn btn-secondary" onClick={()=>setStep('gaze')}>Add or retry optional recordings</button>
+            </section>
             <ol style={{ listStyle: 'none', margin: '18px 0 0', padding: 0, display: 'grid', gap: 10 }}>
               {TODDLER_ITEMS.map((q, i) => {
                 const opt = q.options.find((o) => o.value === answers[q.id]);
@@ -164,7 +188,7 @@ export default function ToddlerScreening() {
 
             {step === 'questions' && startAt !== undefined && missing.length === 0 && <button type="button" className="btn btn-primary" onClick={() => setStep('review')}>Return to review</button>}
 
-        {step !== 'questions' && !(step === 'review' && loading) && (
+        {!['questions','gaze','speech','facial'].includes(step) && !(step === 'review' && loading) && (
           <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginTop: 28, flexWrap: 'wrap' }}>
             <button type="button" className="btn btn-secondary"
               onClick={() => { setNotice(''); step === 'welcome' ? navigate('/app/screening') : setStep(STEPS[stepIndex - 1]); }}>Back</button>

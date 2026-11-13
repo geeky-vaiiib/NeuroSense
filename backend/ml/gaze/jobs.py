@@ -102,7 +102,7 @@ def _heartbeat(job_id: str, token: str, stop: threading.Event) -> None:
 
 
 def submit(user_id: str, video_path: Path, duration_s: Optional[float], session_id: Optional[str],
-           keep_features: bool = False) -> str:
+           keep_features: bool = False, population: str = "adult") -> str:
     job_id, token = uuid.uuid4().hex, uuid.uuid4().hex
     try:
         with _lock:
@@ -113,7 +113,7 @@ def submit(user_id: str, video_path: Path, duration_s: Optional[float], session_
             _persist({"id": job_id, "owner_token": token, "user_id": user_id, "stage": "uploaded",
                       "state": "processing", "result": None, "created": now, "heartbeat_at": now,
                       "lease_until": now + LEASE_S, "deadline": now + JOB_TIMEOUT_S, "raw_path": str(video_path)})
-            thread = threading.Thread(target=_run, args=(job_id, token, video_path, duration_s, session_id, keep_features), daemon=True)
+            thread = threading.Thread(target=_run, args=(job_id, token, video_path, duration_s, session_id, keep_features, population), daemon=True)
             _threads.add(thread)
             thread.start()
         return job_id
@@ -128,7 +128,7 @@ def submit(user_id: str, video_path: Path, duration_s: Optional[float], session_
 
 
 def _run(job_id: str, owner_token: str, video: Path, duration_s: Optional[float], session_id: Optional[str],
-         keep_features: bool = False) -> None:
+         keep_features: bool = False, population: str = "adult") -> None:
     svc = None
     stop = threading.Event()
     heartbeat = threading.Thread(target=_heartbeat, args=(job_id, owner_token, stop), daemon=True)
@@ -140,7 +140,11 @@ def _run(job_id: str, owner_token: str, video: Path, duration_s: Optional[float]
     try:
         _run_slots.acquire()
         acquired = True
-        svc = get_gaze_service()
+        if population == 'toddler':
+            from ..toddler_recordings import ToddlerGazeMeasurements
+            svc = ToddlerGazeMeasurements()
+        else:
+            svc = get_gaze_service()
         base = svc._base(session_id)
         if not _set(job_id, owner_token, stage="normalizing_video"):
             return
@@ -174,9 +178,10 @@ def _run(job_id: str, owner_token: str, video: Path, duration_s: Optional[float]
             except OF.OpenFaceFailed as exc:
                 result = svc._fail(base, "unavailable", exc.code, "openface_failed", str(exc))
             else:
-                _set(job_id, owner_token, stage="running_model")
+                _set(job_id, owner_token, stage="measuring_toddler_gaze" if population == "toddler" else "running_model")
                 t0 = time.perf_counter()
                 result = svc.analyze_frames(df, session_id)
+                result['input_population'] = population
                 timings["preprocess_and_model"] = time.perf_counter() - t0
     except Exception as exc:  # never leave a job hanging
         logger.exception("Gaze processing failed (job=%s)", job_id)
@@ -193,6 +198,7 @@ def _run(job_id: str, owner_token: str, video: Path, duration_s: Optional[float]
         except OSError:
             pass
     timings["total"] = time.perf_counter() - t_job
+    result["input_population"] = population
     result["recording_timing"] = recording_timing
     result["timings_s"] = {k: round(v, 3) for k, v in timings.items()}     # measured, not estimated
     try:
