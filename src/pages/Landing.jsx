@@ -1,7 +1,7 @@
 /**
  * Landing.jsx — NeuroSense public homepage.
  * Hero: the multimodal signal network. Then: how it works, capabilities, responsible-use, CTA.
- * Wording is deliberately "screening support / risk assessment": NeuroSense never claims to diagnose.
+ * Wording describes questionnaire screening and separate research tasks: NeuroSense never claims to diagnose.
  */
 import { Link } from 'react-router-dom';
 import PublicNavbar from '../components/layout/PublicNavbar';
@@ -24,7 +24,7 @@ const CAPABILITIES = [
   },
   {
     title: 'Honest about missing signals',
-    desc: 'If a gaze, speech or facial signal is skipped or fails quality checks, it is shown as unavailable and never substituted with a guess.',
+    desc: 'Missing classifications remain unavailable. Useful recording measurements can still be shown, with the reason a model result was withheld.',
     icon: <svg {...ico}><circle cx="12" cy="12" r="9" /><path d="M12 8v5M12 16.5v.01" /></svg>,
   },
   {
@@ -76,7 +76,7 @@ export default function Landing() {
         <div className="ns-container">
           <SectionHeader
             eyebrow="How it works" title="Four stages, one screening insight"
-            description="Each signal is captured and scored on its own, checked for quality, and only then combined — so the final indicator is never stronger than the evidence behind it."
+            description="The questionnaire score determines the screening result. Optional recordings add separate measurements and research findings to the saved report; their model scores are not combined."
             align="center" as="h2"
           />
           <div id="hiw-title" style={{ height: 0 }} />
@@ -104,12 +104,12 @@ export default function Landing() {
         <div className="ns-container ns-about">
           <SectionHeader
             tone="dark" eyebrow="About" title="Built to support clinicians, not replace them"
-            description="Only the server-computed questionnaire score determines the screening result. Optional gaze is experimental; speech and facial analysis provide measurements. This research prototype does not diagnose autism."
+            description="Only the server-computed questionnaire score determines the screening result. Optional gaze is experimental. Adult voice and facial recordings can provide measurements and separate emotion or expression model labels. This research prototype does not diagnose autism."
           />
           <ul className="ns-about__list">
             {[
               ['Research limitations', 'Supplementary models have limited dataset evidence and no clinical validation for this application. They never change the questionnaire result.'],
-              ['Transparent quality', 'Calibration quality, usable-sample counts and model versions are reported next to every signal.'],
+              ['Transparent quality', 'Available recording-quality measurements, usable-sample counts and model versions are shown in Technical details. There is no screen-position calibration.'],
               ['One source of truth', 'The final indicator is computed on the server. What you see on screen is what was stored with the case.'],
             ].map(([t, d]) => (
               <li key={t}>

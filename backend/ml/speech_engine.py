@@ -20,6 +20,8 @@ import base64
 import json
 import os
 import tempfile
+import subprocess
+import io
 from pathlib import Path
 
 import numpy as np
@@ -96,11 +98,19 @@ def analyze_speech(audio_base64: str, mime_type: str = "audio/webm", *, research
             tmp.write(audio_bytes)
             tmp_path = tmp.name
         import librosa
-        native_y, native_sr = librosa.load(tmp_path, sr=None, mono=True, duration=SF.MAX_DURATION_S)
+        # Decode browser containers explicitly; do not depend on audioread's
+        # deprecated stdlib imports or extension guessing for WebM/MP4.
+        decoded = subprocess.run(['ffmpeg','-v','error','-i',tmp_path,'-t',str(SF.MAX_DURATION_S),
+                                  '-ac','1','-f','wav','-acodec','pcm_f32le','pipe:1'],
+                                 capture_output=True,check=True,timeout=40)
+        import soundfile as sf
+        native_y, native_sr = sf.read(io.BytesIO(decoded.stdout),dtype='float32')
         sr = SF.SAMPLE_RATE
         y = librosa.resample(native_y, orig_sr=native_sr, target_sr=sr) if native_sr != sr else native_y
-    except Exception as exc:
-        return _result("analysis_failed", reason=f"Audio could not be processed: {exc}", code=ERR_DECODE)
+    except Exception:
+        import logging
+        logging.getLogger('neurosense.speech').exception('Audio decoding failed')
+        return _result("analysis_failed", reason="The server could not decode the recording. Check the server audio runtime and FFmpeg installation before trying again.", code=ERR_DECODE)
     finally:
         if tmp_path and os.path.exists(tmp_path):
             os.unlink(tmp_path)           # recordings are never kept

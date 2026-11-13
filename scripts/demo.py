@@ -32,6 +32,10 @@ def preflight(without_webcam=False):
     # Explicit overrides precede application imports/dotenv and apply to child processes.
     if os.environ.get('MONGODB_URI') != 'mongomock://academic-demo':
         raise RuntimeError('Refusing non-disposable demo database')
+    try:
+        import ctypes.util, aifc, wave, subprocess
+    except ImportError as exc:
+        raise SystemExit('Incomplete Python standard library: recreate the environment using a persistent Python 3.11.14 installation, then restart the backend. ' + str(exc))
     import torch
     torch.set_num_threads(2)
     from backend.core.config import load_settings

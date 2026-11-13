@@ -1,8 +1,8 @@
 /**
  * GazeLab.jsx — temporary page: record 30 s gaze sessions with the real NeuroSense flow, keep the
  * OpenFace feature CSVs (numbers only, never the video) and run the webcam domain check.
- * Passing the check is what allows the gaze model to count in the combined result.
- * Volunteer sessions here have no ASD/TD labels: they validate the pipeline, not clinical accuracy.
+ * The check never makes gaze eligible for the questionnaire result.
+ * Volunteer sessions here have no ASD/TD labels: they inspect the pipeline and cannot establish clinical accuracy.
  */
 import { useCallback, useEffect, useState } from 'react';
 import GazeSession from '../components/GazeSession';
@@ -42,7 +42,7 @@ export default function GazeLab() {
       <p style={{ color: 'var(--ns-n600)', lineHeight: 1.65, marginBottom: 20 }}>
         Temporary tool. Record the 30-second task a few times (different people, normal webcam, normal lighting). OpenFace runs on each
         recording and only the extracted numbers are kept — the video is deleted. When enough good sessions exist, run the check that
-        checks whether their head/eye movement lies inside the range of the training recordings (children). Adults sitting still will normally fall outside it. Until it passes, the gaze result is shown but not counted in the final result.
+        checks whether their head/eye movement lies inside the range of the training recordings (children). Gaze remains excluded from the screening result regardless of this check.
         These recordings have no diagnosis labels, so this checks the pipeline, not accuracy.
       </p>
 
@@ -50,7 +50,7 @@ export default function GazeLab() {
         {lab.loading ? <p>Loading…</p> : lab.error ? <p role="alert" style={{ color: 'var(--color-risk-high)' }}>{lab.error}</p> : (
           <>
             <p style={{ margin: 0, fontWeight: 700 }}>
-              Webcam validation: {v?.passed ? <span style={{ color: 'var(--ns-risk-low-text)' }}>PASSED — gaze counts in fusion</span>
+              Webcam domain check: {v?.passed ? <span style={{ color: 'var(--ns-risk-low-text)' }}>PASSED — gaze remains excluded from screening</span>
                 : <span style={{ color: 'var(--ns-risk-mod-text)' }}>not passed{v?.reason ? ` (${v.reason})` : ''}</span>}
             </p>
             <p style={{ margin: '8px 0 14px', color: 'var(--ns-n600)', fontSize: '0.9rem' }}>

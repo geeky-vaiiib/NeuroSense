@@ -56,7 +56,7 @@ def present(report, category=None, example=False):
                         text += ' The movement was outside the model’s supported range.'
                 else:
                     text += ' No research classification was provided.'
-                if stages['reason']:
+                if stages['reason'] and stages['applicability_status'] != 'out_of_domain':
                     text += ' ' + stages['reason']
             if mid == 'gaze' and measured:
                 text += ' Tracking continuity and movement summaries are in Technical details; these do not measure eye contact or screen position.'
@@ -71,7 +71,7 @@ def present(report, category=None, example=False):
         elif status == 'not_provided':
             plain, text = 'Could not analyse', 'No recording analysis is available in this saved record.'
         else:
-            plain, text = 'Could not analyse', 'The analysis service or required model could not provide a result. Your questionnaire result is still available.'
+            plain, text = 'Could not analyse', (stages['reason'] or 'The analysis service or required model could not provide a result.') + ' Your questionnaire result is still available.'
         if plain == 'Recording needs another attempt' and mid != 'gaze':
             text = (stages['reason'] or ('The recording was too short or unclear for analysis.' if mid == 'speech' else 'A usable face could not be detected in the snapshot.')) + ' You can try again in a new screening; the questionnaire result is unchanged.'
         recordings.append({'id':mid,'label':label,'status':plain,'summary':text,'analysis':stages})

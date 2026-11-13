@@ -1,6 +1,6 @@
 /**
- * NeuroSense signature visual: four signal streams (questionnaire, gaze, speech, behaviour)
- * flowing into one fusion node and out as a screening insight.
+ * NeuroSense signature visual: questionnaire scoring and optional recording findings
+ * assembled into one report. This diagram does not represent diagnostic fusion.
  *
  * Decorative / explanatory only: it carries no data. Real per-case data lives in
  * results/ModalityStatusGrid. `highlight` dims the other streams (hover/focus interaction).
@@ -9,9 +9,10 @@ import { useState } from 'react';
 import useReducedMotion from './useReducedMotion';
 
 const STREAMS = [
-  { id: 'questionnaire', label: 'QUESTIONNAIRE', sub: 'structured responses', y: 130, color: '#A5B4FC' },
-  { id: 'gaze', label: 'GAZE', sub: 'attention paths', y: 290, color: '#22D3EE' },
-  { id: 'speech', label: 'SPEECH', sub: 'voice patterns', y: 450, color: '#5EEAD4' },
+  { id: 'questionnaire', label: 'QUESTIONNAIRE', sub: 'screening score', y: 100, color: '#A5B4FC' },
+  { id: 'gaze', label: 'GAZE', sub: 'movement measures', y: 220, color: '#22D3EE' },
+  { id: 'speech', label: 'SPEECH', sub: 'acoustics / emotion', y: 340, color: '#5EEAD4' },
+  { id: 'facial', label: 'FACIAL', sub: 'quality / expression', y: 460, color: '#F9C784' },
 ];
 const HUB = { x: 418, y: 290 };
 const OUT = { x: 664, y: 290 };
@@ -68,7 +69,7 @@ export default function SignalVisualization({ highlight: controlled, onHighlight
 
   return (
     <div style={{ width: '100%', ...style }}>
-      <svg viewBox="0 0 720 580" role="img" aria-label="Diagram: questionnaire, gaze and speech signals flow into a fusion node that produces a screening insight." style={{ width: '100%', height: 'auto', overflow: 'visible' }}>
+      <svg viewBox="0 0 720 580" role="img" aria-label="Diagram: questionnaire score and separate gaze, speech and facial findings are assembled into a saved report. Only the questionnaire determines screening." style={{ width: '100%', height: 'auto', overflow: 'visible' }}>
         <defs>
           <radialGradient id="svHub" cx="50%" cy="50%" r="50%">
             <stop offset="0" stopColor="#22D3EE" stopOpacity="0.35" />
@@ -119,15 +120,15 @@ export default function SignalVisualization({ highlight: controlled, onHighlight
           {[[-17, 17], [-17, -17], [17, 17], [17, -17]].map(([x, y], i) => (<circle key={i} cx={x} cy={y} r="4.2" fill="#0B1220" stroke="#22D3EE" strokeWidth="1.8" />))}
           <circle r="6.5" fill="#22D3EE" className={reduced ? undefined : 'ns-node-pulse'} />
           <circle r="2.4" fill="#0B1220" />
-          <text className="ns-sv-label" y="86" textAnchor="middle" fill="#8FA3C0" fontFamily="var(--font-data)" fontSize="11" letterSpacing="2">MULTIMODAL FUSION</text>
+          <text className="ns-sv-label" y="86" textAnchor="middle" fill="#8FA3C0" fontFamily="var(--font-data)" fontSize="11" letterSpacing="2">SAVED REPORT</text>
         </g>
 
         <path d={`M${HUB.x + 60} ${HUB.y} L ${OUT.x - 40} ${OUT.y}`} stroke="url(#svOut)" strokeWidth="1.8" className={reduced ? undefined : 'ns-signal-path'} strokeLinecap="round" />
         <g transform={`translate(${OUT.x} ${OUT.y})`}>
           <circle r="34" fill="rgba(34,211,238,0.08)" stroke="rgba(34,211,238,0.6)" strokeWidth="1.2" />
           <path d="M-12 0h24M4-8l8 8-8 8" stroke="#22D3EE" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-          <text className="ns-sv-label" y="58" textAnchor="middle" fill="#E6ECF5" fontFamily="var(--font-data)" fontSize="11" letterSpacing="1.6" fontWeight="600">SCREENING</text>
-          <text className="ns-sv-label" y="73" textAnchor="middle" fill="#E6ECF5" fontFamily="var(--font-data)" fontSize="11" letterSpacing="1.6" fontWeight="600">INSIGHT</text>
+          <text className="ns-sv-label" y="58" textAnchor="middle" fill="#E6ECF5" fontFamily="var(--font-data)" fontSize="11" letterSpacing="1.6" fontWeight="600">REVIEW</text>
+          <text className="ns-sv-label" y="73" textAnchor="middle" fill="#E6ECF5" fontFamily="var(--font-data)" fontSize="11" letterSpacing="1.6" fontWeight="600">FINDINGS</text>
         </g>
       </svg>
 
@@ -135,7 +136,7 @@ export default function SignalVisualization({ highlight: controlled, onHighlight
         {STREAMS.map((s) => (
           <li key={s.id}><span style={{ background: s.color }} />{s.label.charAt(0) + s.label.slice(1).toLowerCase()}</li>
         ))}
-        <li><span style={{ background: '#22D3EE' }} />Fusion → screening insight</li>
+        <li><span style={{ background: '#22D3EE' }} />Separate findings → saved report</li>
       </ul>
       <style>{`
         .ns-sv-legend{display:none;list-style:none;margin:10px 0 0;padding:0;gap:6px 14px;flex-wrap:wrap;font-size:.78rem;color:#9FB0C8}

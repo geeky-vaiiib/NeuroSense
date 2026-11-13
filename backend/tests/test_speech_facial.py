@@ -157,3 +157,21 @@ def test_detected_face_quality_rejection_retains_measurements(monkeypatch,case):
     assert r['status']=='failed_quality' and r['output'] is None
     assert r['features']['face_detected'] is True
     assert r['quality']['valid'] is False and r['reason']
+
+
+def test_webm_opus_decodes_through_real_ffmpeg():
+    """Codec engineering test; generated tone is not real-speech validation."""
+    import subprocess
+    wav=base64.b64decode(_wav_b64())
+    webm=subprocess.run(['ffmpeg','-v','error','-i','pipe:0','-c:a','libopus','-f','webm','pipe:1'],input=wav,capture_output=True,check=True).stdout
+    result=SE.analyze_speech(base64.b64encode(webm).decode(),'audio/webm;codecs=opus',research_enabled=True)
+    assert result['features']['pitch_mean']>0
+    assert result['emotion_result']['output'] is not None
+
+
+def test_missing_decoder_is_service_failure_not_recording_quality(monkeypatch):
+    def fail(*args,**kwargs):raise FileNotFoundError('ffmpeg')
+    monkeypatch.setattr(SE.subprocess,'run',fail)
+    result=SE.analyze_speech(_wav_b64(),'audio/wav',research_enabled=True)
+    assert result['status']=='analysis_failed' and result['output'] is None
+    assert 'server audio runtime' in result['reason']

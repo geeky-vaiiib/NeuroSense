@@ -125,3 +125,13 @@ def test_incompatible_checkpoint_hash_is_not_evidence_of_model_availability():
     stages=recording_analysis('gaze',state,state)
     assert stages['model_status']=='unavailable'
     assert stages['measurement_status']=='available' and stages['output'] is None
+
+
+def test_decoding_failure_has_specific_reason_and_service_retry_action():
+    reason='The server could not decode the recording. Check the server audio runtime and FFmpeg installation before trying again.'
+    report=present({'modalities':[{'id':'speech','status':'analysis_failed','reason':reason},
+                                 {'id':'speech_emotion','status':'analysis_failed','reason':reason}]})
+    voice=report['presentation']['recordings'][1]
+    assert reason in voice['summary']
+    assert voice['analysis']['classification_status']=='failed'
+    assert 'operator' in voice['analysis']['retry_action']
