@@ -111,7 +111,7 @@ def submit(user_id: str, video_path: Path, duration_s: Optional[float], session_
                 raise TooManyJobs(f"at most {MAX_ACTIVE_PER_USER} gaze analyses can run at once")
             now = time.time()
             _persist({"id": job_id, "owner_token": token, "user_id": user_id, "stage": "uploaded",
-                      "state": "processing", "result": None, "created": now, "heartbeat_at": now,
+                      "state": "processing", "population": population, "result": None, "created": now, "heartbeat_at": now,
                       "lease_until": now + LEASE_S, "deadline": now + JOB_TIMEOUT_S, "raw_path": str(video_path)})
             thread = threading.Thread(target=_run, args=(job_id, token, video_path, duration_s, session_id, keep_features, population), daemon=True)
             _threads.add(thread)
@@ -209,6 +209,8 @@ def _run(job_id: str, owner_token: str, video: Path, duration_s: Optional[float]
 
 def _failure(session_id: Optional[str], reason: str, detail: str) -> dict:
     return {"modality": "gaze", "status": "unavailable", "probability": None,
+            "model_status":"unavailable", "model_version":"not_executed", "dataset":"Unavailable",
+            "feature_schema_version":"unavailable", "analyzed_at":datetime.now(timezone.utc).isoformat(),
             "reason": reason, "detail": detail, "error_code": "GAZE_INFERENCE_FAILED",
             "session_id": session_id, "fusion_eligible": False}
 
@@ -221,7 +223,9 @@ def get(job_id: str, user_id: str) -> Optional[dict]:
 
 def result_for(job_id: str, user_id: str) -> Optional[dict]:
     j = get(job_id, user_id)
-    return j["result"] if j and j["state"] == "done" else None
+    if not j or j['state'] != 'done':
+        return None
+    return {**j['result'], 'input_population':j['population']} if j.get('population') else j['result']
 
 
 def shutdown(wait_s: float = 5) -> None:

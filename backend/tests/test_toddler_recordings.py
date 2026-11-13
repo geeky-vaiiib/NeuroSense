@@ -53,3 +53,17 @@ def test_toddler_capability_does_not_construct_child_service(app_client,monkeypa
     c=app_client();c.post('/auth/register',json={'name':'QA','email':'toddler-status@example.com','password':'fixture-password-99'})
     response=c.get('/gaze/status?population=toddler')
     assert response.status_code==200 and response.json()['model_version']=='toddler-measurements-v1'
+
+
+def test_expired_toddler_job_retains_population_and_has_valid_poll_response(mongo):
+    import time
+    from backend.ml.gaze import jobs
+    from backend.schemas.gaze import GazeJobStatus
+    now=time.time()
+    jobs._persist({'id':'expired-toddler','user_id':'owner','owner_token':'token','state':'processing',
+                   'created':now-100,'lease_until':now-1,'deadline':now+100,'population':'toddler'})
+    polled=jobs.get('expired-toddler','owner')
+    GazeJobStatus(job_id=polled['id'],state=polled['state'],stage=polled['stage'],result=polled['result'])
+    result=jobs.result_for('expired-toddler','owner')
+    assert result['input_population']=='toddler' and result['probability'] is None
+    assert result['reason']=='interrupted'

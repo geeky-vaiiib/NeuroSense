@@ -15,4 +15,6 @@ Tests: independent numeric gaze fixture proves no checkpoint/domain call; genera
 
 Remaining dependency for toddler-trained predictions: appropriately licensed toddler participant-level recordings with target-label provenance, matching ages/task/devices/languages, participant-independent splits and a prespecified evaluation protocol. No such trained recording models are present. No adult/child model, synthetic diagnosis, new training, participant download or fusion was substituted.
 
-Verification: isolated backend **377 passed, 7 optional-data skipped**; frontend **116 passed**; lint/build PASS; existing browser E2E **7 passed** (21.3s). New capture-boundary component test is mocked; no physical toddler participation or toddler diagnostic model inference is claimed. The pushed commit's CI is verified separately.
+Verification: isolated backend **378 passed, 7 optional-data skipped**; frontend **116 passed**; lint/build PASS; existing browser E2E **7 passed** (21.3s). New capture-boundary component test is mocked; no physical toddler participation or toddler diagnostic model inference is claimed. The pushed commit's CI is verified separately.
+
+Recovery regression: population is persisted on job creation and restored on result retrieval, including lease expiry. Terminal recovery responses contain explicit unavailable model/schema provenance so authenticated polling remains serializable; null outputs are preserved.
